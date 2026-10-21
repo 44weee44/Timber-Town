@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Управа — Timber Town</title>
+</head>
+<body data-screen="uprava">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="uprava">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Управа</h1>
+    <img src="The_Board.jpeg" width="1168" height="784" alt="Управа">
+    <p>Налог 50$ в день. Сейф для него закрыт. Четыре дня долг копится, на пятый лесопилка встаёт, дальше пеня 10$ в день. На тридцатый день просрочки — конфискация людей, брёвен и досок. Золото и здания остаются.</p>
+    <section id="taxes">
+      <h2>Налог</h2>
+      <p>Долг <data id="tax-debt" value="0">0$</data></p>
+      <p>Дней просрочки <data id="overdue-days" value="0">0</data></p>
+      <p>Пеня всего <data id="tax-penalty" value="0">0$</data></p>
+      <label for="tax-amount">Сумма</label>
+      <input id="tax-amount" type="number" min="1" step="1" value="0" inputmode="numeric">
+      <button type="button" id="pay-tax" disabled>Оплатить налог</button>
+    </section>
+    <section id="licenses">
+      <h2>Лицензии</h2>
+      <p id="chop-license">Рубка активна до дня <data id="chop-until" value="20">20</data></p>
+      <button type="button" id="renew-chop">Продлить рубку</button>
+      <p id="trade-license">Торговая лицензия: ещё не выдана</p>
+    </section>
+    <section id="hiring">
+      <h2>Найм</h2>
+      <p>Сейчас <data id="worker-count" value="0">0</data> из <data id="worker-cap" value="10">10</data>. Первый и второй — бесплатно, третий 200$, каждый следующий ещё на 200$ дороже. Имя и скин закрепляются навсегда.</p>
+      <button type="button" id="hire">Нанять бесплатно</button>
+    </section>
+    <section id="delivery-pay">
+      <h2>Доставка</h2>
+      <p id="report-plain">Докладная: нет</p>
+      <p id="report-sealed">Докладная с печатью: нет</p>
+      <p>Пошлина 50$ и ещё 1$ за доску. Доски списываются, путь занимает 30 игровых минут, прибыль падает в сейф лесопилки.</p>
+      <button type="button" id="pay-delivery" disabled>Оплатить доставку</button>
+    </section>
+    <template id="hired-worker">
+      <li data-worker-id="">
+        <p class="worker-name"></p>
+        <p class="worker-skin"></p>
+      </li>
+    </template>
+    <ul id="hired-list"></ul>
+  </main>
+</body>
+</html>

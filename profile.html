@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Личное дело — Timber Town</title>
+</head>
+<body data-screen="profile">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="profile">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Личное дело</h1>
+    <nav aria-label="Разделы профиля">
+      <a href="#tab-stats">Статистика</a>
+      <a href="#tab-chances">Шансы</a>
+      <a href="#tab-crew">Работники</a>
+    </nav>
+    <section id="tab-stats">
+      <h2>Статистика</h2>
+      <p>День <data id="day" value="1">1</data></p>
+      <p>Время <time id="profile-time" datetime="07:00">07:00</time> · <span id="profile-period">Рассвет</span></p>
+      <p>Часы работы <data id="hours-worked" value="0">0</data></p>
+      <p>Брёвен за день <data id="logs-today" value="0">0</data></p>
+      <p>Брёвен всего <data id="logs-all" value="0">0</data></p>
+      <p>Потрачено <data id="spent" value="0">0$</data></p>
+      <p>Золото <data id="gold" value="0">0</data></p>
+      <p id="payback">Окупаемость: продаж ещё нет</p>
+      <p id="delivery-track">Доставка: нет</p>
+    </section>
+    <section id="tab-chances" hidden>
+      <h2>Шансы</h2>
+      <p id="chances-empty">Некого считать. Нанять можно в управе.</p>
+      <ul id="chance-list"></ul>
+    </section>
+    <template id="chance-card">
+      <li data-worker-id="">
+        <p class="worker-name"></p>
+        <p class="worker-axe"></p>
+        <ul class="quality-odds">
+          <li>Гнилое <data class="odd-rotten" value="0">0%</data></li>
+          <li>Обычное <data class="odd-normal" value="0">0%</data></li>
+          <li>Хорошее <data class="odd-good" value="0">0%</data></li>
+          <li>Отличное <data class="odd-excellent" value="0">0%</data></li>
+          <li>Идеальное <data class="odd-perfect" value="0">0%</data></li>
+        </ul>
+      </li>
+    </template>
+    <section id="tab-crew" hidden>
+      <h2>Работники</h2>
+      <p id="profile-crew-empty">Работников нет.</p>
+      <ul id="profile-crew"></ul>
+    </section>
+    <template id="profile-worker">
+      <li data-worker-id="">
+        <p class="worker-name"></p>
+        <p class="worker-level"></p>
+        <p class="worker-skin"></p>
+        <p class="worker-axe">Топор не выдан</p>
+        <button type="button" class="change-axe">Сменить топор</button>
+        <ul class="axe-choices" hidden></ul>
+        <button type="button" class="unequip-axe" hidden>Снять топор</button>
+        <button type="button" class="fire-worker">Уволить</button>
+      </li>
+    </template>
+    <template id="axe-choice">
+      <li>
+        <button type="button" class="equip-axe"></button>
+      </li>
+    </template>
+    <button type="button" id="reset-progress">Сбросить прогресс</button>
+    <dialog id="reset-step-1" aria-labelledby="reset-1-title">
+      <h2 id="reset-1-title">Точно стереть всё?</h2>
+      <button type="button" id="reset-continue">Да, дальше</button>
+      <button type="button" id="reset-cancel-1">Отмена</button>
+    </dialog>
+    <dialog id="reset-step-2" aria-labelledby="reset-2-title">
+      <h2 id="reset-2-title">Сброс</h2>
+      <p>Кошелёк, люди, топоры, делянки и долг исчезнут. Останется новый город и 1 000$.</p>
+      <button type="button" id="reset-yes">Стереть</button>
+      <button type="button" id="reset-no">Отмена</button>
+    </dialog>
+    <dialog id="fire-confirm" aria-labelledby="fire-title">
+      <h2 id="fire-title">Увольнение</h2>
+      <p>Вернётся 35% от цены найма. За бесплатных — ничего. Топор упадёт в рюкзак.</p>
+      <button type="button" id="fire-yes">Уволить</button>
+      <button type="button" id="fire-no">Отмена</button>
+    </dialog>
+  </main>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Карта — Timber Town</title>
+</head>
+<body data-screen="map">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="map">
+    <h1>Тимбер-Таун</h1>
+    <p id="period" data-period="dawn">Рассвет. День <data id="day" value="1">1</data>.</p>
+    <figure id="world">
+      <img id="map-dawn" src="World_map_Sunrise.jpeg" width="1248" height="832" alt="Карта Тимбер-Тауна на рассвете" usemap="#spots-dawn">
+      <img id="map-day" src="World_map_day.jpeg" width="1168" height="784" alt="Карта Тимбер-Тауна днём" usemap="#spots-day" hidden>
+      <img id="map-dusk" src="World_map_Sunset.jpeg" width="1248" height="832" alt="Карта Тимбер-Тауна на закате" usemap="#spots-dusk" hidden>
+      <img id="map-night" src="World_map_Night.jpeg" width="1248" height="832" alt="Карта Тимбер-Тауна ночью" usemap="#spots-night" hidden>
+    </figure>
+    <map name="spots-dawn">
+    <area shape="rect" coords="250,17,549,150" href="sawmill.html" alt="Хвойный Кряж" data-spot="pine">
+    <area shape="rect" coords="948,158,1223,275" href="sawmill.html" alt="Дубовый Стан" data-spot="oak">
+    <area shape="rect" coords="12,266,237,399" href="sawmill.html" alt="Склад леса" data-spot="yard">
+    <area shape="rect" coords="12,424,237,557" href="sklad.html" alt="Склады" data-spot="wh">
+    <area shape="rect" coords="387,275,599,408" href="shop.html" alt="Торговый центр" data-spot="shop">
+    <area shape="rect" coords="537,408,736,557" href="uprava.html" alt="Управа" data-spot="hall">
+    <area shape="rect" coords="736,291,961,408" href="master.html" alt="Мастерская" data-spot="ws">
+    <area shape="rect" coords="886,408,1111,532" href="liteynaya.html" alt="Литейная" data-spot="fn">
+    <area shape="rect" coords="874,607,1148,749" href="sawmill.html" alt="Берёзовый Ручей" data-spot="birch">
+  </map>
+    <map name="spots-day">
+    <area shape="rect" coords="234,16,514,141" href="sawmill.html" alt="Хвойный Кряж" data-spot="pine">
+    <area shape="rect" coords="888,149,1145,259" href="sawmill.html" alt="Дубовый Стан" data-spot="oak">
+    <area shape="rect" coords="12,251,222,376" href="sawmill.html" alt="Склад леса" data-spot="yard">
+    <area shape="rect" coords="12,400,222,525" href="sklad.html" alt="Склады" data-spot="wh">
+    <area shape="rect" coords="362,259,561,384" href="shop.html" alt="Торговый центр" data-spot="shop">
+    <area shape="rect" coords="502,384,689,525" href="uprava.html" alt="Управа" data-spot="hall">
+    <area shape="rect" coords="689,274,899,384" href="master.html" alt="Мастерская" data-spot="ws">
+    <area shape="rect" coords="829,384,1040,502" href="liteynaya.html" alt="Литейная" data-spot="fn">
+    <area shape="rect" coords="818,572,1075,706" href="sawmill.html" alt="Берёзовый Ручей" data-spot="birch">
+  </map>
+    <map name="spots-dusk">
+    <area shape="rect" coords="250,17,549,150" href="sawmill.html" alt="Хвойный Кряж" data-spot="pine">
+    <area shape="rect" coords="948,158,1223,275" href="sawmill.html" alt="Дубовый Стан" data-spot="oak">
+    <area shape="rect" coords="12,266,237,399" href="sawmill.html" alt="Склад леса" data-spot="yard">
+    <area shape="rect" coords="12,424,237,557" href="sklad.html" alt="Склады" data-spot="wh">
+    <area shape="rect" coords="387,275,599,408" href="shop.html" alt="Торговый центр" data-spot="shop">
+    <area shape="rect" coords="537,408,736,557" href="uprava.html" alt="Управа" data-spot="hall">
+    <area shape="rect" coords="736,291,961,408" href="master.html" alt="Мастерская" data-spot="ws">
+    <area shape="rect" coords="886,408,1111,532" href="liteynaya.html" alt="Литейная" data-spot="fn">
+    <area shape="rect" coords="874,607,1148,749" href="sawmill.html" alt="Берёзовый Ручей" data-spot="birch">
+  </map>
+    <map name="spots-night">
+    <area shape="rect" coords="250,17,549,150" href="sawmill.html" alt="Хвойный Кряж" data-spot="pine">
+    <area shape="rect" coords="948,158,1223,275" href="sawmill.html" alt="Дубовый Стан" data-spot="oak">
+    <area shape="rect" coords="12,266,237,399" href="sawmill.html" alt="Склад леса" data-spot="yard">
+    <area shape="rect" coords="12,424,237,557" href="sklad.html" alt="Склады" data-spot="wh">
+    <area shape="rect" coords="387,275,599,408" href="shop.html" alt="Торговый центр" data-spot="shop">
+    <area shape="rect" coords="537,408,736,557" href="uprava.html" alt="Управа" data-spot="hall">
+    <area shape="rect" coords="736,291,961,408" href="master.html" alt="Мастерская" data-spot="ws">
+    <area shape="rect" coords="886,408,1111,532" href="liteynaya.html" alt="Литейная" data-spot="fn">
+    <area shape="rect" coords="874,607,1148,749" href="sawmill.html" alt="Берёзовый Ручей" data-spot="birch">
+  </map>
+    <nav aria-label="Здания">
+      <a href="sawmill.html" data-spot="pine">Хвойный Кряж</a>
+      <a href="sawmill.html" data-spot="oak">Дубовый Стан</a>
+      <a href="sawmill.html" data-spot="yard">Склад леса</a>
+      <a href="sklad.html" data-spot="wh">Склады</a>
+      <a href="shop.html" data-spot="shop">Торговый центр</a>
+      <a href="uprava.html" data-spot="hall">Управа</a>
+      <a href="master.html" data-spot="ws">Мастерская</a>
+      <a href="liteynaya.html" data-spot="fn">Литейная</a>
+      <a href="sawmill.html" data-spot="birch">Берёзовый Ручей</a>
+    </nav>
+  </main>
+</body>
+</html>

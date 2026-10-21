@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Лесопилка — Timber Town</title>
+</head>
+<body data-screen="sawmill">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="sawmill">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Лесопилка</h1>
+    <img src="idex_fon.jpeg" width="768" height="1152" alt="Лесопилка">
+    <nav aria-label="Разделы лесопилки">
+      <a href="#safe">Сейф</a>
+      <a href="#crew">Работники</a>
+      <a href="#stats">Статистика</a>
+      <a href="#zones">Карта зон</a>
+    </nav>
+
+    <section id="safe">
+      <h2>Сейф</h2>
+      <p>В сейфе <data id="safe-money" value="0">0$</data></p>
+      <p>В кошельке <data id="safe-wallet" value="1000">1 000$</data></p>
+      <p id="safe-watch" hidden>Снято под надзором <data id="safe-exposed" value="0">0$</data>. Осталось <time id="safe-timer">00:00</time>. Не потратите за игровой час — спишут в долг, а если долга нет, деньги сгорят.</p>
+      <label for="safe-amount">Сумма</label>
+      <input id="safe-amount" type="number" min="1" step="1" value="100" inputmode="numeric">
+      <button type="button" id="safe-deposit">В сейф</button>
+      <button type="button" id="safe-withdraw">Забрать</button>
+    </section>
+
+    <section id="crew" hidden>
+      <h2>Работники</h2>
+      <p id="crew-empty">На делянке тихо. Первые двое нанимаются в управе даром.</p>
+      <ul id="crew-list"></ul>
+      <p><a href="profile.html">Топоры и увольнение</a></p>
+    </section>
+    <template id="worker-row">
+      <li data-worker-id="">
+        <p class="worker-name"></p>
+        <p class="worker-level"></p>
+        <p class="worker-skin"></p>
+        <p class="worker-status"></p>
+        <progress class="worker-carry" max="4" value="0">0/4</progress>
+      </li>
+    </template>
+
+    <section id="stats" hidden>
+      <h2>Статистика</h2>
+      <p>На делянке <data id="zone-stock" value="200000">200 000</data></p>
+      <p>Брёвен на дворе <data id="logs-total" value="0">0</data></p>
+      <ul id="log-piles">
+        <li>Гнилое <data id="logs-rotten" value="0">0</data></li>
+        <li>Обычное <data id="logs-normal" value="0">0</data></li>
+        <li>Хорошее <data id="logs-good" value="0">0</data></li>
+        <li>Отличное <data id="logs-excellent" value="0">0</data></li>
+        <li>Идеальное <data id="logs-perfect" value="0">0</data></li>
+      </ul>
+      <p>Доски <data id="planks" value="0">0</data></p>
+      <p>Цена доски <data id="plank-price" value="">ещё не назначена</data></p>
+    </section>
+
+    <section id="zones" hidden>
+      <h2>Карта зон</h2>
+      <p>Зон <data id="zone-count" value="1">1</data> из 28. Мест для людей <data id="worker-cap" value="10">10</data>. В зоне 200 000 брёвен, запас возвращается каждый игровой день.</p>
+      <div id="zone-grid" role="group" aria-label="28 зон">
+        <button type="button" data-zone="1" data-owned="true" aria-label="Зона 1 , куплена">1</button>
+        <button type="button" data-zone="2" data-owned="false" aria-label="Зона 2">2</button>
+        <button type="button" data-zone="3" data-owned="false" aria-label="Зона 3">3</button>
+        <button type="button" data-zone="4" data-owned="false" aria-label="Зона 4">4</button>
+        <button type="button" data-zone="5" data-owned="false" aria-label="Зона 5">5</button>
+        <button type="button" data-zone="6" data-owned="false" aria-label="Зона 6">6</button>
+        <button type="button" data-zone="7" data-owned="false" aria-label="Зона 7">7</button>
+        <button type="button" data-zone="8" data-owned="false" aria-label="Зона 8">8</button>
+        <button type="button" data-zone="9" data-owned="false" aria-label="Зона 9">9</button>
+        <button type="button" data-zone="10" data-owned="false" aria-label="Зона 10">10</button>
+        <button type="button" data-zone="11" data-owned="false" aria-label="Зона 11">11</button>
+        <button type="button" data-zone="12" data-owned="false" aria-label="Зона 12">12</button>
+        <button type="button" data-zone="13" data-owned="false" aria-label="Зона 13">13</button>
+        <button type="button" data-zone="14" data-owned="false" aria-label="Зона 14">14</button>
+        <button type="button" data-zone="15" data-owned="false" aria-label="Зона 15">15</button>
+        <button type="button" data-zone="16" data-owned="false" aria-label="Зона 16">16</button>
+        <button type="button" data-zone="17" data-owned="false" aria-label="Зона 17">17</button>
+        <button type="button" data-zone="18" data-owned="false" aria-label="Зона 18">18</button>
+        <button type="button" data-zone="19" data-owned="false" aria-label="Зона 19">19</button>
+        <button type="button" data-zone="20" data-owned="false" aria-label="Зона 20">20</button>
+        <button type="button" data-zone="21" data-owned="false" aria-label="Зона 21">21</button>
+        <button type="button" data-zone="22" data-owned="false" aria-label="Зона 22">22</button>
+        <button type="button" data-zone="23" data-owned="false" aria-label="Зона 23">23</button>
+        <button type="button" data-zone="24" data-owned="false" aria-label="Зона 24">24</button>
+        <button type="button" data-zone="25" data-owned="false" aria-label="Зона 25">25</button>
+        <button type="button" data-zone="26" data-owned="false" aria-label="Зона 26">26</button>
+        <button type="button" data-zone="27" data-owned="false" aria-label="Зона 27">27</button>
+        <button type="button" data-zone="28" data-owned="false" aria-label="Зона 28">28</button>
+      </div>
+    </section>
+    <dialog id="zone-buy" aria-labelledby="zone-buy-title">
+      <h2 id="zone-buy-title">Новая делянка</h2>
+      <p id="zone-buy-text">+10 мест работников, +1 территория, 1 500$.</p>
+      <button type="button" id="zone-buy-yes">Купить</button>
+      <button type="button" id="zone-buy-no">Отмена</button>
+    </dialog>
+  </main>
+</body>
+</html>

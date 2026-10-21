@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Мастерская — Timber Town</title>
+</head>
+<body data-screen="master">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="master">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Мастерская</h1>
+    <img src="Workshop.jpeg" width="1168" height="784" alt="Мастерская">
+    <p>Мастер берёт только сломанное. Топор: 1% прочности = 1$, но не меньше 10$. Станок: 2$ за 1%.</p>
+    <section id="axe-repair">
+      <h2>Топоры</h2>
+      <p id="axes-ok">Ломаных топоров нет.</p>
+      <ul id="broken-axes"></ul>
+    </section>
+    <template id="broken-axe">
+      <li data-rarity="" data-where="">
+        <p class="axe-name"></p>
+        <p class="axe-owner"></p>
+        <button type="button" class="repair-axe">Починить</button>
+      </li>
+    </template>
+    <section id="machine-repair">
+      <h2>Станок</h2>
+      <p>Прочность <data id="machine-durability" value="100">100</data>%</p>
+      <button type="button" id="repair-machine" disabled>Починить станок</button>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,3 +1,5 @@
+Старт игры: [index.html](index.html)
+
 # Timber-Town
 2d pixel art game.
 📖 TIMBER TOWN: ПОЛНОЕ ТЕХНИЧЕСКОЕ ЗАДАНИЕ (GDD & TECHNICAL REF)

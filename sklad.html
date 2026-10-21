@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Склады — Timber Town</title>
+</head>
+<body data-screen="sklad">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="sklad">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Склады</h1>
+    <img src="Warehouse.jpeg" width="1168" height="784" alt="Склад досок">
+    <p>Доски <data id="planks" value="0">0</data></p>
+    <p>Цена сегодня <data id="plank-price" value="">ещё не назначена</data></p>
+    <p>Брёвен <data id="logs-total" value="0">0</data></p>
+    <p>Станок <data id="machine-level" value="1">1</data> ур. · прочность <data id="machine-durability" value="100">100</data>%</p>
+    <form id="sell-form">
+      <label for="plank-qty">Сколько досок в докладную</label>
+      <input id="plank-qty" type="number" min="1" step="1" value="1" inputmode="numeric">
+      <button type="button" id="sell-planks" disabled>Продать доски</button>
+    </form>
+    <p id="report-status">Докладная: нет</p>
+    <button type="button" id="toggle-machine">Станок</button>
+    <section id="machine" hidden>
+      <h2>Станок</h2>
+      <p id="machine-state">Стоит</p>
+      <p>За один запуск: <data id="machine-capacity" value="10">10</data> брёвен</p>
+      <p>На бревно: <data id="machine-pace" value="10">10</data> игр. мин.</p>
+      <p>Шанс лишней доски: <data id="machine-bonus" value="1">1</data>%</p>
+      <ul id="machine-queue">
+        <li>Гнилое <input id="mill-rotten" type="number" min="0" value="0"></li>
+        <li>Обычное <input id="mill-normal" type="number" min="0" value="0"></li>
+        <li>Хорошее <input id="mill-good" type="number" min="0" value="0"></li>
+        <li>Отличное <input id="mill-excellent" type="number" min="0" value="0"></li>
+        <li>Идеальное <input id="mill-perfect" type="number" min="0" value="0"></li>
+      </ul>
+      <p id="machine-left" hidden>Осталось <data id="machine-logs-left" value="0">0</data>, время <time id="machine-eta">00:00</time></p>
+      <button type="button" id="start-machine" disabled>Запустить</button>
+    </section>
+    <table id="machine-tiers">
+      <caption>Уровни станка</caption>
+      <thead>
+        <tr><th>Уровень</th><th>Цена</th><th>Брёвен</th><th>Минут на бревно</th><th>Лишняя доска</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>старт</td><td>10</td><td>10</td><td>1%</td></tr>
+        <tr><td>2</td><td>250$</td><td>20</td><td>9</td><td>25%</td></tr>
+        <tr><td>3</td><td>400$</td><td>30</td><td>8</td><td>50%</td></tr>
+        <tr><td>4</td><td>750$</td><td>40</td><td>7</td><td>75%</td></tr>
+        <tr><td>5</td><td>1 000$</td><td>50</td><td>5</td><td>95%</td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

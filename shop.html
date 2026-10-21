@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Торговый центр — Timber Town</title>
+</head>
+<body data-screen="shop">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="shop">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Торговый центр</h1>
+    <img src="Trad_Center.jpeg" width="1168" height="784" alt="Торговый центр">
+    <p>Одинаковые топоры — одна редкость и одна прочность — складываются в рюкзак.</p>
+    <ul id="axe-catalog">
+      <li data-rarity="common">
+        <h2>Обычный</h2>
+        <p>150$ · прочность 100 · −1% за 1 бревно</p>
+        <button type="button" id="buy-common">Купить</button>
+      </li>
+      <li data-rarity="rare">
+        <h2>Редкий</h2>
+        <p>500$ · прочность 250 · −1% за 3 бревна</p>
+        <button type="button" id="buy-rare">Купить</button>
+      </li>
+      <li data-rarity="legendary">
+        <h2>Легендарный</h2>
+        <p>1 500$ · прочность 500 · −1% за 5 брёвен</p>
+        <button type="button" id="buy-legendary">Купить</button>
+      </li>
+      <li data-rarity="mythic">
+        <h2>Мифический</h2>
+        <p>4 000$ · прочность 1000 · −1% за 10 брёвен</p>
+        <button type="button" id="buy-mythic">Купить</button>
+      </li>
+    </ul>
+    <section id="machine-upgrade">
+      <h2>Улучшение станка</h2>
+      <p>Сейчас <data id="machine-level" value="1">1</data> уровень.</p>
+      <button type="button" id="upgrade-machine">Улучшить до 2 ур. · 250$</button>
+    </section>
+  </main>
+</body>
+</html>
