@@ -1136,6 +1136,106 @@ function advanceTime(realMs) {
 
     notify('Прогресс сброшен.');
   });
+  
+  function addAxeToInventory(rarity, durability) {
+  const axe = state.inventory.axes.find(item =>
+    item.rarity === rarity &&
+    item.durability === durability
+  );
+
+  if (axe) {
+    axe.count++;
+  } else {
+    state.inventory.axes.push({
+      rarity,
+      durability,
+      count: 1
+    });
+  }
+}
+
+function repairAxe(rarity, durability, workerId = null) {
+  return transaction('Ремонт топора', () => {
+    let target = null;
+
+    if (workerId) {
+      const worker = state.sawmill.workers.find(
+        item => item.id === workerId
+      );
+
+      if (
+        worker?.axe &&
+        worker.axe.rarity === rarity &&
+        worker.axe.durability === durability
+      ) {
+        target = worker.axe;
+      }
+    } else {
+      target = state.inventory.axes.find(item =>
+        item.rarity === rarity &&
+        item.durability === durability &&
+        item.count > 0
+      );
+    }
+
+    if (!target || target.durability >= AXES[rarity].max) {
+      notify('Этот топор не нуждается в ремонте.', 'error');
+      return false;
+    }
+
+    const max = AXES[rarity].max;
+    const restored = max - target.durability;
+    const cost = Math.max(10, Math.ceil(restored));
+
+    if (!spend(cost)) return false;
+
+    target.durability = max;
+
+    if (workerId) {
+      target.wear = 0;
+
+      const worker = state.sawmill.workers.find(
+        item => item.id === workerId
+      );
+
+      if (worker) worker.isWorking = true;
+    }
+
+    notify(`Топор восстановлен за ${cost}$.`);
+  });
+}
+
+function repairMachine() {
+  return transaction('Ремонт станка', () => {
+    const machine = state.sawmill.machine;
+
+    if (machine.durability >= 100) {
+      notify('Станок уже исправен.');
+      return false;
+    }
+
+    const cost = (100 - machine.durability) * 2;
+
+    if (!spend(cost)) return false;
+
+    machine.durability = 100;
+
+    notify(`Станок отремонтирован за ${cost}$.`);
+  });
+}
+
+bind('repair-machine', repairMachine);
+
+bind('broken-axes', event => {
+  const button = event.target.closest('.repair-axe');
+  if (!button) return;
+
+  repairAxe(
+    button.dataset.rarity,
+    Number(button.dataset.durability),
+    button.dataset.workerId || null
+  );
+});
 
   // Офлайн-прогресс рассчитывается при загрузке страницы.
   const elapsed = Math.max(
