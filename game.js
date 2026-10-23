@@ -565,110 +565,134 @@
   }
 
   function dayTick() {
-    state.day++;
-    state.gameMinutes = 0;
+  state.day++;
 
-    state.sawmill.zoneStock = 200000;
-    state.sawmill.logsToday = 0;
+  state.sawmill.zoneStock = 200000;
+  state.sawmill.logsToday = 0;
 
-    state.taxDebt += 50;
+  // Ежедневный налог начисляется отдельно от старого долга.
+  state.taxDebt += 50;
 
-    if (state.taxDebt > 0) {
-      state.overdueDays++;
+  if (state.taxDebt + state.taxPenalty > 0) {
+    state.overdueDays++;
 
-      if (state.overdueDays > 4) {
-        state.taxPenalty += 10;
-      }
+    if (state.overdueDays > 4) {
+      state.taxPenalty += 10;
     }
-
-    if (state.overdueDays === 5) {
-      notify(
-        'Налоговая остановила лесопилку.',
-        'error'
-      );
-    }
-
-    if (state.overdueDays >= 30) {
-      state.sawmill.workers = [];
-
-      state.sawmill.logs = Object.fromEntries(
-        QUALITY.map(q => [q, 0])
-      );
-
-      state.sawmill.planks = 0;
-
-      state.taxDebt = 0;
-      state.taxPenalty = 0;
-      state.overdueDays = 0;
-
-      notify(
-        'Конфискация: работники, брёвна и доски потеряны.',
-        'error'
-      );
-    }
-
-    state.stats.lastDay = state.day;
+  } else {
+    state.overdueDays = 0;
   }
 
-  function advanceTime(realMs) {
-    // Ограничиваем офлайн-расчёт одним игровым годом.
-    let remaining = Math.min(
-      Math.max(0, realMs),
-      365 * GAME_DAY_MS
+  if (state.overdueDays === 5) {
+    state.sawmill.workers.forEach(worker => {
+      worker.isWorking = false;
+    });
+
+    notify('Налоговая остановила лесопилку.', 'error');
+  }
+
+  if (state.overdueDays >= 30) {
+    state.sawmill.workers = [];
+
+    state.sawmill.logs = Object.fromEntries(
+      QUALITY.map(q => [q, 0])
     );
 
-    while (remaining > 0) {
-      const step = Math.min(remaining, GAME_MINUTE_MS);
-      remaining -= step;
+    state.sawmill.planks = 0;
+    state.sawmill.machine.queue = {};
+    state.sawmill.machine.isRunning = false;
+    state.sawmill.machine.remaining = 0;
 
-      state.gameMinutes++;
+    state.taxDebt = 0;
+    state.taxPenalty = 0;
+    state.overdueDays = 0;
 
-      if (state.gameMinutes >= 1440) {
-        dayTick();
-      }
+    notify(
+      'Конфискация: работники, брёвна и доски потеряны.',
+      'error'
+    );
+  }
 
-      if (state.overdueDays < 5) {
-        state.sawmill.workers.forEach(chop);
-      }
+  state.stats.lastDay = state.day;
+}
 
-      machineTick(1);
-      deliveryTick(1);
+// Счётчик неполной игровой минуты сохраняется между вызовами.
+let timeRemainderMs = 0;
 
+function advanceTime(realMs) {
+  const safeMs = Math.min(
+    Math.max(0, Number(realMs) || 0),
+    365 * GAME_DAY_MS
+  );
+
+  timeRemainderMs += safeMs;
+
+  const fullMinutes = Math.floor(
+    timeRemainderMs / GAME_MINUTE_MS
+  );
+
+  timeRemainderMs %= GAME_MINUTE_MS;
+
+  for (let i = 0; i < fullMinutes; i++) {
+    // Игровые сутки идут с 07:00 до 07:00.
+    state.gameMinutes = (state.gameMinutes + 1) % 1440;
+
+    if (state.gameMinutes === 420) {
+      dayTick();
+    }
+
+    if (state.overdueDays < 5) {
+      state.sawmill.workers.forEach(chop);
+    }
+
+    machineTick(1);
+    deliveryTick(1);
+
+    if (state.sawmill.workers.some(w => w.isWorking)) {
       state.sawmill.hoursWorked += 1 / 60;
+    }
 
-      if (state.sawmill.safeExposure) {
-        state.sawmill.safeExposure.remaining--;
+    // Деньги под надзором можно потратить за один игровой час.
+    const exposure = state.sawmill.safeExposure;
 
-        if (state.sawmill.safeExposure.remaining <= 0) {
-          const amount = state.sawmill.safeExposure.amount;
-          const debtBefore = state.taxDebt + state.taxPenalty;
-          const paid = Math.min(amount, debtBefore);
+    if (exposure) {
+      exposure.remaining--;
 
-          const paidDebt = Math.min(paid, state.taxDebt);
+      if (exposure.remaining <= 0) {
+        const amount = exposure.amount;
+        const debt = state.taxDebt + state.taxPenalty;
+        const paid = Math.min(amount, debt);
 
-          state.taxDebt -= paidDebt;
-          state.taxPenalty -= Math.min(
-            state.taxPenalty,
-            paid - paidDebt
-          );
+        const paidDebt = Math.min(paid, state.taxDebt);
+        state.taxDebt -= paidDebt;
+        state.taxPenalty -= Math.min(
+          state.taxPenalty,
+          paid - paidDebt
+        );
 
-          if (paid === 0) {
-            notify(
-              `${amount}$ сгорели: долга не было.`,
-              'error'
-            );
-          } else {
-            notify(
-              `${paid}$ списаны в счёт налогового долга.`,
-              'error'
-            );
-          }
+        // Не потраченная сумма полностью исчезает из кошелька.
+        state.money = Math.max(0, state.money - amount);
 
-          state.money += 0;
-          state.sawmill.safeExposure = null;
+        notify(
+          paid > 0
+            ? `${paid}$ списаны в счёт налогового долга. Остаток сгорел.`
+            : `${amount}$ сгорели: налогового долга не было.`,
+          'error'
+        );
+
+        if (state.taxDebt === 0 && state.taxPenalty === 0) {
+          state.overdueDays = 0;
         }
+
+        state.sawmill.safeExposure = null;
       }
     }
+  }
+
+  state.lastLogin = Date.now();
+  saveState();
+  render();
+}
 
     saveState();
   }
