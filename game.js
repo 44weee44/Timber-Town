@@ -1236,6 +1236,172 @@ bind('broken-axes', event => {
     button.dataset.workerId || null
   );
 });
+  bind('renew-chop', () =>
+  transaction('Продление лицензии на рубку', () => {
+    const cost = 300;
+
+    if (!spend(cost)) return false;
+
+    state.licenses.chopping.active = true;
+    state.licenses.chopping.expiresDay = state.day + 19;
+
+    notify('Лицензия на рубку продлена на 20 дней.');
+  })
+);
+
+bind('buy-trade-license', () =>
+  transaction('Торговая лицензия', () => {
+    const cost = 500;
+
+    if (!spend(cost)) return false;
+
+    state.licenses.trade.active = true;
+    state.licenses.trade.expiresDay = state.day + 19;
+
+    notify('Торговая лицензия действует 20 дней.');
+  })
+);
+
+let selectedZone = null;
+
+document.querySelectorAll('[data-zone]').forEach(button => {
+  button.addEventListener('click', () => {
+    const zone = Number(button.dataset.zone);
+
+    if (zone <= state.sawmill.zones) return;
+
+    selectedZone = zone;
+
+    const dialog = $('zone-buy');
+    const description = $('zone-buy-text');
+
+    if (description) {
+      description.textContent =
+        `Зона ${zone}: +10 мест для работников. Стоимость 1 500$.`;
+    }
+
+    dialog?.showModal();
+  });
+});
+
+bind('zone-buy-no', () => {
+  selectedZone = null;
+  $('zone-buy')?.close();
+});
+
+bind('zone-buy-yes', () =>
+  transaction('Покупка территории', () => {
+    if (!selectedZone) return false;
+
+    // Территории покупаются последовательно.
+    if (selectedZone !== state.sawmill.zones + 1) {
+      notify('Сначала купите предыдущую территорию.', 'error');
+      return false;
+    }
+
+    if (state.sawmill.zones >= 28) {
+      notify('Все территории уже куплены.', 'error');
+      return false;
+    }
+
+    if (!spend(1500)) return false;
+
+    state.sawmill.zones++;
+    selectedZone = null;
+
+    $('zone-buy')?.close();
+
+    notify('Новая территория приобретена.');
+  })
+);
+  let selectedWorkerId = null;
+
+function fireWorker(workerId) {
+  return transaction('Увольнение работника', () => {
+    const index = state.sawmill.workers.findIndex(
+      worker => worker.id === workerId
+    );
+
+    if (index < 0) return false;
+
+    const worker = state.sawmill.workers[index];
+
+    // Возврат 35% стоимости найма.
+    const refund = Math.floor(worker.hireCost * 0.35);
+
+    if (worker.axe) {
+      addAxeToInventory(
+        worker.axe.rarity,
+        worker.axe.durability
+      );
+    }
+
+    state.money += refund;
+    state.sawmill.workers.splice(index, 1);
+
+    notify(
+      refund
+        ? `${worker.name} уволен. Возвращено ${refund}$.`
+        : `${worker.name} уволен. Возврата нет.`
+    );
+  });
+}
+
+function unequipAxe(workerId) {
+  return transaction('Снятие топора', () => {
+    const worker = state.sawmill.workers.find(
+      item => item.id === workerId
+    );
+
+    if (!worker?.axe) {
+      notify('У работника нет топора.', 'error');
+      return false;
+    }
+
+    addAxeToInventory(
+      worker.axe.rarity,
+      worker.axe.durability
+    );
+
+    worker.axe = null;
+    worker.isWorking = false;
+
+    notify(`${worker.name}: топор возвращён в рюкзак.`);
+  });
+}
+
+bind('profile-crew', event => {
+  const fireButton = event.target.closest('.fire-worker');
+  const removeButton = event.target.closest('.unequip-axe');
+
+  const row = event.target.closest('[data-worker-id]');
+  if (!row) return;
+
+  const workerId = row.dataset.workerId;
+
+  if (fireButton) {
+    selectedWorkerId = workerId;
+    $('fire-confirm')?.showModal();
+  }
+
+  if (removeButton) {
+    unequipAxe(workerId);
+  }
+});
+
+bind('fire-yes', () => {
+  if (selectedWorkerId) {
+    fireWorker(selectedWorkerId);
+  }
+
+  selectedWorkerId = null;
+  $('fire-confirm')?.close();
+});
+
+bind('fire-no', () => {
+  selectedWorkerId = null;
+  $('fire-confirm')?.close();
+});
 
   // Офлайн-прогресс рассчитывается при загрузке страницы.
   const elapsed = Math.max(
