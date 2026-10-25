@@ -188,6 +188,7 @@ data {
 #wallet {
   flex: 1 1 auto;
   min-width: 0;
+  overflow: hidden;
   padding: var(--s1);
   border: 2px solid var(--ink);
   font-size: 11px;
@@ -198,6 +199,9 @@ data {
   display: block;
   font-size: 16px;
   line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #open-inventory,
@@ -480,6 +484,7 @@ main form button,
 #zone-grid button[data-owned="true"] {
   background: var(--moss-wash);
   border-color: var(--moss);
+  opacity: 1;
 }
 
 #machine-tiers {
@@ -524,6 +529,8 @@ main form button,
 
 dialog {
   width: min(26rem, calc(100% - 1.5rem));
+  max-height: calc(100dvh - 1rem);
+  overflow-y: auto;
   border: 4px solid var(--ink);
   background: var(--wood-deep);
   color: var(--cream);
@@ -572,7 +579,7 @@ dialog p + button {
 
 #toasts {
   position: fixed;
-  top: 4.2rem;
+  top: calc(4.2rem + env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
   z-index: 40;
@@ -611,6 +618,45 @@ progress.worker-carry::-webkit-progress-value {
 
 progress.worker-carry::-moz-progress-bar {
   background: var(--moss);
+}
+
+@media (max-width: 500px) {
+  #machine-tiers {
+    font-size: 0.68rem;
+  }
+
+  #machine-tiers th,
+  #machine-tiers td {
+    padding: 0.22rem;
+  }
+}
+
+@media (max-width: 359px) {
+  #hud {
+    gap: 0.3rem;
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
+  }
+
+  #hud p {
+    font-size: 9px;
+  }
+
+  #money {
+    font-size: 13px;
+  }
+
+  #open-inventory,
+  #open-profile {
+    padding: 0.3rem 0.45rem;
+    font-size: 9px;
+    min-height: 2.4rem;
+  }
+
+  #clock {
+    padding: 0.25rem 0.3rem;
+    font-size: 0.45rem;
+  }
 }
 
 @media (min-width: 800px) {

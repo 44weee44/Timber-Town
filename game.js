@@ -1,4 +1,3 @@
-
 (() => {
   'use strict';
 
@@ -322,6 +321,11 @@
   let selectedWorkerId = null;
   let lastTick = Date.now();
   let timeRemainderMs = 0;
+  let suppressNotifications = false;
+
+  // UI-состояние: у каких работников раскрыт список топоров в профиле.
+  // Не сбрасывается между рендерами, чтобы панель не захлопывалась каждую секунду.
+  const openAxeChoosers = new Set();
 
   function saveState() {
     state.lastLogin = Date.now();
@@ -335,6 +339,13 @@
   }
 
   function notify(message, type = 'good') {
+    // Во время длинного догона времени важные уведомления (error) показываем,
+    // обычные (good) подавляем, чтобы не завалить интерфейс за один тик.
+    if (suppressNotifications && type !== 'error') {
+      console.info(`[Timber Town/${type}] ${message}`);
+      return;
+    }
+
     const host = $('toasts');
 
     if (!host) {
@@ -630,11 +641,8 @@
   }
 
   function dayTick() {
-    state.day++;
-    state.sawmill.zoneStock = 200000;
-    state.sawmill.logsToday = 0;
-    state.taxDebt += 50;
-
+    // Сначала проверяем долг за ПРОШЕДШИЕ дни (налог за текущий ещё
+    // не начислен). Иначе неоплаченный налог набегал бы мгновенно.
     if (state.taxDebt + state.taxPenalty > 0) {
       state.overdueDays++;
 
@@ -644,6 +652,11 @@
     } else {
       state.overdueDays = 0;
     }
+
+    state.day++;
+    state.sawmill.zoneStock = 200000;
+    state.sawmill.logsToday = 0;
+    state.taxDebt += 50;
 
     if (state.overdueDays === 5) {
       state.sawmill.workers.forEach(worker => {
@@ -656,11 +669,8 @@
     if (state.overdueDays >= 30) {
       state.sawmill.workers.forEach(worker => {
         if (worker.axe) {
-          state.inventory.axes.push({
-            rarity: worker.axe.rarity,
-            durability: worker.axe.durability,
-            count: 1
-          });
+          // Используем общий метод, чтобы избежать дубликатов стеков.
+          addAxeToInventory(worker.axe.rarity, worker.axe.durability);
         }
       });
 
@@ -731,24 +741,32 @@
     const fullMinutes = Math.floor(timeRemainderMs / GAME_MINUTE_MS);
     timeRemainderMs %= GAME_MINUTE_MS;
 
-    for (let i = 0; i < fullMinutes; i++) {
-      state.gameMinutes = (state.gameMinutes + 1) % DAY_MINUTES;
+    // Если игрок вернулся после долгого отсутствия, не заваливаем
+    // его сотнями уведомлений за один проход.
+    suppressNotifications = fullMinutes > 10;
 
-      if (state.gameMinutes === 420) {
-        dayTick();
+    try {
+      for (let i = 0; i < fullMinutes; i++) {
+        state.gameMinutes = (state.gameMinutes + 1) % DAY_MINUTES;
+
+        if (state.gameMinutes === 420) {
+          dayTick();
+        }
+
+        if (state.overdueDays < 5) {
+          state.sawmill.workers.forEach(chop);
+        }
+
+        machineTick(1);
+        deliveryTick(1);
+        settleSafeExposure();
+
+        if (state.sawmill.workers.some(w => w.isWorking)) {
+          state.sawmill.hoursWorked += 1 / 60;
+        }
       }
-
-      if (state.overdueDays < 5) {
-        state.sawmill.workers.forEach(chop);
-      }
-
-      machineTick(1);
-      deliveryTick(1);
-      settleSafeExposure();
-
-      if (state.sawmill.workers.some(w => w.isWorking)) {
-        state.sawmill.hoursWorked += 1 / 60;
-      }
+    } finally {
+      suppressNotifications = false;
     }
 
     saveState();
@@ -932,6 +950,7 @@
 
       state.money += refund;
       state.sawmill.workers.splice(index, 1);
+      openAxeChoosers.delete(workerId);
 
       notify(
         refund > 0
@@ -1028,8 +1047,19 @@
         }
 
         if (carry) {
-          carry.max = 4;
-          carry.value = worker.axe?.durability > 0 ? 4 : 0;
+          if (worker.axe) {
+            const maxDur = AXES[worker.axe.rarity].max;
+            carry.max = maxDur;
+            carry.value = worker.axe.durability;
+            carry.setAttribute(
+              'aria-label',
+              `Прочность топора ${worker.axe.durability} из ${maxDur}`
+            );
+          } else {
+            carry.max = 4;
+            carry.value = 0;
+            carry.setAttribute('aria-label', 'Нет топора');
+          }
         }
 
         crewList.append(row);
@@ -1094,6 +1124,8 @@
         if (unequip) unequip.hidden = !worker.axe;
 
         if (choices) {
+          // Восстанавливаем раскрытие панели между рендерами.
+          choices.hidden = !openAxeChoosers.has(worker.id);
           choices.replaceChildren();
 
           state.inventory.axes.forEach(axe => {
@@ -1387,7 +1419,18 @@
       );
     });
 
-    setText('chop-until', state.licenses.chopping.expiresDay);
+    // Лицензия на рубку: показываем актуальное состояние.
+    const chopLicense = $('chop-license');
+
+    if (chopLicense) {
+      const chopActive =
+        state.licenses.chopping.active &&
+        state.day <= state.licenses.chopping.expiresDay;
+
+      chopLicense.textContent = chopActive
+        ? `Рубка активна до дня ${state.licenses.chopping.expiresDay}`
+        : 'Рубка остановлена: лицензия истекла.';
+    }
 
     const tradeLabel = $('trade-license');
 
@@ -1423,6 +1466,27 @@
           : `Докладная: ${state.report.planks} досок · ${state.report.price}$ за доску`;
     }
 
+    // Статус на странице литейной.
+    const stampStatus = $('stamp-status');
+
+    if (stampStatus) {
+      if (!state.report) {
+        stampStatus.textContent =
+          'Докладной нет. Её выдают на складе при продаже досок.';
+      } else if (state.report.sealed) {
+        stampStatus.textContent =
+          `Докладная с печатью на ${state.report.planks} досок. Осталось оплатить доставку в управе.`;
+      } else {
+        const tradeActive =
+          state.licenses.trade.active &&
+          state.day <= state.licenses.trade.expiresDay;
+
+        stampStatus.textContent = tradeActive
+          ? `Докладная на ${state.report.planks} досок. Печать доступна.`
+          : `Докладная на ${state.report.planks} досок. Нужна торговая лицензия.`;
+      }
+    }
+
     const stampButton = $('stamp');
 
     if (stampButton) {
@@ -1443,15 +1507,26 @@
     if (deliveryStatus) {
       deliveryStatus.textContent = state.delivery
         ? `Доставка в пути: осталось ${state.delivery.remaining} игровых минут`
-        : 'Активной доставки нет';
+        : 'Доставка: нет';
     }
 
+    // Окупаемость: процент выручки от затрат с обоими числами.
     const payback = $('payback');
 
     if (payback) {
-      payback.textContent = state.stats.revenue > 0
-        ? `Выручка: ${state.stats.revenue.toLocaleString('ru-RU')} $`
-        : 'Окупаемость: продаж ещё нет';
+      const revenue = state.stats.revenue;
+      const spent = state.sawmill.spent;
+
+      if (revenue <= 0) {
+        payback.textContent = 'Окупаемость: продаж ещё нет';
+      } else if (spent <= 0) {
+        payback.textContent =
+          `Выручка: ${revenue.toLocaleString('ru-RU')} $ · затрат нет`;
+      } else {
+        const percent = Math.round((revenue / spent) * 100);
+        payback.textContent =
+          `Окупаемость: ${percent}% (${revenue.toLocaleString('ru-RU')} из ${spent.toLocaleString('ru-RU')} $)`;
+      }
     }
 
     const sellButton = $('sell-planks');
@@ -1480,6 +1555,24 @@
       buyTrade.disabled =
         state.licenses.trade.active &&
         state.day <= state.licenses.trade.expiresDay;
+    }
+
+    const hireButton = $('hire');
+
+    if (hireButton) {
+      const count = state.sawmill.workers.length;
+      const capacity = state.sawmill.zones * 10;
+
+      if (count >= capacity) {
+        hireButton.disabled = true;
+        hireButton.textContent = 'Нет свободных мест';
+      } else {
+        hireButton.disabled = false;
+        const cost = count < 2 ? 0 : (count - 1) * 200;
+        hireButton.textContent = cost > 0
+          ? `Нанять за ${cost}$`
+          : 'Нанять бесплатно';
+      }
     }
 
     renderInventory();
@@ -1570,6 +1663,19 @@
 
     state.money -= amount;
     state.sawmill.safeMoney += amount;
+
+    // Возвращённые в сейф деньги больше не находятся "под надзором"
+    // и не должны сгорать через игровой час.
+    if (state.sawmill.safeExposure) {
+      state.sawmill.safeExposure.amount = Math.max(
+        0,
+        state.sawmill.safeExposure.amount - amount
+      );
+
+      if (state.sawmill.safeExposure.amount <= 0) {
+        state.sawmill.safeExposure = null;
+      }
+    }
 
     notify(`${amount}$ помещены в сейф.`);
   }));
@@ -1868,8 +1974,16 @@
     }
 
     if (event.target.closest('.change-axe')) {
+      // Сохраняем раскрытие в Set, чтобы рендер через 1 секунду
+      // не закрыл панель снова.
+      if (openAxeChoosers.has(workerId)) {
+        openAxeChoosers.delete(workerId);
+      } else {
+        openAxeChoosers.add(workerId);
+      }
+
       const choices = row.querySelector('.axe-choices');
-      if (choices) choices.hidden = !choices.hidden;
+      if (choices) choices.hidden = !openAxeChoosers.has(workerId);
     }
   });
 
@@ -1917,6 +2031,7 @@
     try {
       localStorage.removeItem(STORAGE_KEY);
       state = createState();
+      openAxeChoosers.clear();
       saveState();
       render();
 
@@ -1969,6 +2084,7 @@
     advanceTime,
     reset: () => {
       state = createState();
+      openAxeChoosers.clear();
       saveState();
       render();
     }

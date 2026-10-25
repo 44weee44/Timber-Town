@@ -41,8 +41,8 @@
   <main id="foundry">
     <p><a href="game.html">На карту</a></p>
     <h1>Литейная</h1>
-    <p id="stamp-status">Докладной нет. Её выдают на складе, когда продаёте доски.</p>
-    <button type="button" id="stamp" disabled>Поставить печать</button>
+    <p id="stamp-status" aria-live="polite">Докладную выдают на складе при продаже досок. Сначала поставьте печать — потом оплатите доставку в управе.</p>
+    <button type="button" id="stamp" disabled aria-describedby="stamp-status">Поставить печать</button>
     <p>Печать требует торговую лицензию. После печати докладную оплачивают в управе.</p>
   </main>
   <script src="game.js" defer></script>

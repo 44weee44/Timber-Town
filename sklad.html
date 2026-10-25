@@ -52,7 +52,7 @@
       <button type="button" id="sell-planks" disabled>Продать доски</button>
     </form>
     <p id="report-status">Докладная: нет</p>
-    <button type="button" id="toggle-machine">Станок</button>
+    <button type="button" id="toggle-machine" aria-expanded="false" aria-controls="machine" aria-label="Показать панель станка">Станок</button>
     <section id="machine" hidden>
       <h2>Станок</h2>
       <p id="machine-state">Стоит</p>
@@ -60,11 +60,11 @@
       <p>На бревно: <data id="machine-pace" value="10">10</data> игр. мин.</p>
       <p>Шанс лишней доски: <data id="machine-bonus" value="1">1</data>%</p>
       <ul id="machine-queue">
-        <li>Гнилое <input id="mill-rotten" type="number" min="0" value="0"></li>
-        <li>Обычное <input id="mill-normal" type="number" min="0" value="0"></li>
-        <li>Хорошее <input id="mill-good" type="number" min="0" value="0"></li>
-        <li>Отличное <input id="mill-excellent" type="number" min="0" value="0"></li>
-        <li>Идеальное <input id="mill-perfect" type="number" min="0" value="0"></li>
+        <li>Гнилое <input id="mill-rotten" type="number" min="0" step="1" value="0" inputmode="numeric"></li>
+        <li>Обычное <input id="mill-normal" type="number" min="0" step="1" value="0" inputmode="numeric"></li>
+        <li>Хорошее <input id="mill-good" type="number" min="0" step="1" value="0" inputmode="numeric"></li>
+        <li>Отличное <input id="mill-excellent" type="number" min="0" step="1" value="0" inputmode="numeric"></li>
+        <li>Идеальное <input id="mill-perfect" type="number" min="0" step="1" value="0" inputmode="numeric"></li>
       </ul>
       <p id="machine-left" hidden>Осталось <data id="machine-logs-left" value="0">0</data>, время <time id="machine-eta">00:00</time></p>
       <button type="button" id="start-machine" disabled>Запустить</button>
