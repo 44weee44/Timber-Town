@@ -2,99 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b140e">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
   <title>Торговый центр — Timber Town</title>
-  <style>
-    /* Улучшенная компоновка карточек торгового центра.
-       Базовые стили #axe-catalog уже описаны в style.css;
-       здесь — специфичная для магазина сетка с иконкой. */
-    #axe-catalog > li {
-      display: grid;
-      grid-template-columns: 56px 1fr;
-      grid-template-rows: auto auto auto;
-      column-gap: 14px;
-      row-gap: 8px;
-      align-items: start;
-    }
-
-    #axe-catalog > li > .axe-icon {
-      grid-row: 1 / 4;
-      grid-column: 1 / 2;
-      width: 56px;
-      height: 56px;
-      object-fit: contain;
-      margin-top: 2px;
-    }
-
-    #axe-catalog > li > h2 {
-      grid-column: 2 / 3;
-      grid-row: 1 / 2;
-      margin: 0;
-      font-size: var(--fs-h2);
-      line-height: 1.35;
-    }
-
-    #axe-catalog > li > .axe-stats {
-      grid-column: 2 / 3;
-      grid-row: 2 / 3;
-      margin: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 12px;
-      font-size: 12px;
-      color: var(--cream-soft);
-    }
-
-    #axe-catalog > li > .axe-stats span {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    #axe-catalog > li > .axe-stats .axe-price {
-      font-family: var(--font-pixel);
-      font-size: 11px;
-      color: var(--gold);
-      letter-spacing: 0;
-    }
-
-    #axe-catalog > li > button {
-      grid-column: 2 / 3;
-      grid-row: 3 / 4;
-      justify-self: start;
-      margin-top: 2px;
-    }
-
-    @media (max-width: 359px) {
-      #axe-catalog > li {
-        grid-template-columns: 44px 1fr;
-        column-gap: 10px;
-      }
-      #axe-catalog > li > .axe-icon {
-        width: 44px;
-        height: 44px;
-      }
-    }
-
-    #machine-upgrade .machine-level-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--line);
-      border-radius: var(--r-md);
-      font-size: var(--fs-small);
-      color: var(--cream-soft);
-    }
-
-    #machine-upgrade .machine-level-row data {
-      font-size: 14px;
-    }
-  </style>
 </head>
 <body data-screen="shop">
   <header id="hud">
@@ -135,52 +45,29 @@
     <p>Одинаковые топоры — одна редкость и одна прочность — складываются в рюкзак.</p>
     <ul id="axe-catalog">
       <li data-rarity="common">
-        <img class="axe-icon" src="1axeskin.jpeg" alt="Иконка обычного топора" width="56" height="56" loading="lazy" decoding="async">
         <h2>Обычный</h2>
-        <p class="axe-stats">
-          <span><span class="axe-price">150$</span></span>
-          <span>Прочность 100</span>
-          <span>−1% за 1 бревно</span>
-        </p>
+        <p>150$ · прочность 100 · −1% за 1 бревно</p>
         <button type="button" id="buy-common">Купить</button>
       </li>
       <li data-rarity="rare">
-        <img class="axe-icon" src="2axeskin.jpeg" alt="Иконка редкого топора" width="56" height="56" loading="lazy" decoding="async">
         <h2>Редкий</h2>
-        <p class="axe-stats">
-          <span><span class="axe-price">500$</span></span>
-          <span>Прочность 250</span>
-          <span>−1% за 3 бревна</span>
-        </p>
+        <p>500$ · прочность 250 · −1% за 3 бревна</p>
         <button type="button" id="buy-rare">Купить</button>
       </li>
       <li data-rarity="legendary">
-        <img class="axe-icon" src="3axeskin.jpeg" alt="Иконка легендарного топора" width="56" height="56" loading="lazy" decoding="async">
         <h2>Легендарный</h2>
-        <p class="axe-stats">
-          <span><span class="axe-price">1 500$</span></span>
-          <span>Прочность 500</span>
-          <span>−1% за 5 брёвен</span>
-        </p>
+        <p>1 500$ · прочность 500 · −1% за 5 брёвен</p>
         <button type="button" id="buy-legendary">Купить</button>
       </li>
       <li data-rarity="mythic">
-        <img class="axe-icon" src="4axeskin.jpeg" alt="Иконка мифического топора" width="56" height="56" loading="lazy" decoding="async">
         <h2>Мифический</h2>
-        <p class="axe-stats">
-          <span><span class="axe-price">4 000$</span></span>
-          <span>Прочность 1000</span>
-          <span>−1% за 10 брёвен</span>
-        </p>
+        <p>4 000$ · прочность 1000 · −1% за 10 брёвен</p>
         <button type="button" id="buy-mythic">Купить</button>
       </li>
     </ul>
-    <section id="machine-upgrade" aria-labelledby="machine-upgrade-title">
-      <h2 id="machine-upgrade-title">Улучшение станка</h2>
-      <div class="machine-level-row">
-        <span>Текущий уровень</span>
-        <data id="machine-level" value="1" aria-live="polite">1</data>
-      </div>
+    <section id="machine-upgrade">
+      <h2>Улучшение станка</h2>
+      <p>Сейчас <data id="machine-level" value="1" aria-live="polite">1</data> уровень.</p>
       <button type="button" id="upgrade-machine">Улучшить станок</button>
     </section>
   </main>

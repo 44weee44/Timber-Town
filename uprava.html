@@ -12,12 +12,7 @@
       visibility: hidden;
     }
 
-    /* Текстовое описание скина больше не показываем — есть портрет. */
-    .worker-skin {
-      display: none !important;
-    }
-
-    /* Карточка нанятого работника: портрет + имя */
+    /* Карточка нанятого работника: портрет + имя + внешность */
     #hired-list > li {
       display: grid;
       grid-template-columns: 48px 1fr;
@@ -40,6 +35,15 @@
       grid-column: 2 / 3;
       grid-row: 1 / 2;
       margin: 0;
+    }
+
+    #hired-list > li > .worker-skin {
+      grid-column: 2 / 3;
+      grid-row: 2 / 3;
+      margin: 0;
+      font-size: var(--fs-tiny);
+      color: var(--cream-muted);
+      line-height: 1.3;
     }
 
     /* Строки статистики налогов/лицензий */
@@ -95,8 +99,7 @@
 <body data-screen="uprava">
   <header id="hud">
     <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
-    <a href="profile.html" id="open-profile">Профиль</a>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
   <div id="toasts" aria-live="polite"></div>
@@ -197,54 +200,11 @@
       <li data-worker-id="">
         <img class="worker-portrait small" alt="" loading="lazy" decoding="async">
         <p class="worker-name"></p>
-        <p class="worker-skin" hidden></p>
+        <p class="worker-skin">Внешность: не указана</p>
       </li>
     </template>
     <ul id="hired-list"></ul>
   </main>
   <script src="game.js" defer></script>
-  <script>
-    (() => {
-      'use strict';
-
-      // Временный мост: подставляет портреты нанятым работникам.
-      // После замены game.js эти же данные будет вести игровой цикл.
-
-      function getState() {
-        try { return window.TimberTown?.getState?.() || null; }
-        catch { return null; }
-      }
-
-      function clampSkin(v) {
-        const n = Math.floor(Number(v));
-        if (!Number.isFinite(n) || n < 1) return 1;
-        return Math.min(4, n);
-      }
-
-      function syncPortraits() {
-        const state = getState();
-        const workers = state?.sawmill?.workers || [];
-        const byId = new Map(workers.map(w => [String(w.id), w]));
-
-        document
-          .querySelectorAll('#hired-list li[data-worker-id]')
-          .forEach(li => {
-            const w = byId.get(String(li.dataset.workerId));
-            if (!w) return;
-            const img = li.querySelector('.worker-portrait');
-            if (!img) return;
-            const n = clampSkin(w.skin);
-            const src = `${n}skin.jpeg`;
-            if (img.getAttribute('src') !== src) {
-              img.setAttribute('src', src);
-              img.setAttribute('alt', `Портрет: ${w.name || 'лесоруб'}`);
-            }
-          });
-      }
-
-      syncPortraits();
-      window.setInterval(syncPortraits, 900);
-    })();
-  </script>
 </body>
 </html>

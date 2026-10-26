@@ -7,10 +7,81 @@
   <link rel="stylesheet" href="style.css">
   <title>Лесопилка — Timber Town</title>
   <style>
-    /* Портрет работника остаётся невидимым, пока game.js не подставит src.
-       Слот резервирует место, чтобы карточка не «прыгала». */
+    /* Портрет работника остаётся невидимым, пока game.js не подставит src. */
     .worker-portrait:not([src]) {
       visibility: hidden;
+    }
+
+    /* Сейф — локальные улучшения под удобство на телефоне */
+    #safe .safe-card .safe-hint {
+      display: block;
+      margin-top: 2px;
+      font-size: var(--fs-tiny);
+      color: var(--cream-muted);
+      letter-spacing: 0.02em;
+    }
+
+    #safe .safe-actions .safe-amount-hint {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      padding: 8px 12px;
+      border-radius: var(--r-sm);
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px dashed var(--line-strong);
+      font-size: var(--fs-tiny);
+      color: var(--cream-muted);
+      line-height: 1.4;
+    }
+
+    #safe .safe-actions .safe-amount-hint data {
+      font-family: var(--font-pixel);
+      font-size: 11px;
+      color: var(--gold);
+    }
+
+    #safe .safe-quick {
+      display: grid;
+      grid-template-columns: auto repeat(3, 1fr);
+      gap: 6px;
+      align-items: center;
+    }
+
+    #safe .safe-quick .safe-quick-label {
+      font-size: var(--fs-tiny);
+      color: var(--cream-soft);
+      letter-spacing: 0.02em;
+    }
+
+    #safe .safe-quick button {
+      min-height: 40px;
+      padding: 8px 10px;
+      font-size: 12px;
+      border-radius: var(--r-sm);
+    }
+
+    #safe .safe-actions-row {
+      margin-top: 6px;
+    }
+
+    #safe #safe-deposit {
+      min-height: 52px;
+      font-size: 14px;
+    }
+
+    #safe #safe-withdraw {
+      min-height: 52px;
+      font-size: 14px;
+    }
+
+    /* safeExposure: инструкция */
+    #safe .safe-warning .safe-warning-advice {
+      display: block;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.14);
+      font-size: var(--fs-tiny);
+      line-height: 1.5;
+      color: var(--cream-soft);
     }
   </style>
 </head>
@@ -63,10 +134,12 @@
         <div class="safe-card safe-card-primary">
           <span class="safe-stat-label">В сейфе — защищено от налога</span>
           <data class="safe-stat-value" id="safe-money" value="0">0$</data>
+          <span class="safe-hint">Налог не забирает эти деньги.</span>
         </div>
         <div class="safe-card">
           <span class="safe-stat-label">В кошельке</span>
           <data class="safe-stat-value" id="safe-wallet" value="1000">1 000$</data>
+          <span class="safe-hint">Доступно для покупок и налогов.</span>
         </div>
       </div>
       <div class="safe-warning safe-danger" id="safe-watch" hidden>
@@ -74,14 +147,34 @@
           Под надзором: <strong><data id="safe-exposed" value="0">0$</data></strong>.
           Осталось <time id="safe-timer" class="safe-timer">00:00</time>.
         </span>
-        <span>
-          Не потратите за игровой час — спишут в счёт налогового долга,
-          а если долга нет, деньги сгорят.
+        <span class="safe-warning-advice">
+          Потратьте эти деньги или положите обратно в сейф в течение игрового
+          часа. Иначе спишут в счёт налогового долга, а если долга нет — сгорят.
         </span>
       </div>
       <div class="safe-actions">
         <label for="safe-amount">Сумма</label>
         <input id="safe-amount" type="number" min="1" step="1" value="100" inputmode="numeric">
+
+        <div class="safe-amount-hint">
+          <span>Можно положить: <data id="safe-max-deposit" value="0">0</data></span>
+          <span>Можно забрать: <data id="safe-max-withdraw" value="0">0</data></span>
+        </div>
+
+        <div class="safe-quick">
+          <span class="safe-quick-label">Положить:</span>
+          <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="0.25">25%</button>
+          <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="0.5">50%</button>
+          <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="1">Всё</button>
+        </div>
+
+        <div class="safe-quick">
+          <span class="safe-quick-label">Забрать:</span>
+          <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="0.25">25%</button>
+          <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="0.5">50%</button>
+          <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="1">Всё</button>
+        </div>
+
         <div class="safe-actions-row">
           <button type="button" id="safe-deposit">Положить в сейф</button>
           <button type="button" id="safe-withdraw">Забрать из сейфа</button>
@@ -176,5 +269,68 @@
     </dialog>
   </main>
   <script src="game.js" defer></script>
+  <script>
+    (() => {
+      'use strict';
+
+      // Быстрый ввод суммы в сейф: кнопки 25% / 50% / Всё.
+      // Только заполняют #safe-amount — не отправляют форму.
+      // Само действие (положить / забрать) остаётся за кнопками
+      // #safe-deposit / #safe-withdraw из game.js.
+
+      function readState() {
+        try { return window.TimberTown?.getState?.() || null; }
+        catch { return null; }
+      }
+
+      function updateMaxHints() {
+        const s = readState();
+        if (!s) return;
+
+        const money = Math.max(0, Math.floor(Number(s.money) || 0));
+        const safe = Math.max(0, Math.floor(Number(s.sawmill?.safeMoney) || 0));
+
+        const dep = document.getElementById('safe-max-deposit');
+        if (dep) {
+          dep.textContent = money.toLocaleString('ru-RU');
+          if (dep.tagName === 'DATA') dep.value = String(money);
+        }
+
+        const wd = document.getElementById('safe-max-withdraw');
+        if (wd) {
+          wd.textContent = safe.toLocaleString('ru-RU');
+          if (wd.tagName === 'DATA') wd.value = String(safe);
+        }
+      }
+
+      document.querySelectorAll('[data-safe-quick]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const s = readState();
+          if (!s) return;
+
+          const target = btn.dataset.target;
+          const pct = Number(btn.dataset.pct);
+
+          if (!Number.isFinite(pct) || pct <= 0) return;
+
+          const base = target === 'deposit'
+            ? Math.max(0, Math.floor(Number(s.money) || 0))
+            : Math.max(0, Math.floor(Number(s.sawmill?.safeMoney) || 0));
+
+          const amount = Math.max(0, Math.floor(base * pct));
+
+          const input = document.getElementById('safe-amount');
+          if (input) {
+            input.value = String(amount);
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+      });
+
+      // Сразу показать максимумы и обновлять их при изменениях состояния.
+      updateMaxHints();
+      window.setInterval(updateMaxHints, 900);
+    })();
+  </script>
 </body>
 </html>

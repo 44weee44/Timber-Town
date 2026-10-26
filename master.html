@@ -2,72 +2,9 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b140e">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="style.css">
   <title>Мастерская — Timber Town</title>
-  <style>
-    /* Иконки редкости в карточке сломанного топора.
-       По умолчанию ни одна не видна; показывается только
-       та, что совпадает с data-rarity у li. */
-    #broken-axes .axe-icon[data-rarity] {
-      display: none;
-    }
-
-    #broken-axes li[data-rarity="common"]    .axe-icon[data-rarity="common"],
-    #broken-axes li[data-rarity="rare"]      .axe-icon[data-rarity="rare"],
-    #broken-axes li[data-rarity="legendary"] .axe-icon[data-rarity="legendary"],
-    #broken-axes li[data-rarity="mythic"]    .axe-icon[data-rarity="mythic"] {
-      display: inline-block;
-    }
-
-    /* Небольшая корректировка сетки для встроенной иконки */
-    #broken-axes > li {
-      grid-template-columns: 32px 1fr auto;
-    }
-
-    #broken-axes > li > .axe-icon {
-      grid-row: 1 / 3;
-      grid-column: 1 / 2;
-      align-self: center;
-      width: 28px;
-      height: 28px;
-      object-fit: contain;
-      margin: 0;
-    }
-
-    /* Панель прочности станка */
-    .machine-durability-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      background: rgba(0, 0, 0, 0.3);
-      border: 1px solid var(--line);
-      border-radius: var(--r-md);
-      font-size: var(--fs-small);
-      color: var(--cream-soft);
-    }
-
-    .machine-durability-card .dur-value {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 2px;
-      font-family: var(--font-pixel);
-      font-size: 16px;
-      color: var(--gold);
-      letter-spacing: 0;
-    }
-
-    .machine-durability-card .dur-value.is-low {
-      color: var(--danger-soft);
-    }
-
-    #machine-repair > button {
-      align-self: flex-start;
-    }
-  </style>
 </head>
 <body data-screen="master">
   <header id="hud">
@@ -106,33 +43,21 @@
     <h1>Мастерская</h1>
     <img src="Workshop.jpeg" width="1168" height="784" alt="Мастерская">
     <p>Мастер берёт только сломанное. Топор: 1% прочности = 1$, но не меньше 10$. Станок: 2$ за 1%.</p>
-
-    <section id="axe-repair" aria-labelledby="axe-repair-title">
-      <h2 id="axe-repair-title">Топоры</h2>
+    <section id="axe-repair">
+      <h2>Топоры</h2>
       <p id="axes-ok">Ломаных топоров нет.</p>
       <ul id="broken-axes"></ul>
     </section>
-
     <template id="broken-axe">
       <li data-rarity="" data-where="">
-        <img class="axe-icon" data-rarity="common" src="1axeskin.jpeg" alt="" aria-hidden="true" width="28" height="28" loading="lazy" decoding="async">
-        <img class="axe-icon" data-rarity="rare" src="2axeskin.jpeg" alt="" aria-hidden="true" width="28" height="28" loading="lazy" decoding="async">
-        <img class="axe-icon" data-rarity="legendary" src="3axeskin.jpeg" alt="" aria-hidden="true" width="28" height="28" loading="lazy" decoding="async">
-        <img class="axe-icon" data-rarity="mythic" src="4axeskin.jpeg" alt="" aria-hidden="true" width="28" height="28" loading="lazy" decoding="async">
         <p class="axe-name"></p>
         <p class="axe-owner"></p>
         <button type="button" class="repair-axe">Починить</button>
       </li>
     </template>
-
-    <section id="machine-repair" aria-labelledby="machine-repair-title">
-      <h2 id="machine-repair-title">Станок</h2>
-      <div class="machine-durability-card">
-        <span>Прочность</span>
-        <span class="dur-value" id="machine-durability-wrap">
-          <data id="machine-durability" value="100" aria-live="polite">100</data>%
-        </span>
-      </div>
+    <section id="machine-repair">
+      <h2>Станок</h2>
+      <p>Прочность <data id="machine-durability" value="100" aria-live="polite">100</data>%</p>
       <button type="button" id="repair-machine" disabled>Починить станок</button>
     </section>
   </main>

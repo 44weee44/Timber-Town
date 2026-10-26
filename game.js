@@ -5,6 +5,13 @@
   const GAME_MINUTE_MS = 7500;
   const DAY_MINUTES = 1440;
   const QUALITY = ['rotten', 'normal', 'good', 'excellent', 'perfect'];
+  const QUALITY_LABEL = {
+    rotten: 'гнилые',
+    normal: 'обычные',
+    good: 'хорошие',
+    excellent: 'отличные',
+    perfect: 'идеальные'
+  };
 
   const AXES = {
     common: { name: 'Обычный', price: 150, max: 100, wearEvery: 1, rank: 0 },
@@ -29,7 +36,6 @@
     { price: 1000, capacity: 50, minutes: 5, bonus: 0.95 }
   ];
 
-  // Единая таблица накопительного опыта для уровней 1–15.
   const XP_FOR_LEVEL = Object.freeze({
     1: 0,
     2: 60,
@@ -87,11 +93,40 @@
       : 'browser';
   }
 
-  // Не меняй ключ: он используется существующими сохранениями.
   const STORAGE_KEY = `timber-town:${getTelegramId()}:v${VERSION}`;
 
   function axeIconSrc(rarity) {
     return AXE_ICON[rarity] || '';
+  }
+
+  const FALLBACK_WORKER_SVG =
+    'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+      '<rect width="64" height="64" fill="#3e2716"/>' +
+      '<circle cx="32" cy="24" r="10" fill="#5c3a20"/>' +
+      '<rect x="14" y="40" width="36" height="22" rx="4" fill="#5c3a20"/>' +
+      '</svg>'
+    );
+
+  const FALLBACK_AXE_SVG =
+    'data:image/svg+xml;utf8,' + encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">' +
+      '<rect x="14" y="8" width="4" height="22" fill="#7a522c"/>' +
+      '<path d="M10 4 L22 4 L22 12 L10 12 Z" fill="#a89a80"/>' +
+      '</svg>'
+    );
+
+  function attachImgFallback(img, fallbackSrc) {
+    if (!img || img.dataset.fallbackAttached === '1') return;
+    img.dataset.fallbackAttached = '1';
+    img.addEventListener('error', function onImgError() {
+      img.classList.add('img-fallback');
+      img.src = fallbackSrc;
+    });
+  }
+
+  function isLegacyBridgeActive() {
+    return Boolean($('mill-rotten'));
   }
 
   function xpForLevel(level) {
@@ -133,35 +168,24 @@
       overdueDays: 0,
       lastLogin: Date.now(),
 
-      inventory: {
-        axes: []
-      },
+      inventory: { axes: [] },
 
       sawmill: {
         zones: 1,
         zoneStock: 200000,
-
-        logs: {
-          rotten: 0,
-          normal: 0,
-          good: 0,
-          excellent: 0,
-          perfect: 0
-        },
-
+        logs: { rotten: 0, normal: 0, good: 0, excellent: 0, perfect: 0 },
         planks: 0,
         safeMoney: 0,
         safeExposure: null,
-
         machine: {
           level: 1,
           durability: 100,
           isRunning: false,
           queue: {},
           remaining: 0,
-          processed: 0
+          processed: 0,
+          queueSchemaVersion: 2
         },
-
         workers: [],
         logsToday: 0,
         logsAll: 0,
@@ -169,15 +193,8 @@
         spent: 0
       },
 
-      // Отдельный склад леса: не смешивается с sawmill.logs.
       forestStorage: {
-        logs: {
-          rotten: 0,
-          normal: 0,
-          good: 0,
-          excellent: 0,
-          perfect: 0
-        }
+        logs: { rotten: 0, normal: 0, good: 0, excellent: 0, perfect: 0 }
       },
 
       licenses: {
@@ -188,11 +205,7 @@
       report: null,
       delivery: null,
 
-      stats: {
-        delivered: 0,
-        revenue: 0,
-        lastDay: 1
-      }
+      stats: { delivered: 0, revenue: 0, lastDay: 1 }
     };
   }
 
@@ -205,34 +218,21 @@
 
     const s = { ...defaults, ...input };
 
-    s.inventory = {
-      ...defaults.inventory,
-      ...(s.inventory || {})
-    };
-
+    s.inventory = { ...defaults.inventory, ...(s.inventory || {}) };
     s.inventory.axes = Array.isArray(s.inventory.axes)
       ? s.inventory.axes
           .filter(a => a && AXES[a.rarity])
           .map(a => ({
             rarity: a.rarity,
-            durability: clamp(
-              num(a.durability),
-              0,
-              AXES[a.rarity].max
-            ),
+            durability: clamp(num(a.durability), 0, AXES[a.rarity].max),
             count: clamp(num(a.count, 1), 1, 999)
           }))
       : [];
 
-    s.sawmill = {
-      ...defaults.sawmill,
-      ...(s.sawmill || {})
-    };
-
+    s.sawmill = { ...defaults.sawmill, ...(s.sawmill || {}) };
     s.sawmill.logs = Object.fromEntries(
       QUALITY.map(q => [q, num(s.sawmill.logs?.[q])])
     );
-
     s.sawmill.zones = clamp(num(s.sawmill.zones, 1), 1, 28);
     s.sawmill.zoneStock = num(s.sawmill.zoneStock, 0);
 
@@ -241,13 +241,8 @@
           .filter(w => w && typeof w.id === 'string')
           .map(w => {
             const rarity = AXES[w.axe?.rarity] ? w.axe.rarity : null;
-
-            // Скины: 1–4. Старые сохранения могли иметь 5 — плавно
-            // нормализуем в 4, чтобы не ломать рендеринг.
             const skin = clamp(num(w.skin, 1), 1, 4);
 
-            // Уровень/опыт: не понижаем уровень, xp поднимаем
-            // до порога текущего уровня и промоутим по новым порогам.
             let level = clamp(num(w.level, 1), 1, MAX_LEVEL);
             let xp = num(w.xp, 0);
 
@@ -256,6 +251,10 @@
 
             while (level < MAX_LEVEL && xp >= xpForLevel(level + 1)) {
               level++;
+            }
+
+            if (level >= MAX_LEVEL) {
+              xp = Math.min(xp, xpForLevel(MAX_LEVEL));
             }
 
             return {
@@ -268,11 +267,7 @@
               axe: rarity
                 ? {
                     rarity,
-                    durability: clamp(
-                      num(w.axe.durability),
-                      0,
-                      AXES[rarity].max
-                    ),
+                    durability: clamp(num(w.axe.durability), 0, AXES[rarity].max),
                     wear: num(w.axe.wear)
                   }
                 : null,
@@ -281,59 +276,58 @@
           })
       : [];
 
-    s.sawmill.machine = {
-      ...defaults.sawmill.machine,
-      ...(s.sawmill.machine || {})
-    };
-
-    s.sawmill.machine.level = clamp(
-      num(s.sawmill.machine.level, 1),
-      1,
-      5
-    );
-
-    s.sawmill.machine.durability = clamp(
-      num(s.sawmill.machine.durability),
-      0,
-      100
-    );
-
-    s.sawmill.machine.remaining = clamp(
-      Number(s.sawmill.machine.remaining) || 0,
-      0,
-      100000
-    );
-
+    s.sawmill.machine = { ...defaults.sawmill.machine, ...(s.sawmill.machine || {}) };
+    s.sawmill.machine.level = clamp(num(s.sawmill.machine.level, 1), 1, 5);
+    s.sawmill.machine.durability = clamp(num(s.sawmill.machine.durability), 0, 100);
+    s.sawmill.machine.remaining = clamp(Number(s.sawmill.machine.remaining) || 0, 0, 100000);
     s.sawmill.machine.processed = num(s.sawmill.machine.processed);
 
     const oldQueue = s.sawmill.machine.queue || {};
-
     s.sawmill.machine.queue = Object.fromEntries(
       QUALITY.map(q => [q, num(oldQueue[q])])
     );
+    s.sawmill.machine.isRunning = Boolean(s.sawmill.m.logachine.isRunning);
 
-    s.sawmill.machine.isRunning = Boolean(s.sawmill.machine.isRunning);
+    const queueSchemaVersion = nums(s.sawmill.machine =.queueSchemaVersion, 0 Object);
+    s.sawmill.machine.from.queueSchemaVersion = queueSchemaVersion;
 
-    // Отдельный склад леса
-    s.forestStorage = {
-      ...defaults.forestStorage,
-      ...(s.forestStorage || {})
-    };
-    s.forestStorage.logs = Object.fromEntries(
+   Entries if (queueSchemaVersion < 2) {
+      const q = s.sawmill.machine.queue;
+      const filled = QUALITY.filter(quality => q[quality] > 0);
+
+      if (filled.length > 1) {
+        const keep = filled[0];
+        let returned = 0;
+
+        QUALITY.forEach(quality => {
+          if (quality !== keep && q[quality] > 0) {
+            s.sawmill.logs[quality] += q[quality];
+            returned += q[quality];
+            q[quality] = 0;
+          }
+        });
+
+        if (returned > 0) {
+          console.info(
+            `[Timber Town/migration] Возвращено ${returned} брёвен ` +
+            `из смешанной партии станка в запас лесопилки.`
+          );
+        }
+      }
+
+      s.sawmill.machine.queueSchemaVersion = 2;
+    }
+
+    s.forestStorage = { ...defaults.forestStorage, ...(s.forestStorage || {}) };
+    s.forestStorage(
       QUALITY.map(q => [q, num(s.forestStorage.logs?.[q])])
     );
 
     s.licenses = {
       ...defaults.licenses,
       ...(s.licenses || {}),
-      chopping: {
-        ...defaults.licenses.chopping,
-        ...(s.licenses?.chopping || {})
-      },
-      trade: {
-        ...defaults.licenses.trade,
-        ...(s.licenses?.trade || {})
-      }
+      chopping: { ...defaults.licenses.chopping, ...(s.licenses?.chopping || {}) },
+      trade: { ...defaults.licenses.trade, ...(s.licenses?.trade || {}) }
     };
 
     s.money = num(s.money);
@@ -351,17 +345,12 @@
     s.sawmill.spent = num(s.sawmill.spent);
     s.lastLogin = num(s.lastLogin, Date.now());
 
-    if (
-      s.sawmill.safeExposure &&
-      typeof s.sawmill.safeExposure === 'object'
-    ) {
+    if (s.sawmill.safeExposure && typeof s.sawmill.safeExposure === 'object') {
       s.sawmill.safeExposure = {
         amount: num(s.sawmill.safeExposure.amount),
         remaining: num(s.sawmill.safeExposure.remaining)
       };
-
-      if (s.sawmill.safeExposure.amount <= 0 ||
-          s.sawmill.safeExposure.remaining <= 0) {
+      if (s.sawmill.safeExposure.amount <= 0 || s.sawmill.safeExposure.remaining <= 0) {
         s.sawmill.safeExposure = null;
       }
     } else {
@@ -421,7 +410,6 @@
 
   function saveState() {
     state.lastLogin = Date.now();
-
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
@@ -475,9 +463,7 @@
 
     try {
       const result = action();
-
       if (result !== false) saveState();
-
       return result !== false;
     } catch (error) {
       console.error(error);
@@ -511,7 +497,6 @@
         0,
         state.sawmill.safeExposure.amount - amount
       );
-
       if (state.sawmill.safeExposure.amount <= 0) {
         state.sawmill.safeExposure = null;
       }
@@ -523,17 +508,14 @@
   function getTimeText() {
     const hours = Math.floor(state.gameMinutes / 60);
     const minutes = state.gameMinutes % 60;
-
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   }
 
   function getPeriod() {
     const hour = Math.floor(state.gameMinutes / 60);
-
     if (hour >= 7 && hour < 11) return 'dawn';
     if (hour >= 11 && hour < 19) return 'day';
     if (hour >= 19 && hour < 23) return 'dusk';
-
     return 'night';
   }
 
@@ -570,7 +552,6 @@
     weights[4] += shift * 0.15;
 
     const total = sum(weights);
-
     return weights.map(weight => weight / total);
   }
 
@@ -581,10 +562,7 @@
 
     for (let i = 0; i < QUALITY.length; i++) {
       cumulative += weights[i];
-
-      if (roll < cumulative) {
-        return QUALITY[i];
-      }
+      if (roll < cumulative) return QUALITY[i];
     }
 
     return 'perfect';
@@ -595,16 +573,11 @@
 
     const license = state.licenses.chopping;
 
-    if (
-      !license.active ||
-      state.day > license.expiresDay ||
-      state.overdueDays >= 5
-    ) {
+    if (!license.active || state.day > license.expiresDay || state.overdueDays >= 5) {
       return;
     }
 
-    if (!worker.axe || worker.axe.durability <= 0 ||
-        state.sawmill.zoneStock <= 0) {
+    if (!worker.axe || worker.axe.durability <= 0 || state.sawmill.zoneStock <= 0) {
       worker.isWorking = false;
       return;
     }
@@ -616,14 +589,20 @@
     state.sawmill.logsToday++;
     state.sawmill.logsAll++;
 
-    worker.xp += 3;
+    if (worker.level < MAX_LEVEL) {
+      worker.xp += 3;
 
-    while (
-      worker.level < MAX_LEVEL &&
-      worker.xp >= xpForLevel(worker.level + 1)
-    ) {
-      worker.level++;
-      notify(`${worker.name} достиг ${worker.level} уровня!`);
+      while (
+        worker.level < MAX_LEVEL &&
+        worker.xp >= xpForLevel(worker.level + 1)
+      ) {
+        worker.level++;
+        notify(`${worker.name} достиг ${worker.level} уровня!`);
+      }
+
+      if (worker.level >= MAX_LEVEL) {
+        worker.xp = Math.min(worker.xp, xpForLevel(MAX_LEVEL));
+      }
     }
 
     worker.axe.wear = (worker.axe.wear || 0) + 1;
@@ -649,7 +628,6 @@
     if (!machine.isRunning || machine.durability <= 0) return;
 
     const config = MACHINE[machine.level];
-
     machine.remaining -= gameMinutes;
 
     while (
@@ -664,28 +642,14 @@
       machine.processed++;
 
       const chances = {
-        rotten: 0.85,
-        normal: 0.95,
-        good: 0.75,
-        excellent: 0.85,
-        perfect: 0.95
+        rotten: 0.85, normal: 0.95, good: 0.75, excellent: 0.85, perfect: 0.95
       };
-
       const yields = {
-        rotten: 1,
-        normal: 1,
-        good: 2,
-        excellent: 3,
-        perfect: 3
+        rotten: 1, normal: 1, good: 2, excellent: 3, perfect: 3
       };
 
-      let planks = Math.random() < chances[quality]
-        ? yields[quality]
-        : 0;
-
-      if (planks > 0 && Math.random() < config.bonus) {
-        planks++;
-      }
+      let planks = Math.random() < chances[quality] ? yields[quality] : 0;
+      if (planks > 0 && Math.random() < config.bonus) planks++;
 
       state.sawmill.planks += planks;
 
@@ -718,10 +682,7 @@
       state.stats.revenue += state.delivery.profit;
       state.stats.delivered += state.delivery.planks;
 
-      notify(
-        `Доставка завершена: ${state.delivery.profit}$ поступили в сейф.`
-      );
-
+      notify(`Доставка завершена: ${state.delivery.profit}$ поступили в сейф.`);
       state.delivery = null;
     }
   }
@@ -729,10 +690,7 @@
   function dayTick() {
     if (state.taxDebt + state.taxPenalty > 0) {
       state.overdueDays++;
-
-      if (state.overdueDays > 4) {
-        state.taxPenalty += 10;
-      }
+      if (state.overdueDays > 4) state.taxPenalty += 10;
     } else {
       state.overdueDays = 0;
     }
@@ -743,28 +701,19 @@
     state.taxDebt += 50;
 
     if (state.overdueDays === 5) {
-      state.sawmill.workers.forEach(worker => {
-        worker.isWorking = false;
-      });
-
+      state.sawmill.workers.forEach(worker => { worker.isWorking = false; });
       notify('Налоговая остановила лесопилку.', 'error');
     }
 
     if (state.overdueDays >= 30) {
       state.sawmill.workers.forEach(worker => {
-        if (worker.axe) {
-          addAxeToInventory(worker.axe.rarity, worker.axe.durability);
-        }
+        if (worker.axe) addAxeToInventory(worker.axe.rarity, worker.axe.durability);
       });
 
       state.sawmill.workers = [];
-      state.sawmill.logs = Object.fromEntries(
-        QUALITY.map(q => [q, 0])
-      );
+      state.sawmill.logs = Object.fromEntries(QUALITY.map(q => [q, 0]));
       state.sawmill.planks = 0;
-      state.sawmill.machine.queue = Object.fromEntries(
-        QUALITY.map(q => [q, 0])
-      );
+      state.sawmill.machine.queue = Object.fromEntries(QUALITY.map(q => [q, 0]));
       state.sawmill.machine.isRunning = false;
       state.sawmill.machine.remaining = 0;
       state.taxDebt = 0;
@@ -782,7 +731,6 @@
     if (!exposure) return;
 
     exposure.remaining--;
-
     if (exposure.remaining > 0) return;
 
     const amount = Math.min(exposure.amount, state.money);
@@ -791,10 +739,7 @@
 
     const paidDebt = Math.min(paid, state.taxDebt);
     state.taxDebt -= paidDebt;
-    state.taxPenalty = Math.max(
-      0,
-      state.taxPenalty - (paid - paidDebt)
-    );
+    state.taxPenalty = Math.max(0, state.taxPenalty - (paid - paidDebt));
 
     state.money -= amount;
 
@@ -813,11 +758,7 @@
   }
 
   function advanceTime(realMs) {
-    const safeMs = clamp(
-      Number(realMs) || 0,
-      0,
-      365 * DAY_MINUTES * GAME_MINUTE_MS
-    );
+    const safeMs = clamp(Number(realMs) || 0, 0, 365 * DAY_MINUTES * GAME_MINUTE_MS);
 
     timeRemainderMs += safeMs;
 
@@ -830,9 +771,7 @@
       for (let i = 0; i < fullMinutes; i++) {
         state.gameMinutes = (state.gameMinutes + 1) % DAY_MINUTES;
 
-        if (state.gameMinutes === 420) {
-          dayTick();
-        }
+        if (state.gameMinutes === 420) dayTick();
 
         if (state.overdueDays < 5) {
           state.sawmill.workers.forEach(chop);
@@ -867,11 +806,7 @@
     if (stack) {
       stack.count = Math.min(999, stack.count + 1);
     } else {
-      state.inventory.axes.push({
-        rarity,
-        durability,
-        count: 1
-      });
+      state.inventory.axes.push({ rarity, durability, count: 1 });
     }
   }
 
@@ -889,11 +824,7 @@
       if (stack) {
         stack.count = Math.min(999, stack.count + 1);
       } else {
-        state.inventory.axes.push({
-          rarity,
-          durability: axe.max,
-          count: 1
-        });
+        state.inventory.axes.push({ rarity, durability: axe.max, count: 1 });
       }
 
       notify(`${axe.name} куплен.`);
@@ -903,7 +834,6 @@
   function equipAxe(workerId, rarity, durability) {
     return transaction('Экипировка топора', () => {
       const worker = state.sawmill.workers.find(w => w.id === workerId);
-
       const axe = state.inventory.axes.find(item =>
         item.rarity === rarity &&
         item.durability === num(durability) &&
@@ -926,7 +856,6 @@
       };
 
       axe.count--;
-
       if (axe.count <= 0) {
         state.inventory.axes = state.inventory.axes.filter(item => item !== axe);
       }
@@ -963,7 +892,6 @@
 
       if (workerId) {
         worker = state.sawmill.workers.find(w => w.id === workerId);
-
         if (
           worker?.axe &&
           worker.axe.rarity === rarity &&
@@ -985,7 +913,6 @@
       }
 
       const cost = Math.max(10, config.max - target.durability);
-
       if (!spend(cost)) return false;
 
       target.durability = config.max;
@@ -1009,7 +936,6 @@
       }
 
       const cost = (100 - machine.durability) * 2;
-
       if (!spend(cost)) return false;
 
       machine.durability = 100;
@@ -1040,7 +966,7 @@
       );
     });
   }
-
+  
   function cloneTemplate(id) {
     const template = $(id);
 
@@ -1064,11 +990,14 @@
     if (!img || !worker) return;
     const skinIdx = clamp(num(worker.skin, 1), 1, 4);
     const src = `${skinIdx}skin.jpeg`;
-    if (img.getAttribute('src') !== src) {
-      img.setAttribute('src', src);
-    }
     img.alt = `Портрет: ${worker.name || 'лесоруб'}`;
     if (small) img.classList.add('small');
+
+    if (img.classList.contains('img-fallback')) return;
+    if (img.getAttribute('src') === src) return;
+
+    attachImgFallback(img, FALLBACK_WORKER_SVG);
+    img.setAttribute('src', src);
   }
 
   function renderInventory() {
@@ -1087,10 +1016,11 @@
 
       const icon = document.createElement('img');
       icon.className = 'axe-icon';
-      icon.src = axeIconSrc(axe.rarity);
       icon.alt = '';
       icon.loading = 'lazy';
       icon.decoding = 'async';
+      attachImgFallback(icon, FALLBACK_AXE_SVG);
+      icon.src = axeIconSrc(axe.rarity);
 
       const name = document.createElement('span');
       name.className = 'axe-name';
@@ -1183,8 +1113,9 @@
 
       const skin = row.querySelector('.worker-skin');
       if (skin) {
-        skin.hidden = true;
-        skin.textContent = '';
+        const skinIdx = clamp(num(worker.skin, 1), 1, 4);
+        skin.hidden = false;
+        skin.textContent = `Внешность: ${skinIdx} из 4`;
       }
 
       hiredList.append(row);
@@ -1229,10 +1160,11 @@
         if (worker.axe) {
           const icon = document.createElement('img');
           icon.className = 'axe-icon small';
-          icon.src = axeIconSrc(worker.axe.rarity);
           icon.alt = '';
           icon.loading = 'lazy';
           icon.decoding = 'async';
+          attachImgFallback(icon, FALLBACK_AXE_SVG);
+          icon.src = axeIconSrc(worker.axe.rarity);
 
           axeText.append(
             icon,
@@ -1259,10 +1191,11 @@
 
           const icon = document.createElement('img');
           icon.className = 'axe-icon small';
-          icon.src = axeIconSrc(axe.rarity);
           icon.alt = '';
           icon.loading = 'lazy';
           icon.decoding = 'async';
+          attachImgFallback(icon, FALLBACK_AXE_SVG);
+          icon.src = axeIconSrc(axe.rarity);
 
           const label = document.createElement('span');
           label.textContent =
@@ -1322,6 +1255,10 @@
     damaged.forEach(axe => {
       const row = cloneTemplate('broken-axe');
       if (!row) return;
+
+      row.querySelectorAll('.axe-icon').forEach(icon => {
+        attachImgFallback(icon, FALLBACK_AXE_SVG);
+      });
 
       row.dataset.rarity = axe.rarity;
       row.dataset.durability = String(axe.durability);
@@ -1468,13 +1405,11 @@
     setText('logs-all', state.sawmill.logsAll);
     setText('spent', `${state.sawmill.spent.toLocaleString('ru-RU')} $`);
 
-    // Индикатор низкой прочности станка (master.html)
     const durWrap = $('machine-durability-wrap');
     if (durWrap) {
       durWrap.classList.toggle('is-low', state.sawmill.machine.durability < 30);
     }
 
-    // Период суток на карте
     const periodElements = {
       dawn: 'map-dawn',
       day: 'map-day',
@@ -1487,7 +1422,6 @@
       if (element) element.hidden = period !== getPeriod();
     });
 
-    // Сейф
     const exposure = state.sawmill.safeExposure;
     const safeWatch = $('safe-watch');
 
@@ -1510,6 +1444,7 @@
 
     // Станок
     const machine = state.sawmill.machine;
+    const machineLocked = machine.isRunning || machineQueueTotal() > 0;
     const machineLeft = $('machine-left');
     const machineState = $('machine-state');
     const startMachine = $('start-machine');
@@ -1536,10 +1471,67 @@
       );
     }
 
+    const qualityHost = $('machine-quality');
+    if (qualityHost) {
+      qualityHost.querySelectorAll('.quality-card').forEach(card => {
+        const q = card.dataset.quality;
+        const stockEl = card.querySelector('.quality-stock-value');
+
+        if (stockEl) {
+          const stock = state.sawmill.logs[q] || 0;
+          stockEl.textContent = String(stock);
+          if (stockEl.tagName === 'DATA') stockEl.value = String(stock);
+        }
+
+        card.disabled = machineLocked;
+        card.setAttribute('aria-disabled', String(machineLocked));
+      });
+
+      const amountInput = $('machine-amount');
+      const fillAllBtn = $('machine-fill-all');
+      const clearBtn = $('machine-clear');
+
+      if (amountInput) amountInput.disabled = machineLocked;
+      if (fillAllBtn) fillAllBtn.disabled = machineLocked;
+      if (clearBtn) clearBtn.disabled = machineLocked;
+
+      const lockBanner = $('machine-lock-banner');
+      if (lockBanner) lockBanner.hidden = !machineLocked;
+
+      const hint = $('machine-hint');
+      if (hint) {
+        if (machineLocked) {
+          hint.textContent =
+            'Партия выполняется. Правки недоступны до завершения.';
+        } else {
+          const selectedCard = qualityHost.querySelector(
+            '.quality-card[aria-pressed="true"]'
+          );
+          const selectedQ = selectedCard?.dataset?.quality;
+
+          if (selectedQ) {
+            hint.textContent =
+              `Партия: только ${QUALITY_LABEL[selectedQ]} брёвна. ` +
+              'Другое качество в эту партию добавить нельзя.';
+          } else {
+            hint.textContent =
+              'Выберите качество и укажите количество. ' +
+              'Одновременно можно грузить только одну редкость.';
+          }
+        }
+      }
+    }
+
     if (startMachine) {
-      startMachine.disabled = machine.durability <= 0 ||
-        (!machine.isRunning && machineQueueTotal() <= 0 &&
-          sum(QUALITY.map(q => num($(`mill-${q}`)?.value))) <= 0);
+      const selectedCard = qualityHost?.querySelector(
+        '.quality-card[aria-pressed="true"]'
+      );
+      const selectedQ = selectedCard?.dataset?.quality || null;
+      const selectedAmount = num($('machine-amount')?.value, 0);
+
+      startMachine.disabled = machine.durability <= 0 || (
+        !machineLocked && !(selectedQ && selectedAmount > 0)
+      );
 
       startMachine.textContent = machine.isRunning
         ? 'Приостановить'
@@ -1559,13 +1551,11 @@
     }
 
     const repairMachineButton = $('repair-machine');
-
     if (repairMachineButton) {
       repairMachineButton.disabled = machine.durability >= 100;
     }
 
     const upgradeMachine = $('upgrade-machine');
-
     if (upgradeMachine) {
       if (machine.level >= 5) {
         upgradeMachine.disabled = true;
@@ -1578,7 +1568,6 @@
       }
     }
 
-    // Зоны
     document.querySelectorAll('[data-zone]').forEach(button => {
       const zone = Number(button.dataset.zone);
       const owned = zone <= state.sawmill.zones;
@@ -1591,7 +1580,6 @@
       );
     });
 
-    // Лицензии
     const chopLicense = $('chop-license');
     const chopActive =
       state.licenses.chopping.active &&
@@ -1632,7 +1620,6 @@
         (tradeActive ? 'license-ok' : 'license-off');
     }
 
-    // Докладные
     const reportPlain = $('report-plain');
     const reportSealed = $('report-sealed');
     const reportStatus = $('report-status');
@@ -1657,7 +1644,6 @@
           : `Докладная: ${state.report.planks} досок · ${state.report.price}$ за доску`;
     }
 
-    // Литейная
     const stampStatus = $('stamp-status');
 
     if (stampStatus) {
@@ -1677,31 +1663,25 @@
     }
 
     const stampButton = $('stamp');
-
     if (stampButton) {
       stampButton.disabled = !state.report ||
         state.report.sealed ||
         !tradeActive;
     }
 
-    // Доставка
     const deliveryButton = $('pay-delivery');
-
     if (deliveryButton) {
       deliveryButton.disabled = !state.report?.sealed || Boolean(state.delivery);
     }
 
     const deliveryStatus = $('delivery-track');
-
     if (deliveryStatus) {
       deliveryStatus.textContent = state.delivery
         ? `Доставка в пути: осталось ${state.delivery.remaining} игровых минут`
         : 'Доставка: нет';
     }
 
-    // Окупаемость
     const payback = $('payback');
-
     if (payback) {
       const revenue = state.stats.revenue;
       const spent = state.sawmill.spent;
@@ -1718,33 +1698,27 @@
       }
     }
 
-    // Кнопки действий
     const sellButton = $('sell-planks');
-
     if (sellButton) {
       sellButton.disabled = state.sawmill.planks <= 0 || Boolean(state.report);
     }
 
     const payTax = $('pay-tax');
-
     if (payTax) {
       payTax.disabled = taxDue <= 0 || state.money <= 0;
     }
 
     const renewChop = $('renew-chop');
-
     if (renewChop) {
       renewChop.disabled = chopActive;
     }
 
     const buyTrade = $('buy-trade-license');
-
     if (buyTrade) {
       buyTrade.disabled = tradeActive;
     }
 
     const hireButton = $('hire');
-
     if (hireButton) {
       const count = state.sawmill.workers.length;
       const capacity = state.sawmill.zones * 10;
@@ -1761,7 +1735,6 @@
       }
     }
 
-    // Списки
     renderInventory();
     renderCrewList();
     renderHiredList();
@@ -1799,7 +1772,6 @@
     }
 
     const cost = workers.length < 2 ? 0 : (workers.length - 1) * 200;
-
     if (cost > 0 && !spend(cost)) return false;
 
     workers.push({
@@ -1829,7 +1801,6 @@
     }
 
     const nextLevel = machine.level + 1;
-
     if (!spend(MACHINE[nextLevel].price)) return false;
 
     machine.level = nextLevel;
@@ -1857,7 +1828,6 @@
         0,
         state.sawmill.safeExposure.amount - amount
       );
-
       if (state.sawmill.safeExposure.amount <= 0) {
         state.sawmill.safeExposure = null;
       }
@@ -1886,10 +1856,7 @@
       state.sawmill.safeExposure.amount += amount;
       state.sawmill.safeExposure.remaining = 60;
     } else {
-      state.sawmill.safeExposure = {
-        amount,
-        remaining: 60
-      };
+      state.sawmill.safeExposure = { amount, remaining: 60 };
     }
 
     notify('Деньги сняты. Потратьте их за игровой час.');
@@ -1912,7 +1879,6 @@
         0,
         state.sawmill.safeExposure.amount - amount
       );
-
       if (state.sawmill.safeExposure.amount <= 0) {
         state.sawmill.safeExposure = null;
       }
@@ -1920,10 +1886,7 @@
 
     const debtPayment = Math.min(amount, state.taxDebt);
     state.taxDebt -= debtPayment;
-    state.taxPenalty = Math.max(
-      0,
-      state.taxPenalty - (amount - debtPayment)
-    );
+    state.taxPenalty = Math.max(0, state.taxPenalty - (amount - debtPayment));
 
     if (!state.taxDebt && !state.taxPenalty) {
       state.overdueDays = 0;
@@ -1961,39 +1924,43 @@
       return;
     }
 
-    const queue = {};
-    let total = 0;
+    const selectedCard = document.querySelector(
+      '#machine-quality .quality-card[aria-pressed="true"]'
+    );
+    const selectedQuality = selectedCard?.dataset?.quality || null;
 
-    QUALITY.forEach(q => {
-      const amount = num($(`mill-${q}`)?.value, 0);
+    if (!QUALITY.includes(selectedQuality)) {
+      notify('Сначала выберите качество брёвен.', 'error');
+      return false;
+    }
 
-      if (amount > state.sawmill.logs[q]) {
-        throw new Error(`Недостаточно брёвен категории «${q}».`);
-      }
+    const amount = num($('machine-amount')?.value, 0);
 
-      queue[q] = amount;
-      total += amount;
-    });
+    if (amount < 1) {
+      notify('Укажите количество брёвен больше нуля.', 'error');
+      return false;
+    }
 
     const capacity = MACHINE[machine.level].capacity;
 
-    if (total < 1 || total > capacity) {
+    if (amount > capacity) {
       notify(
-        `Выберите от 1 до ${capacity} брёвен.`,
+        `Станок вмещает не больше ${capacity} брёвен за раз.`,
         'error'
       );
       return false;
     }
 
-    const filled = QUALITY.filter(q => queue[q] > 0);
-
-    if (filled.length > 1) {
+    if (amount > state.sawmill.logs[selectedQuality]) {
       notify(
-        'В одной партии может быть только одно качество брёвен.',
+        `В наличии только ${state.sawmill.logs[selectedQuality]} брёвен этого качества.`,
         'error'
       );
       return false;
     }
+
+    const queue = Object.fromEntries(QUALITY.map(q => [q, 0]));
+    queue[selectedQuality] = amount;
 
     QUALITY.forEach(q => {
       state.sawmill.logs[q] -= queue[q];
@@ -2020,12 +1987,7 @@
       return false;
     }
 
-    state.report = {
-      planks: amount,
-      sealed: false,
-      price: dailyPrice()
-    };
-
+    state.report = { planks: amount, sealed: false, price: dailyPrice() };
     state.sawmill.planks -= amount;
 
     notify(`Докладная на ${amount} досок создана.`);
@@ -2053,7 +2015,6 @@
     }
 
     const fee = 50 + state.report.planks;
-
     if (!spend(fee)) return false;
 
     state.delivery = {
@@ -2063,7 +2024,6 @@
     };
 
     state.report = null;
-
     notify('Доставка оплачена. Ожидайте 30 игровых минут.');
   }));
 
@@ -2136,9 +2096,11 @@
   });
 
   bind('zone-buy-yes', () => transaction('Покупка территории', () => {
-    if (!selectedZone ||
-        selectedZone !== state.sawmill.zones + 1 ||
-        state.sawmill.zones >= 28) {
+    if (
+      !selectedZone ||
+      selectedZone !== state.sawmill.zones + 1 ||
+      state.sawmill.zones >= 28
+    ) {
       notify('Эта территория сейчас недоступна.', 'error');
       return false;
     }
@@ -2180,6 +2142,103 @@
 
       const choices = row.querySelector('.axe-choices');
       if (choices) choices.hidden = !openAxeChoosers.has(workerId);
+    }
+  });
+
+  // Станок (sklad.html): живая санитизация количества
+  // и немедленный пересчёт состояния кнопки «Запустить».
+  document.addEventListener('input', event => {
+    if (event.target.id !== 'machine-amount') return;
+
+    const machine = state.sawmill.machine;
+    if (machine.isRunning || machineQueueTotal() > 0) return;
+
+    const selectedCard = document.querySelector(
+      '#machine-quality .quality-card[aria-pressed="true"]'
+    );
+    const q = selectedCard?.dataset?.quality || null;
+    const capacity = MACHINE[machine.level].capacity;
+    const stock = q ? (state.sawmill.logs[q] || 0) : capacity;
+    const limit = Math.min(capacity, stock);
+
+    let n = Number(event.target.value);
+    if (!Number.isFinite(n)) n = 0;
+    n = Math.floor(n);
+    if (n < 0) n = 0;
+    if (n > limit) n = limit;
+
+    if (String(n) !== event.target.value) {
+      event.target.value = String(n);
+    }
+
+    render();
+  });
+
+  // Станок (sklad.html): выбор качества, «Положить всё», «Очистить».
+  // Пока в sklad.html ещё работает старый мост (#mill-* inputs),
+  // не вмешиваемся — иначе получим двойное переключение.
+  // После шага 2 (удаление моста) эти обработчики станут основными.
+  document.addEventListener('click', event => {
+    if (isLegacyBridgeActive()) return;
+
+    const qualityHost = $('machine-quality');
+    if (!qualityHost) return;
+
+    const machine = state.sawmill.machine;
+    const locked = machine.isRunning || machineQueueTotal() > 0;
+
+    const card = event.target.closest('.quality-card');
+    if (card && qualityHost.contains(card)) {
+      if (card.disabled || locked) return;
+
+      const wasSelected = card.getAttribute('aria-pressed') === 'true';
+
+      qualityHost.querySelectorAll('.quality-card').forEach(c => {
+        c.setAttribute('aria-pressed', String(!wasSelected && c === card));
+      });
+
+      const amountInput = $('machine-amount');
+      if (amountInput) amountInput.value = '0';
+
+      render();
+      return;
+    }
+
+    if (event.target.closest('#machine-fill-all')) {
+      if (locked) return;
+
+      const selectedCard = qualityHost.querySelector(
+        '.quality-card[aria-pressed="true"]'
+      );
+      const q = selectedCard?.dataset?.quality;
+
+      if (!q) {
+        notify('Сначала выберите качество брёвен.', 'error');
+        return;
+      }
+
+      const capacity = MACHINE[machine.level].capacity;
+      const stock = state.sawmill.logs[q] || 0;
+      const max = Math.min(capacity, stock);
+
+      const amountInput = $('machine-amount');
+      if (amountInput) amountInput.value = String(max);
+
+      render();
+      return;
+    }
+
+    if (event.target.closest('#machine-clear')) {
+      if (locked) return;
+
+      qualityHost.querySelectorAll('.quality-card').forEach(c => {
+        c.setAttribute('aria-pressed', 'false');
+      });
+
+      const amountInput = $('machine-amount');
+      if (amountInput) amountInput.value = '0';
+
+      render();
     }
   });
 
@@ -2238,6 +2297,13 @@
 
   function initialize() {
     renderProfileTab();
+
+    document.querySelectorAll('img.axe-icon').forEach(img => {
+      attachImgFallback(img, FALLBACK_AXE_SVG);
+    });
+    document.querySelectorAll('img.worker-portrait').forEach(img => {
+      attachImgFallback(img, FALLBACK_WORKER_SVG);
+    });
 
     const elapsed = Math.max(0, Date.now() - num(state.lastLogin, Date.now()));
 
