@@ -26,7 +26,7 @@
       body[data-screen="map"] #world {
         position: relative;
         z-index: 1;
-        width: min(160vw, 900px);
+        width: min(170vw, 960px);
         max-width: none;
         max-height: none;
         flex-shrink: 0;
@@ -43,13 +43,40 @@
       }
     }
 
-    /* Заблокированные локации: клик доходит до обработчика
-       (в style.css стоит pointer-events: none для [aria-disabled]).
-       Визуально помечены курсором «недоступно» — перехода нет. */
+    /* Заблокированные локации: клик доходит до обработчика,
+       но визуально помечены как недоступные. */
     #world a[data-spot="pine"],
     #world a[data-spot="oak"] {
       pointer-events: auto;
       cursor: not-allowed;
+    }
+
+    /* Оверлей «Закрыто» — не перехватывает клики, но визуально
+       предупреждает, что локация недоступна. */
+    #world a[data-spot="pine"]::after,
+    #world a[data-spot="oak"]::after {
+      content: "Закрыто";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--pixel);
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--cream);
+      background: rgba(20, 14, 9, 0.55);
+      border: 2px dashed rgba(244, 231, 200, 0.35);
+      border-radius: 4px;
+      text-shadow: 0 1px 0 var(--ink), 0 0 6px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+    }
+
+    #world a[data-spot="pine"]:focus-visible::after,
+    #world a[data-spot="oak"]:focus-visible::after {
+      background: rgba(20, 14, 9, 0.72);
+      border-color: var(--gold);
     }
   </style>
 </head>

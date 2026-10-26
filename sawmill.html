@@ -12,77 +12,192 @@
       visibility: hidden;
     }
 
-    /* Сейф — локальные улучшения под удобство на телефоне */
-    #safe .safe-card .safe-hint {
+    /* === СЕЙФ === */
+    #safe .safe-balances {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    #safe .safe-card {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 14px;
+      background: var(--ink);
+      border: 2px solid var(--line);
+      border-radius: var(--s1);
+    }
+
+    #safe .safe-card-primary {
+      border-color: var(--gold);
+      background: linear-gradient(180deg, rgba(226, 182, 87, 0.10), rgba(0, 0, 0, 0.4));
+    }
+
+    #safe .safe-stat-label {
+      font-size: 0.75em;
+      letter-spacing: 0.04em;
+      color: var(--cream-soft);
+      text-transform: uppercase;
+    }
+
+    #safe .safe-stat-value {
+      font-family: var(--pixel);
+      font-size: 18px;
+      color: var(--gold);
+      line-height: 1.2;
+    }
+
+    #safe .safe-hint {
       display: block;
       margin-top: 2px;
-      font-size: var(--fs-tiny);
+      font-size: 0.75em;
       color: var(--cream-muted);
       letter-spacing: 0.02em;
     }
 
-    #safe .safe-actions .safe-amount-hint {
+    /* Предупреждение «Под надзором» */
+    #safe .safe-warning {
       display: flex;
-      flex-wrap: wrap;
-      gap: 4px 12px;
-      padding: 8px 12px;
-      border-radius: var(--r-sm);
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px dashed var(--line-strong);
-      font-size: var(--fs-tiny);
-      color: var(--cream-muted);
-      line-height: 1.4;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 14px;
+      border-radius: var(--s1);
+      font-size: 0.9em;
+      line-height: 1.5;
     }
 
-    #safe .safe-actions .safe-amount-hint data {
-      font-family: var(--font-pixel);
-      font-size: 11px;
+    #safe .safe-warning.safe-danger {
+      background: rgba(157, 51, 44, 0.25);
+      border: 1px solid rgba(240, 192, 187, 0.35);
+      color: var(--cream);
+    }
+
+    #safe .safe-timer {
+      font-family: var(--pixel);
+      font-size: 0.9em;
       color: var(--gold);
     }
 
-    #safe .safe-quick {
-      display: grid;
-      grid-template-columns: auto repeat(3, 1fr);
-      gap: 6px;
-      align-items: center;
-    }
-
-    #safe .safe-quick .safe-quick-label {
-      font-size: var(--fs-tiny);
-      color: var(--cream-soft);
-      letter-spacing: 0.02em;
-    }
-
-    #safe .safe-quick button {
-      min-height: 40px;
-      padding: 8px 10px;
-      font-size: 12px;
-      border-radius: var(--r-sm);
-    }
-
-    #safe .safe-actions-row {
-      margin-top: 6px;
-    }
-
-    #safe #safe-deposit {
-      min-height: 52px;
-      font-size: 14px;
-    }
-
-    #safe #safe-withdraw {
-      min-height: 52px;
-      font-size: 14px;
-    }
-
-    /* safeExposure: инструкция */
     #safe .safe-warning .safe-warning-advice {
       display: block;
       padding-top: 6px;
       border-top: 1px dashed rgba(255, 255, 255, 0.14);
-      font-size: var(--fs-tiny);
+      font-size: 0.8em;
       line-height: 1.5;
       color: var(--cream-soft);
     }
+
+    /* Поле суммы */
+    #safe .safe-input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--line);
+      border-radius: var(--s1);
+    }
+
+    #safe .safe-input-row label {
+      font-size: 0.8em;
+      color: var(--cream-soft);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    #safe .safe-input-row input {
+      min-height: 48px;
+      font-family: var(--pixel);
+      font-size: 16px;
+      text-align: center;
+    }
+
+    #safe .safe-amount-hint {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      font-size: 0.75em;
+      color: var(--cream-muted);
+      line-height: 1.4;
+    }
+
+    #safe .safe-amount-hint data {
+      font-family: var(--pixel);
+      font-size: 0.95em;
+      color: var(--gold);
+    }
+
+    /* Панели действий */
+    #safe .safe-actions-panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    #safe .safe-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      border-radius: var(--s1);
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    #safe .safe-panel-deposit {
+      border-left: 3px solid var(--moss);
+    }
+
+    #safe .safe-panel-withdraw {
+      border-left: 3px solid var(--gold);
+    }
+
+    #safe .safe-panel-title {
+      margin: 0;
+      font-size: 0.85em;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--cream-soft);
+    }
+
+    #safe .safe-panel .safe-quick {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    #safe .safe-panel .safe-quick button {
+      min-height: 40px;
+      padding: 8px 6px;
+      font-size: 0.8em;
+      border-radius: var(--s1);
+    }
+
+    #safe .safe-panel > button {
+      min-height: 52px;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    #safe #safe-deposit {
+      background: var(--moss);
+      color: var(--cream);
+    }
+
+    #safe #safe-withdraw {
+      background: var(--gold);
+      color: var(--ink);
+    }
+
+    @media (max-width: 460px) {
+      #safe .safe-balances,
+      #safe .safe-actions-panels {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Дальше — стили, унаследованные с прошлых версий файла. */
   </style>
 </head>
 <body data-screen="sawmill">
@@ -130,18 +245,20 @@
 
     <section id="safe" aria-labelledby="safe-title">
       <h2 id="safe-title">Сейф</h2>
-      <div class="safe-grid">
+
+      <div class="safe-balances">
         <div class="safe-card safe-card-primary">
-          <span class="safe-stat-label">В сейфе — защищено от налога</span>
+          <span class="safe-stat-label">В сейфе</span>
           <data class="safe-stat-value" id="safe-money" value="0">0$</data>
-          <span class="safe-hint">Налог не забирает эти деньги.</span>
+          <span class="safe-hint">Защищено от налога</span>
         </div>
         <div class="safe-card">
           <span class="safe-stat-label">В кошельке</span>
           <data class="safe-stat-value" id="safe-wallet" value="1000">1 000$</data>
-          <span class="safe-hint">Доступно для покупок и налогов.</span>
+          <span class="safe-hint">Доступно для покупок и налогов</span>
         </div>
       </div>
+
       <div class="safe-warning safe-danger" id="safe-watch" hidden>
         <span>
           Под надзором: <strong><data id="safe-exposed" value="0">0$</data></strong>.
@@ -152,31 +269,34 @@
           часа. Иначе спишут в счёт налогового долга, а если долга нет — сгорят.
         </span>
       </div>
-      <div class="safe-actions">
+
+      <div class="safe-input-row">
         <label for="safe-amount">Сумма</label>
         <input id="safe-amount" type="number" min="1" step="1" value="100" inputmode="numeric">
-
         <div class="safe-amount-hint">
           <span>Можно положить: <data id="safe-max-deposit" value="0">0</data></span>
           <span>Можно забрать: <data id="safe-max-withdraw" value="0">0</data></span>
         </div>
+      </div>
 
-        <div class="safe-quick">
-          <span class="safe-quick-label">Положить:</span>
-          <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="0.25">25%</button>
-          <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="0.5">50%</button>
-          <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="1">Всё</button>
-        </div>
-
-        <div class="safe-quick">
-          <span class="safe-quick-label">Забрать:</span>
-          <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="0.25">25%</button>
-          <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="0.5">50%</button>
-          <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="1">Всё</button>
-        </div>
-
-        <div class="safe-actions-row">
+      <div class="safe-actions-panels">
+        <div class="safe-panel safe-panel-deposit">
+          <p class="safe-panel-title">Положить</p>
+          <div class="safe-quick">
+            <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="0.25">25%</button>
+            <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="0.5">50%</button>
+            <button type="button" class="ghost" data-safe-quick data-target="deposit" data-pct="1">Всё</button>
+          </div>
           <button type="button" id="safe-deposit">Положить в сейф</button>
+        </div>
+
+        <div class="safe-panel safe-panel-withdraw">
+          <p class="safe-panel-title">Забрать</p>
+          <div class="safe-quick">
+            <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="0.25">25%</button>
+            <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="0.5">50%</button>
+            <button type="button" class="ghost" data-safe-quick data-target="withdraw" data-pct="1">Всё</button>
+          </div>
           <button type="button" id="safe-withdraw">Забрать из сейфа</button>
         </div>
       </div>

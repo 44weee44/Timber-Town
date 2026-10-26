@@ -21,19 +21,97 @@
       to   { opacity: 1; }
     }
 
-    #boot h1 {
+    /* Пульсация кнопки «Играть»: золотое кольцо расходится от кнопки. */
+    @keyframes play-pulse {
+      0%, 100% {
+        box-shadow:
+          4px 4px 0 var(--ink),
+          0 0 0 0 rgba(226, 182, 87, 0.55);
+      }
+      50% {
+        box-shadow:
+          4px 4px 0 var(--ink),
+          0 0 0 10px rgba(226, 182, 87, 0);
+      }
+    }
+
+    /* Видимый заголовок «Timber Town» — переопределяет sr-only из style.css
+       за счёт более высокой специфичности. */
+    body[data-screen="boot"] #boot h1 {
+      position: absolute;
+      z-index: 3;
+      top: calc(env(safe-area-inset-top, 0px) + 5vh);
+      left: 50%;
+      translate: -50% 0;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      font-family: var(--pixel);
+      font-size: clamp(22px, 7.2vw, 44px);
+      line-height: 1.1;
+      letter-spacing: 0.08em;
+      text-align: center;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: var(--gold);
+      text-shadow:
+        3px 3px 0 var(--ink),
+        -1px -1px 0 var(--ink),
+        1px -1px 0 var(--ink),
+        -1px 1px 0 var(--ink),
+        0 0 24px rgba(226, 182, 87, 0.45);
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
       animation: boot-fade-up 700ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
+
+    /* Верхний градиент-затемнение для читаемости заголовка. */
+    body[data-screen="boot"]::before {
+      content: "";
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: calc(22vh + env(safe-area-inset-top, 0px));
+      background: linear-gradient(
+        180deg,
+        rgba(20, 14, 9, 0.72) 0%,
+        rgba(20, 14, 9, 0.35) 55%,
+        rgba(20, 14, 9, 0) 100%
+      );
+      pointer-events: none;
+    }
+
     #boot-art {
       animation: boot-fade-in 900ms 0ms ease both;
     }
+
     #tip,
     #tip-list {
       animation: boot-fade-up 700ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      transition: opacity 200ms ease;
     }
+
+    #tip.is-fading {
+      opacity: 0;
+    }
+
     #play {
-      animation: boot-fade-up 700ms 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      animation:
+        boot-fade-up 700ms 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+        play-pulse 2.4s 1400ms ease-out infinite;
     }
+
+    @media (hover: hover) {
+      #play:hover {
+        background: var(--gold-light, #f4d382);
+        filter: brightness(1.06);
+      }
+    }
+
     #boot-storage-warning {
       animation: boot-fade-up 500ms 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
@@ -47,13 +125,13 @@
       width: min(220px, 55vw);
       height: 2px;
       border: 0;
-      border-radius: var(--r-pill);
+      border-radius: var(--r-pill, 999px);
       background: linear-gradient(
         90deg,
         transparent 0%,
-        var(--gold-wash) 20%,
+        var(--gold-wash, rgba(226, 182, 87, 0.18)) 20%,
         var(--gold) 50%,
-        var(--gold-wash) 80%,
+        var(--gold-wash, rgba(226, 182, 87, 0.18)) 80%,
         transparent 100%
       );
       opacity: 0.85;
@@ -71,23 +149,23 @@
       margin: 0;
       padding: 10px 14px;
       text-align: center;
-      font-size: var(--fs-tiny);
+      font-size: var(--fs-tiny, 10px);
       color: var(--danger-ink);
       line-height: 1.5;
-      background: var(--danger-wash);
+      background: var(--danger-wash, rgba(157, 51, 44, 0.18));
       border: 1px solid rgba(240, 192, 187, 0.3);
-      border-radius: var(--r-md);
+      border-radius: var(--r-md, 10px);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
     }
 
-    /* Небольшое авторское обозначение в углу. */
+    /* Авторское обозначение в углу. */
     #boot-credit {
       position: fixed;
       right: max(12px, env(safe-area-inset-right, 0px));
       top: calc(env(safe-area-inset-top, 0px) + 12px);
       margin: 0;
-      font-family: var(--font-ui);
+      font-family: var(--ui, "Russo One", sans-serif);
       font-size: 10px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -100,8 +178,28 @@
       animation: boot-fade-in 900ms 500ms ease both;
     }
 
+    /* Если JavaScript отключён — понятное сообщение. */
+    .boot-noscript {
+      position: fixed;
+      z-index: 3;
+      left: 50%;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem);
+      translate: -50% 0;
+      width: min(28rem, calc(100% - 32px));
+      margin: 0;
+      padding: 12px 16px;
+      text-align: center;
+      font-family: var(--ui, "Russo One", sans-serif);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--danger-ink);
+      background: var(--danger-wash, rgba(157, 51, 44, 0.18));
+      border: 1px solid rgba(240, 192, 187, 0.35);
+      border-radius: var(--r-md, 10px);
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      #boot h1,
+      body[data-screen="boot"] #boot h1,
       #boot-art,
       #tip,
       #tip-list,
@@ -111,6 +209,14 @@
       #boot-credit {
         animation-duration: 0.001ms !important;
         animation-delay: 0ms !important;
+      }
+
+      #tip {
+        transition: none !important;
+      }
+
+      #play {
+        animation: none !important;
       }
     }
   </style>
@@ -138,6 +244,11 @@
     <p id="boot-credit" aria-hidden="true">© Timber Town</p>
     <a href="game.html" id="play" role="button">Играть</a>
   </main>
+  <noscript>
+    <p class="boot-noscript">
+      Timber Town требует JavaScript. Включите его в настройках браузера, чтобы начать игру.
+    </p>
+  </noscript>
   <script>
     (() => {
       'use strict';
@@ -154,7 +265,14 @@
 
         window.setInterval(() => {
           index = (index + 1) % tips.length;
-          tip.textContent = tips[index];
+
+          // Плавная смена подсказки: снять класс → дождаться фейда →
+          // обновить текст → вернуть класс.
+          tip.classList.add('is-fading');
+          window.setTimeout(() => {
+            tip.textContent = tips[index];
+            tip.classList.remove('is-fading');
+          }, 200);
         }, 6000);
       }
 

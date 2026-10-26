@@ -42,38 +42,20 @@
   <main id="sklad-lesa">
     <p><a href="game.html">На карту</a></p>
     <h1>Склад леса</h1>
-    <p>Отдельный склад под будущие механики. Запас лесопилки сюда не попадает, общий котёл с «Складами» не ведётся.</p>
-    <section id="forest-storage" class="forest-storage" aria-labelledby="forest-storage-title">
-      <h2 id="forest-storage-title">Запас</h2>
-      <div class="storage-total">
-        <span class="storage-total-label">Всего брёвен</span>
-        <data class="storage-total-value" id="forest-storage-total" value="0">0</data>
-      </div>
-      <ul class="quality-breakdown" id="forest-storage-list">
-        <li data-quality="rotten">
-          <span>Гнилое</span>
-          <data id="forest-logs-rotten" value="0">0</data>
-        </li>
-        <li data-quality="normal">
-          <span>Обычное</span>
-          <data id="forest-logs-normal" value="0">0</data>
-        </li>
-        <li data-quality="good">
-          <span>Хорошее</span>
-          <data id="forest-logs-good" value="0">0</data>
-        </li>
-        <li data-quality="excellent">
-          <span>Отличное</span>
-          <data id="forest-logs-excellent" value="0">0</data>
-        </li>
-        <li data-quality="perfect">
-          <span>Идеальное</span>
-          <data id="forest-logs-perfect" value="0">0</data>
-        </li>
+    <img src="Warehouse.jpeg" width="1168" height="784" alt="Склад леса">
+    <p>Отдельный склад для будущих механик хранения. Пока сюда попадают только брёвна, выгруженные из смешанных партий станка при миграции.</p>
+
+    <section id="forest-storage" aria-labelledby="forest-storage-title">
+      <h2 id="forest-storage-title">Запас леса</h2>
+      <p>Всего брёвен: <data id="forest-storage-total" value="0">0</data></p>
+      <p id="forest-storage-empty">Склад пуст. Брёвна сюда пока не поступают.</p>
+      <ul id="log-piles">
+        <li>Гнилое <data id="forest-logs-rotten" value="0">0</data></li>
+        <li>Обычное <data id="forest-logs-normal" value="0">0</data></li>
+        <li>Хорошее <data id="forest-logs-good" value="0">0</data></li>
+        <li>Отличное <data id="forest-logs-excellent" value="0">0</data></li>
+        <li>Идеальное <data id="forest-logs-perfect" value="0">0</data></li>
       </ul>
-      <p class="storage-empty" id="forest-storage-empty">
-        Склад пуст. Брёвна сюда попадут, когда появятся соответствующие механики.
-      </p>
     </section>
   </main>
   <script src="game.js" defer></script>

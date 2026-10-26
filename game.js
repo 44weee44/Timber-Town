@@ -36,24 +36,20 @@
     { price: 1000, capacity: 50, minutes: 5, bonus: 0.95 }
   ];
 
-  const XP_FOR_LEVEL = Object.freeze({
-    1: 0,
-    2: 60,
-    3: 150,
-    4: 270,
-    5: 420,
-    6: 600,
-    7: 810,
-    8: 1050,
-    9: 1320,
-    10: 1620,
-    11: 1950,
-    12: 2310,
-    13: 2700,
-    14: 3120,
-    15: 3570
-  });
   const MAX_LEVEL = 15;
+
+  // Опыт следующего уровня: ceil(50 × L^1.35), где L — текущий уровень.
+  // Таблица строится один раз при загрузке файла и хранит кумулятивные
+  // значения (сколько опыта нужно всего, чтобы достичь уровня N).
+  const XP_FOR_LEVEL = (() => {
+    const table = { 1: 0 };
+    let total = 0;
+    for (let l = 1; l < MAX_LEVEL; l++) {
+      total += Math.ceil(50 * Math.pow(l, 1.35));
+      table[l + 1] = total;
+    }
+    return Object.freeze(table);
+  })();
 
   const NAMES = [
     'Иван', 'Мария', 'Егор', 'Анна',
@@ -286,12 +282,12 @@
     s.sawmill.machine.queue = Object.fromEntries(
       QUALITY.map(q => [q, num(oldQueue[q])])
     );
-    s.sawmill.machine.isRunning = Boolean(s.sawmill.m.logachine.isRunning);
+    s.sawmill.machine.isRunning = Boolean(s.sawmill.machine.isRunning);
 
-    const queueSchemaVersion = nums(s.sawmill.machine =.queueSchemaVersion, 0 Object);
-    s.sawmill.machine.from.queueSchemaVersion = queueSchemaVersion;
+    const queueSchemaVersion = num(s.sawmill.machine.queueSchemaVersion, 0);
+    s.sawmill.machine.queueSchemaVersion = queueSchemaVersion;
 
-   Entries if (queueSchemaVersion < 2) {
+    if (queueSchemaVersion < 2) {
       const q = s.sawmill.machine.queue;
       const filled = QUALITY.filter(quality => q[quality] > 0);
 
@@ -319,7 +315,7 @@
     }
 
     s.forestStorage = { ...defaults.forestStorage, ...(s.forestStorage || {}) };
-    s.forestStorage(
+    s.forestStorage.logs = Object.fromEntries(
       QUALITY.map(q => [q, num(s.forestStorage.logs?.[q])])
     );
 
@@ -966,7 +962,7 @@
       );
     });
   }
-  
+
   function cloneTemplate(id) {
     const template = $(id);
 
@@ -1258,6 +1254,12 @@
 
       row.querySelectorAll('.axe-icon').forEach(icon => {
         attachImgFallback(icon, FALLBACK_AXE_SVG);
+        if (axe.rarity) {
+          icon.src = axeIconSrc(axe.rarity);
+          icon.alt = '';
+          icon.loading = 'lazy';
+          icon.decoding = 'async';
+        }
       });
 
       row.dataset.rarity = axe.rarity;
@@ -1442,7 +1444,6 @@
       }
     }
 
-    // Станок
     const machine = state.sawmill.machine;
     const machineLocked = machine.isRunning || machineQueueTotal() > 0;
     const machineLeft = $('machine-left');
@@ -2114,7 +2115,6 @@
     notify('Новая территория приобретена.');
   }));
 
-  // Делегирование кликов в карточках работников (profile.html)
   document.addEventListener('click', event => {
     const row = event.target.closest('#profile-crew [data-worker-id]');
     if (!row) return;
@@ -2145,8 +2145,6 @@
     }
   });
 
-  // Станок (sklad.html): живая санитизация количества
-  // и немедленный пересчёт состояния кнопки «Запустить».
   document.addEventListener('input', event => {
     if (event.target.id !== 'machine-amount') return;
 
@@ -2174,10 +2172,6 @@
     render();
   });
 
-  // Станок (sklad.html): выбор качества, «Положить всё», «Очистить».
-  // Пока в sklad.html ещё работает старый мост (#mill-* inputs),
-  // не вмешиваемся — иначе получим двойное переключение.
-  // После шага 2 (удаление моста) эти обработчики станут основными.
   document.addEventListener('click', event => {
     if (isLegacyBridgeActive()) return;
 
