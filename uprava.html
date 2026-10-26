@@ -12,38 +12,23 @@
       visibility: hidden;
     }
 
-    /* Карточка нанятого работника: портрет + имя + внешность */
+    /* Карточка нанятого: портрет и имя. Внешность видна по портрету, отдельной строки нет. */
     #hired-list > li {
       display: grid;
       grid-template-columns: 48px 1fr;
-      grid-template-rows: auto auto;
       column-gap: 12px;
-      row-gap: 4px;
       align-items: center;
       padding: 10px 12px;
     }
 
     #hired-list > li > .worker-portrait {
-      grid-row: 1 / 3;
-      grid-column: 1 / 2;
       width: 48px;
       height: 48px;
       margin: 0;
     }
 
     #hired-list > li > .worker-name {
-      grid-column: 2 / 3;
-      grid-row: 1 / 2;
       margin: 0;
-    }
-
-    #hired-list > li > .worker-skin {
-      grid-column: 2 / 3;
-      grid-row: 2 / 3;
-      margin: 0;
-      font-size: var(--fs-tiny);
-      color: var(--cream-muted);
-      line-height: 1.3;
     }
 
     /* Строки статистики налогов/лицензий */
@@ -201,7 +186,6 @@
       <li data-worker-id="">
         <img class="worker-portrait small" alt="" loading="lazy" decoding="async">
         <p class="worker-name"></p>
-        <p class="worker-skin">Внешность: не указана</p>
       </li>
     </template>
     <ul id="hired-list"></ul>
