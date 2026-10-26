@@ -2,9 +2,50 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b140e">
   <link rel="stylesheet" href="style.css">
   <title>Личное дело — Timber Town</title>
+  <style>
+    /* Портрет скрыт, пока не будет выставлен src. */
+    .worker-portrait:not([src]) {
+      visibility: hidden;
+    }
+
+    /* Старое текстовое описание скина больше не показываем. */
+    .worker-skin {
+      display: none !important;
+    }
+
+    /* Опыт: полоса под уровнем */
+    #profile-crew .exp-bar,
+    #chance-list .exp-bar {
+      margin-top: 2px;
+    }
+
+    /* Портрет в карточке работника */
+    #profile-crew > li > .worker-portrait {
+      align-self: flex-start;
+    }
+    #chance-list > li > .worker-portrait {
+      margin-bottom: 4px;
+    }
+
+    /* Кнопки выбора топора: иконка слева от названия */
+    .axe-choices .equip-axe {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+    }
+
+    /* Telegram ID: спокойная типографика, когда значение отсутствует */
+    #telegram-id-value.muted {
+      font-family: var(--font-ui);
+      font-size: var(--fs-small);
+      color: var(--cream-soft);
+    }
+  </style>
 </head>
 <body data-screen="profile">
   <header id="hud">
@@ -46,8 +87,9 @@
       <a href="#tab-chances" aria-controls="tab-chances">Шансы</a>
       <a href="#tab-crew" aria-controls="tab-crew">Работники</a>
     </nav>
-    <section id="tab-stats">
-      <h2>Статистика</h2>
+
+    <section id="tab-stats" aria-labelledby="tab-stats-title">
+      <h2 id="tab-stats-title">Статистика</h2>
       <p>День <data id="day" value="1">1</data></p>
       <p>Время <time id="profile-time" datetime="07:00">07:00</time> · <span id="profile-period">Рассвет</span></p>
       <p>Часы работы <data id="hours-worked" value="0">0</data></p>
@@ -57,14 +99,21 @@
       <p>Золото <data id="gold" value="0">0</data></p>
       <p id="payback">Окупаемость: продаж ещё нет</p>
       <p id="delivery-track">Доставка: нет</p>
+
+      <div class="telegram-id" id="telegram-id-block">
+        <span class="telegram-id-label">Telegram ID</span>
+        <span class="telegram-id-value muted" id="telegram-id-value">ID доступен при запуске через Telegram</span>
+      </div>
     </section>
-    <section id="tab-chances" hidden>
-      <h2>Шансы</h2>
+
+    <section id="tab-chances" hidden aria-labelledby="tab-chances-title">
+      <h2 id="tab-chances-title">Шансы</h2>
       <p id="chances-empty">Некого считать. Нанять можно в управе.</p>
       <ul id="chance-list"></ul>
     </section>
     <template id="chance-card">
       <li data-worker-id="">
+        <img class="worker-portrait small" alt="" loading="lazy" decoding="async">
         <p class="worker-name"></p>
         <p class="worker-axe"></p>
         <ul class="quality-odds">
@@ -76,16 +125,19 @@
         </ul>
       </li>
     </template>
-    <section id="tab-crew" hidden>
-      <h2>Работники</h2>
+
+    <section id="tab-crew" hidden aria-labelledby="tab-crew-title">
+      <h2 id="tab-crew-title">Работники</h2>
       <p id="profile-crew-empty">Работников нет.</p>
       <ul id="profile-crew"></ul>
     </section>
     <template id="profile-worker">
       <li data-worker-id="">
+        <img class="worker-portrait" alt="" loading="lazy" decoding="async">
         <p class="worker-name"></p>
         <p class="worker-level"></p>
-        <p class="worker-skin"></p>
+        <div class="exp-bar"><div class="exp-bar-fill" style="width:0%"></div></div>
+        <p class="worker-skin" hidden></p>
         <p class="worker-axe">Топор не выдан</p>
         <button type="button" class="change-axe">Сменить топор</button>
         <ul class="axe-choices" hidden></ul>
@@ -98,6 +150,7 @@
         <button type="button" class="equip-axe"></button>
       </li>
     </template>
+
     <button type="button" id="reset-progress">Сбросить прогресс</button>
     <dialog id="reset-step-1" aria-labelledby="reset-1-title">
       <h2 id="reset-1-title">Точно стереть всё?</h2>
@@ -118,5 +171,96 @@
     </dialog>
   </main>
   <script src="game.js" defer></script>
+  <script>
+    (() => {
+      'use strict';
+
+      // Временный мост для отображения портретов и полосы опыта.
+      // После замены game.js эти значения будет вести сам игровой цикл.
+
+      const MAX_LEVEL = 15;
+      const XP_FOR_LEVEL = {
+        1: 0, 2: 60, 3: 150, 4: 270, 5: 420, 6: 600,
+        7: 810, 8: 1050, 9: 1320, 10: 1620,
+        11: 1950, 12: 2310, 13: 2700, 14: 3120, 15: 3570
+      };
+
+      function getState() {
+        try { return window.TimberTown?.getState?.() || null; }
+        catch { return null; }
+      }
+
+      function clampSkin(v) {
+        const n = Math.floor(Number(v));
+        if (!Number.isFinite(n) || n < 1) return 1;
+        return Math.min(4, n);
+      }
+
+      function levelProgress(w) {
+        const lvl = Math.max(1, Math.min(MAX_LEVEL, Math.floor(w.level) || 1));
+        const xp = Math.max(0, Math.floor(w.xp) || 0);
+        if (lvl >= MAX_LEVEL) return { max: true, pct: 100 };
+        const cur = XP_FOR_LEVEL[lvl] || 0;
+        const nxt = XP_FOR_LEVEL[lvl + 1] || cur + 1;
+        const span = Math.max(1, nxt - cur);
+        const into = Math.max(0, Math.min(span, xp - cur));
+        return { max: false, pct: Math.round((into / span) * 100) };
+      }
+
+      function syncPortraitsAndBars() {
+        const state = getState();
+        const workers = state?.sawmill?.workers || [];
+        const byId = new Map(workers.map(w => [String(w.id), w]));
+
+        const selector =
+          '#profile-crew li[data-worker-id], ' +
+          '#chance-list li[data-worker-id]';
+
+        document.querySelectorAll(selector).forEach(li => {
+          const w = byId.get(String(li.dataset.workerId));
+          if (!w) return;
+
+          const img = li.querySelector('.worker-portrait');
+          if (img) {
+            const n = clampSkin(w.skin);
+            const src = `${n}skin.jpeg`;
+            if (img.getAttribute('src') !== src) {
+              img.setAttribute('src', src);
+              img.setAttribute('alt', `Портрет: ${w.name || 'лесоруб'}`);
+            }
+          }
+
+          const fill = li.querySelector('.exp-bar-fill');
+          if (fill) {
+            fill.style.width = levelProgress(w).pct + '%';
+          }
+        });
+      }
+
+      function renderTelegramId() {
+        const el = document.getElementById('telegram-id-value');
+        if (!el) return;
+
+        let id = null;
+        try {
+          id = window.Telegram?.WebApp?.initDataUnsafe?.user?.id ?? null;
+        } catch {
+          id = null;
+        }
+
+        if (id != null && /^\d+$/.test(String(id))) {
+          el.textContent = String(id);
+          el.classList.remove('muted');
+        } else {
+          el.textContent = 'ID доступен при запуске через Telegram';
+          el.classList.add('muted');
+        }
+      }
+
+      syncPortraitsAndBars();
+      renderTelegramId();
+      window.setInterval(syncPortraitsAndBars, 900);
+    })();
+  </script>
 </body>
 </html>

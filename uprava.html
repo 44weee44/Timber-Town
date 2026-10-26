@@ -2,9 +2,95 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b140e">
   <link rel="stylesheet" href="style.css">
   <title>Управа — Timber Town</title>
+  <style>
+    /* Портрет работника скрыт, пока не будет выставлен src. */
+    .worker-portrait:not([src]) {
+      visibility: hidden;
+    }
+
+    /* Текстовое описание скина больше не показываем — есть портрет. */
+    .worker-skin {
+      display: none !important;
+    }
+
+    /* Карточка нанятого работника: портрет + имя */
+    #hired-list > li {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      grid-template-rows: auto auto;
+      column-gap: 12px;
+      row-gap: 4px;
+      align-items: center;
+      padding: 10px 12px;
+    }
+
+    #hired-list > li > .worker-portrait {
+      grid-row: 1 / 3;
+      grid-column: 1 / 2;
+      width: 48px;
+      height: 48px;
+      margin: 0;
+    }
+
+    #hired-list > li > .worker-name {
+      grid-column: 2 / 3;
+      grid-row: 1 / 2;
+      margin: 0;
+    }
+
+    /* Строки статистики налогов/лицензий */
+    #taxes .stat-row,
+    #licenses .stat-row,
+    #delivery-pay .stat-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    #taxes .stat,
+    #licenses .stat,
+    #delivery-pay .stat {
+      flex: 1 1 calc(50% - 4px);
+      min-width: 130px;
+    }
+
+    #taxes .stat-value,
+    #licenses .stat-value,
+    #delivery-pay .stat-value {
+      font-size: 15px;
+    }
+
+    #licenses .stat-value.license-ok {
+      color: var(--moss-light);
+    }
+
+    #licenses .stat-value.license-off {
+      color: var(--cream-soft);
+    }
+
+    #licenses .stat-value.license-warn {
+      color: var(--gold-light);
+    }
+
+    /* Кнопки секций */
+    #taxes button,
+    #licenses button,
+    #hiring button,
+    #delivery-pay button {
+      align-self: flex-start;
+      margin-top: 4px;
+    }
+
+    /* Форма налога: сумма + кнопка в один столбец */
+    #taxes label,
+    #taxes input {
+      width: 100%;
+    }
+  </style>
 </head>
 <body data-screen="uprava">
   <header id="hud">
@@ -43,42 +129,122 @@
     <h1>Управа</h1>
     <img src="The_Board.jpeg" width="1168" height="784" alt="Управа">
     <p>Налог 50$ в день. Сейф для него закрыт. Четыре дня долг копится, на пятый лесопилка встаёт, дальше пеня 10$ в день. На тридцатый день просрочки — конфискация людей, брёвен и досок. Золото и здания остаются.</p>
-    <section id="taxes">
-      <h2>Налог</h2>
-      <p>Долг <data id="tax-debt" value="0">0$</data></p>
-      <p>Дней просрочки <data id="overdue-days" value="0">0</data></p>
-      <p>Пеня всего <data id="tax-penalty" value="0">0$</data></p>
+
+    <section id="taxes" aria-labelledby="taxes-title">
+      <h2 id="taxes-title">Налог</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <span class="stat-label">Долг</span>
+          <data class="stat-value" id="tax-debt" value="0">0$</data>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Дней просрочки</span>
+          <data class="stat-value" id="overdue-days" value="0">0</data>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Пеня всего</span>
+          <data class="stat-value" id="tax-penalty" value="0">0$</data>
+        </div>
+      </div>
       <label for="tax-amount">Сумма</label>
       <input id="tax-amount" type="number" min="1" step="1" value="0" inputmode="numeric">
       <button type="button" id="pay-tax" disabled>Оплатить налог</button>
     </section>
-    <section id="licenses">
-      <h2>Лицензии</h2>
-      <p id="chop-license">Рубка активна до дня <data id="chop-until" value="20">20</data></p>
+
+    <section id="licenses" aria-labelledby="licenses-title">
+      <h2 id="licenses-title">Лицензии</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <span class="stat-label">Рубка</span>
+          <data class="stat-value" id="chop-until" value="20">до дня 20</data>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Торговая</span>
+          <data class="stat-value" id="trade-until" value="0">не выдана</data>
+        </div>
+      </div>
+      <p id="chop-license">Рубка активна до дня <data id="chop-until-text" value="20">20</data></p>
       <button type="button" id="renew-chop">Продлить рубку</button>
       <p id="trade-license">Торговая лицензия: ещё не выдана</p>
       <button type="button" id="buy-trade-license">Купить торговую лицензию · 500$</button>
     </section>
-    <section id="hiring">
-      <h2>Найм</h2>
-      <p>Сейчас <data id="worker-count" value="0">0</data> из <data id="worker-cap" value="10">10</data>. Первый и второй — бесплатно, третий 200$, каждый следующий ещё на 200$ дороже. Имя и скин закрепляются навсегда.</p>
+
+    <section id="hiring" aria-labelledby="hiring-title">
+      <h2 id="hiring-title">Найм</h2>
+      <div class="stat-row">
+        <div class="stat">
+          <span class="stat-label">Сейчас работников</span>
+          <data class="stat-value" id="worker-count" value="0">0</data>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Вместимость</span>
+          <data class="stat-value" id="worker-cap" value="10">10</data>
+        </div>
+      </div>
+      <p>Первый и второй — бесплатно, третий 200$, каждый следующий ещё на 200$ дороже. Имя закрепляется навсегда.</p>
       <button type="button" id="hire">Нанять бесплатно</button>
     </section>
-    <section id="delivery-pay">
-      <h2>Доставка</h2>
+
+    <section id="delivery-pay" aria-labelledby="delivery-title">
+      <h2 id="delivery-title">Доставка</h2>
       <p id="report-plain">Докладная: нет</p>
       <p id="report-sealed">Докладная с печатью: нет</p>
       <p>Пошлина 50$ и ещё 1$ за доску. Доски списываются, путь занимает 30 игровых минут, прибыль падает в сейф лесопилки.</p>
       <button type="button" id="pay-delivery" disabled>Оплатить доставку</button>
     </section>
+
     <template id="hired-worker">
       <li data-worker-id="">
+        <img class="worker-portrait small" alt="" loading="lazy" decoding="async">
         <p class="worker-name"></p>
-        <p class="worker-skin"></p>
+        <p class="worker-skin" hidden></p>
       </li>
     </template>
     <ul id="hired-list"></ul>
   </main>
   <script src="game.js" defer></script>
+  <script>
+    (() => {
+      'use strict';
+
+      // Временный мост: подставляет портреты нанятым работникам.
+      // После замены game.js эти же данные будет вести игровой цикл.
+
+      function getState() {
+        try { return window.TimberTown?.getState?.() || null; }
+        catch { return null; }
+      }
+
+      function clampSkin(v) {
+        const n = Math.floor(Number(v));
+        if (!Number.isFinite(n) || n < 1) return 1;
+        return Math.min(4, n);
+      }
+
+      function syncPortraits() {
+        const state = getState();
+        const workers = state?.sawmill?.workers || [];
+        const byId = new Map(workers.map(w => [String(w.id), w]));
+
+        document
+          .querySelectorAll('#hired-list li[data-worker-id]')
+          .forEach(li => {
+            const w = byId.get(String(li.dataset.workerId));
+            if (!w) return;
+            const img = li.querySelector('.worker-portrait');
+            if (!img) return;
+            const n = clampSkin(w.skin);
+            const src = `${n}skin.jpeg`;
+            if (img.getAttribute('src') !== src) {
+              img.setAttribute('src', src);
+              img.setAttribute('alt', `Портрет: ${w.name || 'лесоруб'}`);
+            }
+          });
+      }
+
+      syncPortraits();
+      window.setInterval(syncPortraits, 900);
+    })();
+  </script>
 </body>
 </html>

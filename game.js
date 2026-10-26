@@ -13,6 +13,13 @@
     mythic: { name: 'Мифический', price: 4000, max: 1000, wearEvery: 10, rank: 3 }
   };
 
+  const AXE_ICON = {
+    common: '1axeskin.jpeg',
+    rare: '2axeskin.jpeg',
+    legendary: '3axeskin.jpeg',
+    mythic: '4axeskin.jpeg'
+  };
+
   const MACHINE = [
     null,
     { price: 0, capacity: 10, minutes: 10, bonus: 0.01 },
@@ -21,6 +28,26 @@
     { price: 750, capacity: 40, minutes: 7, bonus: 0.75 },
     { price: 1000, capacity: 50, minutes: 5, bonus: 0.95 }
   ];
+
+  // Единая таблица накопительного опыта для уровней 1–15.
+  const XP_FOR_LEVEL = Object.freeze({
+    1: 0,
+    2: 60,
+    3: 150,
+    4: 270,
+    5: 420,
+    6: 600,
+    7: 810,
+    8: 1050,
+    9: 1320,
+    10: 1620,
+    11: 1950,
+    12: 2310,
+    13: 2700,
+    14: 3120,
+    15: 3570
+  });
+  const MAX_LEVEL = 15;
 
   const NAMES = [
     'Иван', 'Мария', 'Егор', 'Анна',
@@ -62,6 +89,37 @@
 
   // Не меняй ключ: он используется существующими сохранениями.
   const STORAGE_KEY = `timber-town:${getTelegramId()}:v${VERSION}`;
+
+  function axeIconSrc(rarity) {
+    return AXE_ICON[rarity] || '';
+  }
+
+  function xpForLevel(level) {
+    return XP_FOR_LEVEL[level] || 0;
+  }
+
+  function expProgress(worker) {
+    const lvl = clamp(num(worker.level, 1), 1, MAX_LEVEL);
+    const xp = num(worker.xp, 0);
+
+    if (lvl >= MAX_LEVEL) {
+      return { max: true, into: 0, span: 0, pct: 100, text: 'Максимальный уровень' };
+    }
+
+    const cur = xpForLevel(lvl);
+    const nxt = xpForLevel(lvl + 1);
+    const span = Math.max(1, nxt - cur);
+    const into = clamp(xp - cur, 0, span);
+    const pct = Math.round((into / span) * 100);
+
+    return {
+      max: false,
+      into,
+      span,
+      pct,
+      text: `Уровень ${lvl} · опыт ${into}/${span} до следующего`
+    };
+  }
 
   function createState() {
     return {
@@ -109,6 +167,17 @@
         logsAll: 0,
         hoursWorked: 0,
         spent: 0
+      },
+
+      // Отдельный склад леса: не смешивается с sawmill.logs.
+      forestStorage: {
+        logs: {
+          rotten: 0,
+          normal: 0,
+          good: 0,
+          excellent: 0,
+          perfect: 0
+        }
       },
 
       licenses: {
@@ -173,12 +242,28 @@
           .map(w => {
             const rarity = AXES[w.axe?.rarity] ? w.axe.rarity : null;
 
+            // Скины: 1–4. Старые сохранения могли иметь 5 — плавно
+            // нормализуем в 4, чтобы не ломать рендеринг.
+            const skin = clamp(num(w.skin, 1), 1, 4);
+
+            // Уровень/опыт: не понижаем уровень, xp поднимаем
+            // до порога текущего уровня и промоутим по новым порогам.
+            let level = clamp(num(w.level, 1), 1, MAX_LEVEL);
+            let xp = num(w.xp, 0);
+
+            const minXp = xpForLevel(level);
+            if (xp < minXp) xp = minXp;
+
+            while (level < MAX_LEVEL && xp >= xpForLevel(level + 1)) {
+              level++;
+            }
+
             return {
               id: w.id,
               name: String(w.name || 'Лесоруб').slice(0, 32),
-              skin: clamp(num(w.skin, 1), 1, 5),
-              level: clamp(num(w.level, 1), 1, 15),
-              xp: num(w.xp),
+              skin,
+              level,
+              xp,
               hireCost: num(w.hireCost),
               axe: rarity
                 ? {
@@ -228,6 +313,15 @@
     );
 
     s.sawmill.machine.isRunning = Boolean(s.sawmill.machine.isRunning);
+
+    // Отдельный склад леса
+    s.forestStorage = {
+      ...defaults.forestStorage,
+      ...(s.forestStorage || {})
+    };
+    s.forestStorage.logs = Object.fromEntries(
+      QUALITY.map(q => [q, num(s.forestStorage.logs?.[q])])
+    );
 
     s.licenses = {
       ...defaults.licenses,
@@ -323,8 +417,6 @@
   let timeRemainderMs = 0;
   let suppressNotifications = false;
 
-  // UI-состояние: у каких работников раскрыт список топоров в профиле.
-  // Не сбрасывается между рендерами, чтобы панель не захлопывалась каждую секунду.
   const openAxeChoosers = new Set();
 
   function saveState() {
@@ -339,8 +431,6 @@
   }
 
   function notify(message, type = 'good') {
-    // Во время длинного догона времени важные уведомления (error) показываем,
-    // обычные (good) подавляем, чтобы не завалить интерфейс за один тик.
     if (suppressNotifications && type !== 'error') {
       console.info(`[Timber Town/${type}] ${message}`);
       return;
@@ -361,7 +451,12 @@
     text.className = 'toast-text';
     text.textContent = String(message);
 
-    item.append(text);
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'toast-close';
+    close.textContent = 'Закрыть';
+
+    item.append(text, close);
     host.append(item);
 
     window.setTimeout(() => item.remove(), 4500);
@@ -411,7 +506,6 @@
     state.money -= amount;
     state.sawmill.spent += amount;
 
-    // Деньги, потраченные в течение надзорного часа, больше не сгорают.
     if (state.sawmill.safeExposure) {
       state.sawmill.safeExposure.amount = Math.max(
         0,
@@ -466,10 +560,8 @@
       Math.max(0, worker.level - 1) * 0.025 + rank * 0.06
     );
 
-    // Пять качеств, сумма базовых вероятностей — 100%.
     const weights = [80, 11.9, 5, 3, 0.1];
 
-    // Улучшение постепенно переносит вероятность от гнилой древесины.
     const shift = Math.min(weights[0] - 1, boost * 60);
     weights[0] -= shift;
     weights[1] += shift * 0.40;
@@ -496,12 +588,6 @@
     }
 
     return 'perfect';
-  }
-
-  function xpNeeded(level) {
-    return level >= 10
-      ? 900 + (level - 10) * 50
-      : 50 + (level - 1) * 100;
   }
 
   function chop(worker) {
@@ -533,8 +619,8 @@
     worker.xp += 3;
 
     while (
-      worker.level < 15 &&
-      worker.xp >= xpNeeded(worker.level)
+      worker.level < MAX_LEVEL &&
+      worker.xp >= xpForLevel(worker.level + 1)
     ) {
       worker.level++;
       notify(`${worker.name} достиг ${worker.level} уровня!`);
@@ -641,8 +727,6 @@
   }
 
   function dayTick() {
-    // Сначала проверяем долг за ПРОШЕДШИЕ дни (налог за текущий ещё
-    // не начислен). Иначе неоплаченный налог набегал бы мгновенно.
     if (state.taxDebt + state.taxPenalty > 0) {
       state.overdueDays++;
 
@@ -669,7 +753,6 @@
     if (state.overdueDays >= 30) {
       state.sawmill.workers.forEach(worker => {
         if (worker.axe) {
-          // Используем общий метод, чтобы избежать дубликатов стеков.
           addAxeToInventory(worker.axe.rarity, worker.axe.durability);
         }
       });
@@ -741,8 +824,6 @@
     const fullMinutes = Math.floor(timeRemainderMs / GAME_MINUTE_MS);
     timeRemainderMs %= GAME_MINUTE_MS;
 
-    // Если игрок вернулся после долгого отсутствия, не заваливаем
-    // его сотнями уведомлений за один проход.
     suppressNotifications = fullMinutes > 10;
 
     try {
@@ -979,6 +1060,17 @@
     }
   }
 
+  function setWorkerPortrait(img, worker, small = false) {
+    if (!img || !worker) return;
+    const skinIdx = clamp(num(worker.skin, 1), 1, 4);
+    const src = `${skinIdx}skin.jpeg`;
+    if (img.getAttribute('src') !== src) {
+      img.setAttribute('src', src);
+    }
+    img.alt = `Портрет: ${worker.name || 'лесоруб'}`;
+    if (small) img.classList.add('small');
+  }
+
   function renderInventory() {
     const list = $('inventory-list');
     if (!list) return;
@@ -989,175 +1081,215 @@
     if (empty) empty.hidden = state.inventory.axes.length > 0;
 
     state.inventory.axes.forEach(axe => {
-      const item = cloneTemplate('axe-stack') || document.createElement('li');
-
+      const item = document.createElement('li');
       item.dataset.rarity = axe.rarity;
       item.dataset.durability = String(axe.durability);
 
-      const name = item.querySelector('.axe-name');
-      const count = item.querySelector('.axe-count');
-      const durability = item.querySelector('.axe-durability');
+      const icon = document.createElement('img');
+      icon.className = 'axe-icon';
+      icon.src = axeIconSrc(axe.rarity);
+      icon.alt = '';
+      icon.loading = 'lazy';
+      icon.decoding = 'async';
 
-      if (name) name.textContent = AXES[axe.rarity].name;
-      if (count) count.textContent = axe.count > 1 ? `×${axe.count}` : '';
-      if (durability) {
-        durability.textContent =
-          `${axe.durability}/${AXES[axe.rarity].max}`;
-      }
+      const name = document.createElement('span');
+      name.className = 'axe-name';
+      name.textContent = AXES[axe.rarity].name;
 
-      if (!name) {
-        item.textContent =
-          `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}` +
-          (axe.count > 1 ? ` ×${axe.count}` : '');
-      }
+      const count = document.createElement('span');
+      count.className = 'axe-count';
+      if (axe.count > 1) count.textContent = `×${axe.count}`;
 
+      const dur = document.createElement('span');
+      dur.className = 'axe-durability';
+      dur.textContent = `${axe.durability}/${AXES[axe.rarity].max}`;
+
+      item.append(icon, name, count, dur);
       list.append(item);
     });
   }
 
-  function renderWorkers() {
+  function renderCrewList() {
     const crewList = $('crew-list');
+    if (!crewList) return;
 
-    if (crewList) {
-      crewList.replaceChildren();
+    crewList.replaceChildren();
 
-      state.sawmill.workers.forEach(worker => {
-        const row = cloneTemplate('worker-row');
-        if (!row) return;
+    state.sawmill.workers.forEach(worker => {
+      const row = cloneTemplate('worker-row');
+      if (!row) return;
 
-        row.dataset.workerId = worker.id;
+      row.dataset.workerId = worker.id;
 
-        const name = row.querySelector('.worker-name');
-        const level = row.querySelector('.worker-level');
-        const skin = row.querySelector('.worker-skin');
-        const status = row.querySelector('.worker-status');
-        const carry = row.querySelector('.worker-carry');
+      const img = row.querySelector('.worker-portrait');
+      if (img) setWorkerPortrait(img, worker);
 
-        if (name) name.textContent = worker.name;
-        if (level) level.textContent =
-          `Уровень ${worker.level} · опыт ${worker.xp}/${xpNeeded(worker.level)}`;
-        if (skin) skin.textContent = `Внешность: ${worker.skin}`;
+      const name = row.querySelector('.worker-name');
+      const level = row.querySelector('.worker-level');
+      const status = row.querySelector('.worker-status');
+      const carry = row.querySelector('.worker-carry');
 
-        if (status) {
-          status.textContent = worker.axe && worker.axe.durability > 0 && worker.isWorking
-            ? 'Работает'
-            : worker.axe
-              ? 'Не работает — проверьте состояние'
-              : 'Ожидает топор';
+      if (name) name.textContent = worker.name;
+      if (level) level.textContent = expProgress(worker).text;
+
+      if (status) {
+        status.textContent = worker.axe && worker.axe.durability > 0 && worker.isWorking
+          ? 'Работает'
+          : worker.axe
+            ? 'Не работает — проверьте состояние'
+            : 'Ожидает топор';
+      }
+
+      if (carry) {
+        if (worker.axe) {
+          const maxDur = AXES[worker.axe.rarity].max;
+          carry.max = maxDur;
+          carry.value = worker.axe.durability;
+          carry.setAttribute(
+            'aria-label',
+            `Прочность топора ${worker.axe.durability} из ${maxDur}`
+          );
+        } else {
+          carry.max = 4;
+          carry.value = 0;
+          carry.setAttribute('aria-label', 'Нет топора');
         }
+      }
 
-        if (carry) {
-          if (worker.axe) {
-            const maxDur = AXES[worker.axe.rarity].max;
-            carry.max = maxDur;
-            carry.value = worker.axe.durability;
-            carry.setAttribute(
-              'aria-label',
-              `Прочность топора ${worker.axe.durability} из ${maxDur}`
-            );
-          } else {
-            carry.max = 4;
-            carry.value = 0;
-            carry.setAttribute('aria-label', 'Нет топора');
-          }
-        }
+      crewList.append(row);
+    });
 
-        crewList.append(row);
-      });
+    const empty = $('crew-empty');
+    if (empty) empty.hidden = state.sawmill.workers.length > 0;
+  }
 
-      const empty = $('crew-empty');
-      if (empty) empty.hidden = state.sawmill.workers.length > 0;
-    }
-
+  function renderHiredList() {
     const hiredList = $('hired-list');
+    if (!hiredList) return;
 
-    if (hiredList) {
-      hiredList.replaceChildren();
+    hiredList.replaceChildren();
 
-      state.sawmill.workers.forEach(worker => {
-        const row = cloneTemplate('hired-worker');
-        if (!row) return;
+    state.sawmill.workers.forEach(worker => {
+      const row = cloneTemplate('hired-worker');
+      if (!row) return;
 
-        row.dataset.workerId = worker.id;
+      row.dataset.workerId = worker.id;
 
-        const name = row.querySelector('.worker-name');
-        const skin = row.querySelector('.worker-skin');
+      const img = row.querySelector('.worker-portrait');
+      if (img) setWorkerPortrait(img, worker, true);
 
-        if (name) name.textContent = worker.name;
-        if (skin) skin.textContent = `Внешность: ${worker.skin}`;
+      const name = row.querySelector('.worker-name');
+      if (name) name.textContent = worker.name;
 
-        hiredList.append(row);
-      });
-    }
+      const skin = row.querySelector('.worker-skin');
+      if (skin) {
+        skin.hidden = true;
+        skin.textContent = '';
+      }
 
+      hiredList.append(row);
+    });
+  }
+
+  function renderProfileCrew() {
     const profileCrew = $('profile-crew');
+    if (!profileCrew) return;
 
-    if (profileCrew) {
-      profileCrew.replaceChildren();
+    profileCrew.replaceChildren();
 
-      state.sawmill.workers.forEach(worker => {
-        const row = cloneTemplate('profile-worker');
-        if (!row) return;
+    state.sawmill.workers.forEach(worker => {
+      const row = cloneTemplate('profile-worker');
+      if (!row) return;
 
-        row.dataset.workerId = worker.id;
+      row.dataset.workerId = worker.id;
 
-        const name = row.querySelector('.worker-name');
-        const level = row.querySelector('.worker-level');
-        const skin = row.querySelector('.worker-skin');
-        const axeText = row.querySelector('.worker-axe');
-        const unequip = row.querySelector('.unequip-axe');
-        const choices = row.querySelector('.axe-choices');
+      const img = row.querySelector('.worker-portrait');
+      if (img) setWorkerPortrait(img, worker);
 
-        if (name) name.textContent = worker.name;
-        if (level) {
-          level.textContent =
-            `Уровень ${worker.level} · опыт ${worker.xp}/${xpNeeded(worker.level)}`;
+      const name = row.querySelector('.worker-name');
+      const level = row.querySelector('.worker-level');
+      const fill = row.querySelector('.exp-bar-fill');
+      const axeText = row.querySelector('.worker-axe');
+      const unequip = row.querySelector('.unequip-axe');
+      const choices = row.querySelector('.axe-choices');
+
+      if (name) name.textContent = worker.name;
+
+      const prog = expProgress(worker);
+      if (level) {
+        level.textContent = prog.text;
+        if (prog.max) level.classList.add('max');
+        else level.classList.remove('max');
+      }
+      if (fill) fill.style.width = prog.pct + '%';
+
+      if (axeText) {
+        axeText.replaceChildren();
+
+        if (worker.axe) {
+          const icon = document.createElement('img');
+          icon.className = 'axe-icon small';
+          icon.src = axeIconSrc(worker.axe.rarity);
+          icon.alt = '';
+          icon.loading = 'lazy';
+          icon.decoding = 'async';
+
+          axeText.append(
+            icon,
+            ` ${AXES[worker.axe.rarity].name} · прочность ${worker.axe.durability}/${AXES[worker.axe.rarity].max}`
+          );
+        } else {
+          axeText.textContent = 'Топор не выдан';
         }
-        if (skin) skin.textContent = `Внешность: ${worker.skin}`;
+      }
 
-        if (axeText) {
-          axeText.textContent = worker.axe
-            ? `${AXES[worker.axe.rarity].name} · прочность ${worker.axe.durability}/${AXES[worker.axe.rarity].max}`
-            : 'Топор не выдан';
-        }
+      if (unequip) unequip.hidden = !worker.axe;
 
-        if (unequip) unequip.hidden = !worker.axe;
+      if (choices) {
+        choices.hidden = !openAxeChoosers.has(worker.id);
+        choices.replaceChildren();
 
-        if (choices) {
-          // Восстанавливаем раскрытие панели между рендерами.
-          choices.hidden = !openAxeChoosers.has(worker.id);
-          choices.replaceChildren();
+        state.inventory.axes.forEach(axe => {
+          const choice = cloneTemplate('axe-choice');
+          const button = choice?.querySelector('.equip-axe');
 
-          state.inventory.axes.forEach(axe => {
-            const choice = cloneTemplate('axe-choice');
-            const button = choice?.querySelector('.equip-axe');
+          if (!choice || !button) return;
 
-            if (!choice || !button) return;
+          button.replaceChildren();
 
-            button.textContent =
-              `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}` +
-              (axe.count > 1 ? ` ×${axe.count}` : '');
+          const icon = document.createElement('img');
+          icon.className = 'axe-icon small';
+          icon.src = axeIconSrc(axe.rarity);
+          icon.alt = '';
+          icon.loading = 'lazy';
+          icon.decoding = 'async';
 
-            button.addEventListener('click', () => {
-              equipAxe(worker.id, axe.rarity, axe.durability);
-            });
+          const label = document.createElement('span');
+          label.textContent =
+            `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}` +
+            (axe.count > 1 ? ` ×${axe.count}` : '');
 
-            choices.append(choice);
+          button.append(icon, label);
+
+          button.addEventListener('click', () => {
+            equipAxe(worker.id, axe.rarity, axe.durability);
           });
 
-          if (!state.inventory.axes.length) {
-            const empty = document.createElement('li');
-            empty.textContent = 'В рюкзаке нет топоров.';
-            choices.append(empty);
-          }
+          choices.append(choice);
+        });
+
+        if (!state.inventory.axes.length) {
+          const empty = document.createElement('li');
+          empty.textContent = 'В рюкзаке нет топоров.';
+          choices.append(empty);
         }
+      }
 
-        profileCrew.append(row);
-      });
+      profileCrew.append(row);
+    });
 
-      const empty = $('profile-crew-empty');
-      if (empty) empty.hidden = state.sawmill.workers.length > 0;
-    }
+    const empty = $('profile-crew-empty');
+    if (empty) empty.hidden = state.sawmill.workers.length > 0;
   }
 
   function renderBrokenAxes() {
@@ -1234,6 +1366,9 @@
 
       card.dataset.workerId = worker.id;
 
+      const img = card.querySelector('.worker-portrait');
+      if (img) setWorkerPortrait(img, worker, true);
+
       const name = card.querySelector('.worker-name');
       const axe = card.querySelector('.worker-axe');
 
@@ -1261,6 +1396,33 @@
 
     const empty = $('chances-empty');
     if (empty) empty.hidden = state.sawmill.workers.length > 0;
+  }
+
+  function renderForestStorage() {
+    const logs = state.forestStorage?.logs || {};
+    const total = sum(QUALITY.map(q => logs[q] || 0));
+
+    setText('forest-storage-total', total.toLocaleString('ru-RU'));
+    QUALITY.forEach(q => setText(`forest-logs-${q}`, logs[q] || 0));
+
+    const empty = $('forest-storage-empty');
+    if (empty) empty.hidden = total > 0;
+  }
+
+  function renderTelegramId() {
+    const el = $('telegram-id-value');
+    if (!el) return;
+
+    const u = telegramUser();
+    const id = u?.id;
+
+    if (id != null && /^\d+$/.test(String(id))) {
+      el.textContent = String(id);
+      el.classList.remove('muted');
+    } else {
+      el.textContent = 'ID доступен при запуске через Telegram';
+      el.classList.add('muted');
+    }
   }
 
   function render() {
@@ -1306,6 +1468,13 @@
     setText('logs-all', state.sawmill.logsAll);
     setText('spent', `${state.sawmill.spent.toLocaleString('ru-RU')} $`);
 
+    // Индикатор низкой прочности станка (master.html)
+    const durWrap = $('machine-durability-wrap');
+    if (durWrap) {
+      durWrap.classList.toggle('is-low', state.sawmill.machine.durability < 30);
+    }
+
+    // Период суток на карте
     const periodElements = {
       dawn: 'map-dawn',
       day: 'map-day',
@@ -1318,6 +1487,7 @@
       if (element) element.hidden = period !== getPeriod();
     });
 
+    // Сейф
     const exposure = state.sawmill.safeExposure;
     const safeWatch = $('safe-watch');
 
@@ -1338,6 +1508,7 @@
       }
     }
 
+    // Станок
     const machine = state.sawmill.machine;
     const machineLeft = $('machine-left');
     const machineState = $('machine-state');
@@ -1407,6 +1578,7 @@
       }
     }
 
+    // Зоны
     document.querySelectorAll('[data-zone]').forEach(button => {
       const zone = Number(button.dataset.zone);
       const owned = zone <= state.sawmill.zones;
@@ -1419,29 +1591,48 @@
       );
     });
 
-    // Лицензия на рубку: показываем актуальное состояние.
+    // Лицензии
     const chopLicense = $('chop-license');
+    const chopActive =
+      state.licenses.chopping.active &&
+      state.day <= state.licenses.chopping.expiresDay;
 
     if (chopLicense) {
-      const chopActive =
-        state.licenses.chopping.active &&
-        state.day <= state.licenses.chopping.expiresDay;
-
       chopLicense.textContent = chopActive
         ? `Рубка активна до дня ${state.licenses.chopping.expiresDay}`
         : 'Рубка остановлена: лицензия истекла.';
     }
 
     const tradeLabel = $('trade-license');
+    const tradeActive =
+      state.licenses.trade.active &&
+      state.day <= state.licenses.trade.expiresDay;
 
     if (tradeLabel) {
-      tradeLabel.textContent =
-        state.licenses.trade.active &&
-        state.day <= state.licenses.trade.expiresDay
-          ? `Торговая лицензия действует до дня ${state.licenses.trade.expiresDay}`
-          : 'Торговая лицензия: не активна';
+      tradeLabel.textContent = tradeActive
+        ? `Торговая лицензия действует до дня ${state.licenses.trade.expiresDay}`
+        : 'Торговая лицензия: не активна';
     }
 
+    const chopUntilEl = $('chop-until');
+    if (chopUntilEl) {
+      chopUntilEl.textContent = chopActive
+        ? `до дня ${state.licenses.chopping.expiresDay}`
+        : 'истекла';
+      chopUntilEl.className = 'stat-value ' +
+        (chopActive ? 'license-ok' : 'license-warn');
+    }
+
+    const tradeUntilEl = $('trade-until');
+    if (tradeUntilEl) {
+      tradeUntilEl.textContent = tradeActive
+        ? `до дня ${state.licenses.trade.expiresDay}`
+        : 'не выдана';
+      tradeUntilEl.className = 'stat-value ' +
+        (tradeActive ? 'license-ok' : 'license-off');
+    }
+
+    // Докладные
     const reportPlain = $('report-plain');
     const reportSealed = $('report-sealed');
     const reportStatus = $('report-status');
@@ -1466,7 +1657,7 @@
           : `Докладная: ${state.report.planks} досок · ${state.report.price}$ за доску`;
     }
 
-    // Статус на странице литейной.
+    // Литейная
     const stampStatus = $('stamp-status');
 
     if (stampStatus) {
@@ -1476,14 +1667,12 @@
       } else if (state.report.sealed) {
         stampStatus.textContent =
           `Докладная с печатью на ${state.report.planks} досок. Осталось оплатить доставку в управе.`;
+      } else if (tradeActive) {
+        stampStatus.textContent =
+          `Докладная на ${state.report.planks} досок. Печать доступна.`;
       } else {
-        const tradeActive =
-          state.licenses.trade.active &&
-          state.day <= state.licenses.trade.expiresDay;
-
-        stampStatus.textContent = tradeActive
-          ? `Докладная на ${state.report.planks} досок. Печать доступна.`
-          : `Докладная на ${state.report.planks} досок. Нужна торговая лицензия.`;
+        stampStatus.textContent =
+          `Докладная на ${state.report.planks} досок. Нужна торговая лицензия.`;
       }
     }
 
@@ -1492,10 +1681,10 @@
     if (stampButton) {
       stampButton.disabled = !state.report ||
         state.report.sealed ||
-        !state.licenses.trade.active ||
-        state.day > state.licenses.trade.expiresDay;
+        !tradeActive;
     }
 
+    // Доставка
     const deliveryButton = $('pay-delivery');
 
     if (deliveryButton) {
@@ -1510,7 +1699,7 @@
         : 'Доставка: нет';
     }
 
-    // Окупаемость: процент выручки от затрат с обоими числами.
+    // Окупаемость
     const payback = $('payback');
 
     if (payback) {
@@ -1529,6 +1718,7 @@
       }
     }
 
+    // Кнопки действий
     const sellButton = $('sell-planks');
 
     if (sellButton) {
@@ -1544,17 +1734,13 @@
     const renewChop = $('renew-chop');
 
     if (renewChop) {
-      renewChop.disabled =
-        state.licenses.chopping.active &&
-        state.day <= state.licenses.chopping.expiresDay;
+      renewChop.disabled = chopActive;
     }
 
     const buyTrade = $('buy-trade-license');
 
     if (buyTrade) {
-      buyTrade.disabled =
-        state.licenses.trade.active &&
-        state.day <= state.licenses.trade.expiresDay;
+      buyTrade.disabled = tradeActive;
     }
 
     const hireButton = $('hire');
@@ -1575,10 +1761,15 @@
       }
     }
 
+    // Списки
     renderInventory();
-    renderWorkers();
+    renderCrewList();
+    renderHiredList();
+    renderProfileCrew();
     renderBrokenAxes();
     renderChances();
+    renderForestStorage();
+    renderTelegramId();
   }
 
   function bind(id, handler) {
@@ -1589,7 +1780,6 @@
   bind('open-inventory', () => $('inventory')?.showModal?.());
   bind('close-inventory', () => $('inventory')?.close?.());
 
-  // Уведомления можно закрыть вручную.
   bind('toasts', event => {
     const close = event.target.closest('.toast-close');
     if (close) close.closest('.toast')?.remove();
@@ -1608,8 +1798,6 @@
       return false;
     }
 
-    // Первые два работника бесплатны; третий стоит 200$,
-    // четвёртый — 400$ и далее по той же схеме.
     const cost = workers.length < 2 ? 0 : (workers.length - 1) * 200;
 
     if (cost > 0 && !spend(cost)) return false;
@@ -1617,7 +1805,7 @@
     workers.push({
       id: uid(),
       name: NAMES[Math.floor(Math.random() * NAMES.length)],
-      skin: 1 + Math.floor(Math.random() * 5),
+      skin: 1 + Math.floor(Math.random() * 4),
       level: 1,
       xp: 0,
       hireCost: cost,
@@ -1664,8 +1852,6 @@
     state.money -= amount;
     state.sawmill.safeMoney += amount;
 
-    // Возвращённые в сейф деньги больше не находятся "под надзором"
-    // и не должны сгорать через игровой час.
     if (state.sawmill.safeExposure) {
       state.sawmill.safeExposure.amount = Math.max(
         0,
@@ -1762,14 +1948,12 @@
       return false;
     }
 
-    // При нажатии во время работы сохраняем очередь и прогресс.
     if (machine.isRunning) {
       machine.isRunning = false;
       notify('Станок приостановлен. Прогресс сохранён.');
       return;
     }
 
-    // Если очередь уже существует, возобновляем её без потери брёвен.
     if (machineQueueTotal() > 0) {
       machine.isRunning = true;
       machine.remaining = Math.max(1, machine.remaining);
@@ -1791,9 +1975,21 @@
       total += amount;
     });
 
-    if (total < 1 || total > MACHINE[machine.level].capacity) {
+    const capacity = MACHINE[machine.level].capacity;
+
+    if (total < 1 || total > capacity) {
       notify(
-        `Выберите от 1 до ${MACHINE[machine.level].capacity} брёвен.`,
+        `Выберите от 1 до ${capacity} брёвен.`,
+        'error'
+      );
+      return false;
+    }
+
+    const filled = QUALITY.filter(q => queue[q] > 0);
+
+    if (filled.length > 1) {
+      notify(
+        'В одной партии может быть только одно качество брёвен.',
         'error'
       );
       return false;
@@ -1956,11 +2152,13 @@
     notify('Новая территория приобретена.');
   }));
 
-  bind('profile-crew', event => {
-    const row = event.target.closest('[data-worker-id]');
+  // Делегирование кликов в карточках работников (profile.html)
+  document.addEventListener('click', event => {
+    const row = event.target.closest('#profile-crew [data-worker-id]');
     if (!row) return;
 
     const workerId = row.dataset.workerId;
+    if (!workerId) return;
 
     if (event.target.closest('.fire-worker')) {
       selectedWorkerId = workerId;
@@ -1974,8 +2172,6 @@
     }
 
     if (event.target.closest('.change-axe')) {
-      // Сохраняем раскрытие в Set, чтобы рендер через 1 секунду
-      // не закрыл панель снова.
       if (openAxeChoosers.has(workerId)) {
         openAxeChoosers.delete(workerId);
       } else {
@@ -1999,7 +2195,6 @@
     $('fire-confirm')?.close?.();
   });
 
-  // Вкладки профиля.
   function renderProfileTab() {
     const hash = window.location.hash;
     const selected = ['#tab-chances', '#tab-crew'].includes(hash)
@@ -2014,7 +2209,6 @@
 
   window.addEventListener('hashchange', renderProfileTab);
 
-  // Двойное подтверждение сброса.
   bind('reset-progress', () => $('reset-step-1')?.showModal?.());
   bind('reset-cancel-1', () => $('reset-step-1')?.close?.());
 
@@ -2058,7 +2252,6 @@
 
   initialize();
 
-  // Игровое время продолжает идти, пока игра открыта.
   window.setInterval(() => {
     const now = Date.now();
     const elapsed = Math.max(0, now - lastTick);

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b140e">
+  <link rel="stylesheet" href="style.css">
+  <title>Склад леса — Timber Town</title>
+</head>
+<body data-screen="sklad-lesa">
+  <header id="hud">
+    <p id="wallet">Кошелёк <data id="money" value="1000">1 000$</data></p>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <a href="profile.html" id="open-profile">Профиль</a>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+  </header>
+  <div id="toasts" aria-live="polite"></div>
+  <template id="toast-template">
+    <article class="toast" data-type="good">
+      <p class="toast-text"></p>
+      <button type="button" class="toast-close">Закрыть</button>
+    </article>
+  </template>
+  <div id="processing" hidden role="alertdialog" aria-modal="true" aria-labelledby="processing-title">
+    <p id="processing-title">Обработка...</p>
+    <p id="processing-action"></p>
+    <p id="processing-warning">НЕ ВЫХОДИТЕ ИЗ ИГРЫ, ПОКА ИДЁТ ОБРАБОТКА, ИНАЧЕ ДЕЙСТВИЕ НЕ СОХРАНИТСЯ</p>
+  </div>
+  <dialog id="inventory" aria-labelledby="inventory-title">
+    <h2 id="inventory-title">Рюкзак</h2>
+    <p id="inventory-empty">Пусто. Топоры продают в торговом центре.</p>
+    <ul id="inventory-list"></ul>
+    <button type="button" id="close-inventory">Закрыть</button>
+  </dialog>
+  <template id="axe-stack">
+    <li data-rarity="" data-durability="">
+      <span class="axe-name"></span>
+      <span class="axe-count"></span>
+      <span class="axe-durability"></span>
+    </li>
+  </template>
+  <main id="sklad-lesa">
+    <p><a href="game.html">На карту</a></p>
+    <h1>Склад леса</h1>
+    <p>Отдельный склад под будущие механики. Запас лесопилки сюда не попадает, общий котёл с «Складами» не ведётся.</p>
+    <section id="forest-storage" class="forest-storage" aria-labelledby="forest-storage-title">
+      <h2 id="forest-storage-title">Запас</h2>
+      <div class="storage-total">
+        <span class="storage-total-label">Всего брёвен</span>
+        <data class="storage-total-value" id="forest-storage-total" value="0">0</data>
+      </div>
+      <ul class="quality-breakdown" id="forest-storage-list">
+        <li data-quality="rotten">
+          <span>Гнилое</span>
+          <data id="forest-logs-rotten" value="0">0</data>
+        </li>
+        <li data-quality="normal">
+          <span>Обычное</span>
+          <data id="forest-logs-normal" value="0">0</data>
+        </li>
+        <li data-quality="good">
+          <span>Хорошее</span>
+          <data id="forest-logs-good" value="0">0</data>
+        </li>
+        <li data-quality="excellent">
+          <span>Отличное</span>
+          <data id="forest-logs-excellent" value="0">0</data>
+        </li>
+        <li data-quality="perfect">
+          <span>Идеальное</span>
+          <data id="forest-logs-perfect" value="0">0</data>
+        </li>
+      </ul>
+      <p class="storage-empty" id="forest-storage-empty">
+        Склад пуст. Брёвна сюда попадут, когда появятся соответствующие механики.
+      </p>
+    </section>
+  </main>
+  <script src="game.js" defer></script>
+</body>
+</html>

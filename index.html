@@ -2,15 +2,16 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b140e">
   <link rel="stylesheet" href="style.css">
   <title>Timber Town</title>
 </head>
 <body data-screen="boot">
   <main id="boot">
     <h1>Timber Town</h1>
-    <img id="boot-art" src="idex_fon.jpeg" width="768" height="1152" alt="Лесопилка у реки">
-    <progress id="load-bar" max="100" value="100" aria-hidden="true">100%</progress>
+    <img id="boot-art" src="idex_fon.jpeg" width="768" height="1152" alt="Лесопилка у реки на рассвете">
+    <progress id="load-bar" max="100" aria-hidden="true"></progress>
     <p id="tip">Первые два лесоруба в управе бесплатны.</p>
     <ul id="tip-list" hidden>
       <li>Первые два лесоруба в управе бесплатны.</li>
@@ -22,7 +23,37 @@
       <li>Снятое из сейфа нужно потратить за игровой час.</li>
       <li>Одинаковые топоры складываются в рюкзаке.</li>
     </ul>
-    <a href="game.html" id="play">Играть</a>
+    <a href="game.html" id="play" role="button">Играть</a>
   </main>
+  <script>
+    (() => {
+      'use strict';
+
+      const tips = Array.from(
+        document.querySelectorAll('#tip-list li')
+      ).map(li => li.textContent.trim()).filter(Boolean);
+
+      const tip = document.getElementById('tip');
+      const bar = document.getElementById('load-bar');
+
+      if (bar) {
+        // Декоративная полоса. Не показываем выдуманный процент.
+        bar.removeAttribute('value');
+        bar.setAttribute('aria-hidden', 'true');
+      }
+
+      if (tip && tips.length) {
+        let index = 0;
+        tip.textContent = tips[0];
+
+        if (tips.length > 1) {
+          window.setInterval(() => {
+            index = (index + 1) % tips.length;
+            tip.textContent = tips[index];
+          }, 6000);
+        }
+      }
+    })();
+  </script>
 </body>
 </html>
