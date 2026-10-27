@@ -52,9 +52,14 @@
   })();
 
   const NAMES = [
-    'Иван', 'Мария', 'Егор', 'Анна',
-    'Михаил', 'Дарья', 'Фёдор', 'Нина',
-    'Степан', 'Вера', 'Артём', 'Ольга'
+    'Иван', 'Егор', 'Михаил', 'Фёдор', 'Степан', 'Артём',
+    'Александр', 'Дмитрий', 'Максим', 'Сергей', 'Андрей', 'Никита',
+    'Павел', 'Роман', 'Кирилл', 'Владимир', 'Илья', 'Тимофей',
+    'Матвей', 'Денис', 'Антон', 'Виктор', 'Григорий', 'Борис',
+    'Константин', 'Леонид', 'Олег', 'Руслан', 'Ярослав', 'Вадим',
+    'Глеб', 'Арсений', 'Эдуард', 'Валерий', 'Захар', 'Пётр',
+    'Василий', 'Станислав', 'Юрий', 'Данила', 'Марк', 'Давид',
+    'Родион', 'Савелий', 'Платон', 'Георгий', 'Анатолий', 'Игнат'
   ];
 
   const $ = id => document.getElementById(id);
@@ -1071,39 +1076,52 @@
     const list = $('inventory-list');
     if (!list) return;
 
-    list.replaceChildren();
-
-    const empty = $('inventory-empty');
-    if (empty) empty.hidden = state.inventory.axes.length > 0;
-
+    // Reuse existing cells and image nodes between renders: avoid axe-icon flicker.
+    const existing = new Map();
+    list.querySelectorAll(':scope > li').forEach(item => {
+      existing.set(`${item.dataset.rarity}:${item.dataset.durability}`, item);
+    });
+    const fragment = document.createDocumentFragment();
     state.inventory.axes.forEach(axe => {
-      const item = document.createElement('li');
+      const key = `${axe.rarity}:${axe.durability}`;
+      let item = existing.get(key);
+      if (item) existing.delete(key);
+      else {
+        item = document.createElement('li');
+        const icon = document.createElement('img');
+        icon.className = 'axe-icon';
+        icon.alt = '';
+        icon.loading = 'lazy';
+        icon.decoding = 'async';
+        attachImgFallback(icon, FALLBACK_AXE_SVG);
+        const name = document.createElement('span'); name.className = 'axe-name';
+        const count = document.createElement('span'); count.className = 'axe-count';
+        const dur = document.createElement('span'); dur.className = 'axe-durability';
+        item.append(icon, name, count, dur);
+      }
       item.dataset.rarity = axe.rarity;
       item.dataset.durability = String(axe.durability);
-
-      const icon = document.createElement('img');
-      icon.className = 'axe-icon';
-      icon.alt = '';
-      icon.loading = 'lazy';
-      icon.decoding = 'async';
-      attachImgFallback(icon, FALLBACK_AXE_SVG);
-      icon.src = axeIconSrc(axe.rarity);
-
-      const name = document.createElement('span');
-      name.className = 'axe-name';
-      name.textContent = AXES[axe.rarity].name;
-
-      const count = document.createElement('span');
-      count.className = 'axe-count';
-      if (axe.count > 1) count.textContent = `×${axe.count}`;
-
-      const dur = document.createElement('span');
-      dur.className = 'axe-durability';
-      dur.textContent = `${axe.durability}/${AXES[axe.rarity].max}`;
-
-      item.append(icon, name, count, dur);
-      list.append(item);
+      const icon = item.querySelector('.axe-icon');
+      const src = axeIconSrc(axe.rarity);
+      if (icon && icon.getAttribute('src') !== src) icon.src = src;
+      const name = item.querySelector('.axe-name');
+      if (name) name.textContent = `${AXES[axe.rarity].name} ( ${({common:'обычная',rare:'редкая',legendary:'легендарная',mythic:'мифическая'})[axe.rarity] || 'обычная'} )`;
+      const count = item.querySelector('.axe-count');
+      if (count) count.textContent = axe.count > 1 ? `×${axe.count}` : '';
+      const dur = item.querySelector('.axe-durability');
+      if (dur) dur.textContent = `${axe.durability}/${AXES[axe.rarity].max}`;
+      fragment.append(item);
     });
+    const occupied = state.inventory.axes.length;
+    for (let i = occupied; i < 20; i++) {
+      const slot = document.createElement('li');
+      slot.className = 'inventory-empty-slot';
+      slot.setAttribute('aria-label', `Пустая ячейка ${i + 1}`);
+      fragment.append(slot);
+    }
+    list.replaceChildren(fragment);
+    const empty = $('inventory-empty');
+    if (empty) empty.hidden = state.inventory.axes.length > 0;
   }
 
   function renderCrewList() {
