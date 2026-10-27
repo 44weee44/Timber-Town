@@ -93,6 +93,11 @@ button,
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  text-align: center;
+  line-height: 1.35;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 button:active:not(:disabled),
@@ -103,7 +108,14 @@ button:active:not(:disabled),
 
 button:disabled {
   opacity: 0.45;
-  cursor: default;
+  cursor: not-allowed;
+}
+
+button:not(:disabled),
+.btn,
+#play {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 button:focus-visible,

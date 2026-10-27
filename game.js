@@ -24,7 +24,7 @@
     common: '1axeskin.jpeg',
     rare: '2axeskin.jpeg',
     legendary: '3axeskin.jpeg',
-    mythic: '4axeskin.jpeg'
+    mythic: '4aceskin.jpeg'
   };
 
   const MACHINE = [
@@ -386,8 +386,50 @@
 
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? sanitize(JSON.parse(raw)) : createState();
+      const current = localStorage.getItem(STORAGE_KEY);
+      if (current) return sanitize(JSON.parse(current));
+
+      // Preserve progress when a version number changes. Only migrate keys
+      // belonging to the same Telegram/browser identity.
+      const identityPrefix = `timber-town:${getTelegramId()}:v`;
+      const candidates = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || key === STORAGE_KEY || !key.startsWith(identityPrefix)) continue;
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            candidates.push({ key, value: parsed, lastLogin: num(parsed.lastLogin) });
+          }
+        } catch (error) {
+          console.warn(`Пропущено повреждённое сохранение ${key}:`, error);
+        }
+      }
+
+      // A legacy unversioned key is safe to use only in a normal browser,
+      // never across Telegram accounts.
+      if (getTelegramId() === 'browser') {
+        try {
+          const legacy = localStorage.getItem('timberTownState');
+          const parsed = legacy ? JSON.parse(legacy) : null;
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            candidates.push({ key: 'timberTownState', value: parsed, lastLogin: num(parsed.lastLogin) });
+          }
+        } catch (error) {
+          console.warn('Не удалось прочитать старое сохранение Timber Town:', error);
+        }
+      }
+
+      if (!candidates.length) return createState();
+      candidates.sort((a, b) => b.lastLogin - a.lastLogin);
+      const migrated = sanitize(candidates[0].value);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      } catch (error) {
+        console.warn('Прогресс загружен, но не удалось записать новую копию сохранения:', error);
+      }
+      console.info(`[Timber Town/migration] Прогресс перенесён из ${candidates[0].key}.`);
+      return migrated;
     } catch (error) {
       console.error('Ошибка загрузки сохранения:', error);
       return createState();
@@ -971,6 +1013,35 @@
       : null;
   }
 
+  // Reuse existing worker cards by ID. Recreating every card each tick reloads
+  // portrait images and causes visible flicker on mobile browsers.
+  function reconcileWorkerRows(list, templateId) {
+    const workers = state.sawmill.workers;
+    const existing = new Map(
+      Array.from(list.children)
+        .filter(row => row.dataset.workerId)
+        .map(row => [row.dataset.workerId, row])
+    );
+    const liveIds = new Set(workers.map(worker => worker.id));
+
+    Array.from(list.children).forEach(row => {
+      if (row.dataset.workerId && !liveIds.has(row.dataset.workerId)) row.remove();
+    });
+
+    return workers.map((worker, index) => {
+      let row = existing.get(worker.id);
+      if (!row) {
+        row = cloneTemplate(templateId);
+        if (!row) return { worker, row: null };
+        row.dataset.workerId = worker.id;
+      }
+
+      const atIndex = list.children[index] || null;
+      if (atIndex !== row) list.insertBefore(row, atIndex);
+      return { worker, row };
+    });
+  }
+
   function setText(id, value) {
     const element = $(id);
     if (!element) return;
@@ -1039,13 +1110,8 @@
     const crewList = $('crew-list');
     if (!crewList) return;
 
-    crewList.replaceChildren();
-
-    state.sawmill.workers.forEach(worker => {
-      const row = cloneTemplate('worker-row');
+    reconcileWorkerRows(crewList, 'worker-row').forEach(({ worker, row }) => {
       if (!row) return;
-
-      row.dataset.workerId = worker.id;
 
       const img = row.querySelector('.worker-portrait');
       if (img) setWorkerPortrait(img, worker);
@@ -1071,18 +1137,13 @@
           const maxDur = AXES[worker.axe.rarity].max;
           carry.max = maxDur;
           carry.value = worker.axe.durability;
-          carry.setAttribute(
-            'aria-label',
-            `Прочность топора ${worker.axe.durability} из ${maxDur}`
-          );
+          carry.setAttribute('aria-label', `Прочность топора ${worker.axe.durability} из ${maxDur}`);
         } else {
           carry.max = 4;
           carry.value = 0;
           carry.setAttribute('aria-label', 'Нет топора');
         }
       }
-
-      crewList.append(row);
     });
 
     const empty = $('crew-empty');
@@ -1093,13 +1154,8 @@
     const hiredList = $('hired-list');
     if (!hiredList) return;
 
-    hiredList.replaceChildren();
-
-    state.sawmill.workers.forEach(worker => {
-      const row = cloneTemplate('hired-worker');
+    reconcileWorkerRows(hiredList, 'hired-worker').forEach(({ worker, row }) => {
       if (!row) return;
-
-      row.dataset.workerId = worker.id;
 
       const img = row.querySelector('.worker-portrait');
       if (img) setWorkerPortrait(img, worker, true);
@@ -1113,8 +1169,6 @@
         skin.hidden = false;
         skin.textContent = `Внешность: ${skinIdx} из 4`;
       }
-
-      hiredList.append(row);
     });
   }
 
@@ -1122,13 +1176,8 @@
     const profileCrew = $('profile-crew');
     if (!profileCrew) return;
 
-    profileCrew.replaceChildren();
-
-    state.sawmill.workers.forEach(worker => {
-      const row = cloneTemplate('profile-worker');
+    reconcileWorkerRows(profileCrew, 'profile-worker').forEach(({ worker, row }) => {
       if (!row) return;
-
-      row.dataset.workerId = worker.id;
 
       const img = row.querySelector('.worker-portrait');
       if (img) setWorkerPortrait(img, worker);
@@ -1145,28 +1194,30 @@
       const prog = expProgress(worker);
       if (level) {
         level.textContent = prog.text;
-        if (prog.max) level.classList.add('max');
-        else level.classList.remove('max');
+        level.classList.toggle('max', prog.max);
       }
       if (fill) fill.style.width = prog.pct + '%';
 
       if (axeText) {
-        axeText.replaceChildren();
-
+        const src = worker.axe ? axeIconSrc(worker.axe.rarity) : '';
+        let icon = axeText.querySelector('img.axe-icon');
         if (worker.axe) {
-          const icon = document.createElement('img');
-          icon.className = 'axe-icon small';
-          icon.alt = '';
-          icon.loading = 'lazy';
-          icon.decoding = 'async';
-          attachImgFallback(icon, FALLBACK_AXE_SVG);
-          icon.src = axeIconSrc(worker.axe.rarity);
-
-          axeText.append(
-            icon,
-            ` ${AXES[worker.axe.rarity].name} · прочность ${worker.axe.durability}/${AXES[worker.axe.rarity].max}`
-          );
-        } else {
+          if (!icon || icon.getAttribute('src') !== src) {
+            axeText.replaceChildren();
+            icon = document.createElement('img');
+            icon.className = 'axe-icon small';
+            icon.alt = '';
+            icon.loading = 'lazy';
+            icon.decoding = 'async';
+            attachImgFallback(icon, FALLBACK_AXE_SVG);
+            icon.src = src;
+            axeText.append(icon, document.createTextNode(''));
+          }
+          const textNode = Array.from(axeText.childNodes).find(node => node.nodeType === Node.TEXT_NODE);
+          const label = ` ${AXES[worker.axe.rarity].name} · прочность ${worker.axe.durability}/${AXES[worker.axe.rarity].max}`;
+          if (textNode) textNode.nodeValue = label;
+          else axeText.append(document.createTextNode(label));
+        } else if (axeText.textContent !== 'Топор не выдан') {
           axeText.textContent = 'Топор не выдан';
         }
       }
@@ -1174,47 +1225,45 @@
       if (unequip) unequip.hidden = !worker.axe;
 
       if (choices) {
-        choices.hidden = !openAxeChoosers.has(worker.id);
-        choices.replaceChildren();
+        const signature = `${openAxeChoosers.has(worker.id)}|${state.inventory.axes.map(a => `${a.rarity}:${a.durability}:${a.count}`).join(',')}`;
+        if (choices.dataset.renderSignature !== signature) {
+          choices.dataset.renderSignature = signature;
+          choices.hidden = !openAxeChoosers.has(worker.id);
+          choices.replaceChildren();
 
-        state.inventory.axes.forEach(axe => {
-          const choice = cloneTemplate('axe-choice');
-          const button = choice?.querySelector('.equip-axe');
+          state.inventory.axes.forEach(axe => {
+            const choice = cloneTemplate('axe-choice');
+            const button = choice?.querySelector('.equip-axe');
+            if (!choice || !button) return;
 
-          if (!choice || !button) return;
+            button.replaceChildren();
+            const icon = document.createElement('img');
+            icon.className = 'axe-icon small';
+            icon.alt = '';
+            icon.loading = 'lazy';
+            icon.decoding = 'async';
+            attachImgFallback(icon, FALLBACK_AXE_SVG);
+            icon.src = axeIconSrc(axe.rarity);
 
-          button.replaceChildren();
+            const label = document.createElement('span');
+            label.textContent =
+              `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}` +
+              (axe.count > 1 ? ` ×${axe.count}` : '');
 
-          const icon = document.createElement('img');
-          icon.className = 'axe-icon small';
-          icon.alt = '';
-          icon.loading = 'lazy';
-          icon.decoding = 'async';
-          attachImgFallback(icon, FALLBACK_AXE_SVG);
-          icon.src = axeIconSrc(axe.rarity);
-
-          const label = document.createElement('span');
-          label.textContent =
-            `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}` +
-            (axe.count > 1 ? ` ×${axe.count}` : '');
-
-          button.append(icon, label);
-
-          button.addEventListener('click', () => {
-            equipAxe(worker.id, axe.rarity, axe.durability);
+            button.append(icon, label);
+            button.addEventListener('click', () => equipAxe(worker.id, axe.rarity, axe.durability));
+            choices.append(choice);
           });
 
-          choices.append(choice);
-        });
-
-        if (!state.inventory.axes.length) {
-          const empty = document.createElement('li');
-          empty.textContent = 'В рюкзаке нет топоров.';
-          choices.append(empty);
+          if (!state.inventory.axes.length) {
+            const emptyItem = document.createElement('li');
+            emptyItem.textContent = 'В рюкзаке нет топоров.';
+            choices.append(emptyItem);
+          }
+        } else {
+          choices.hidden = !openAxeChoosers.has(worker.id);
         }
       }
-
-      profileCrew.append(row);
     });
 
     const empty = $('profile-crew-empty');
@@ -1297,13 +1346,8 @@
     const list = $('chance-list');
     if (!list) return;
 
-    list.replaceChildren();
-
-    state.sawmill.workers.forEach(worker => {
-      const card = cloneTemplate('chance-card');
+    reconcileWorkerRows(list, 'chance-card').forEach(({ worker, row: card }) => {
       if (!card) return;
-
-      card.dataset.workerId = worker.id;
 
       const img = card.querySelector('.worker-portrait');
       if (img) setWorkerPortrait(img, worker, true);
@@ -1312,25 +1356,17 @@
       const axe = card.querySelector('.worker-axe');
 
       if (name) name.textContent = worker.name;
-      if (axe) {
-        axe.textContent = worker.axe
-          ? AXES[worker.axe.rarity].name
-          : 'Без топора';
-      }
+      if (axe) axe.textContent = worker.axe ? AXES[worker.axe.rarity].name : 'Без топора';
 
       const weights = getQualityWeights(worker);
-
       QUALITY.forEach((quality, index) => {
         const element = card.querySelector(`.odd-${quality}`);
-
         if (element) {
           const percent = (weights[index] * 100).toFixed(1);
           element.textContent = `${percent}%`;
           element.value = percent;
         }
       });
-
-      list.append(card);
     });
 
     const empty = $('chances-empty');
