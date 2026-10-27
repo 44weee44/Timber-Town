@@ -1130,10 +1130,30 @@ progress.worker-carry::-moz-progress-bar {
 #inventory-list .axe-durability { margin-top:auto; color:var(--cream-muted); font-size:7px; line-height:1.4; }
 #inventory > #close-inventory { width:100%; margin-top:12px; }
 
-/* Map uses the whole play area; hotspots and image scale together. */
+/* Map keeps its original 3:2 proportions: no distortion. On portrait phones it fits width; on landscape screens it grows to available height. */
 body[data-screen="map"] #map { width:100%; height:100%; }
-body[data-screen="map"] #world { width:100%; height:100%; max-width:none; max-height:none; aspect-ratio:auto; }
-body[data-screen="map"] #world img { width:100%; height:100%; object-fit:fill; }
+body[data-screen="map"] #world { width:min(100%, calc(100cqh * 1.5)); height:auto; max-width:none; max-height:none; aspect-ratio:3 / 2; flex:0 0 auto; }
+body[data-screen="map"] #world img { width:100%; height:100%; object-fit:contain; }
+body[data-screen="map"] #world { overflow:hidden; }
+
+/* Compact wallet: keep the full balance on one line without truncation. */
+#hud { gap: clamp(4px, 1.5vw, 10px); }
+#wallet { flex: 1 1 0; min-width: 0; display:flex; flex-direction:column; justify-content:center; gap:2px; }
+#wallet > span { font-size:clamp(7px, 2vw, 10px); }
+#money { display:block; font-size:clamp(10px, 3.2vw, 16px); letter-spacing:-0.04em; overflow:visible; text-overflow:clip; white-space:nowrap; font-variant-numeric:tabular-nums; }
+#open-inventory, #open-profile { padding-inline:clamp(6px, 2vw, 12px); font-size:clamp(9px, 2.6vw, 13px); }
+
+/* Event zone tags and worker zone picker */
+#zone-grid button[data-event="rotten"] { border-color:#8d9a75; box-shadow:inset 0 0 0 2px #8d9a75; }
+#zone-grid button[data-event="empty"] { border-color:#77716a; box-shadow:inset 0 0 0 2px #77716a; opacity:.75; }
+#zone-grid button[data-event="ideal"] { border-color:#e2b657; box-shadow:inset 0 0 0 2px #e2b657, 0 0 10px #e2b65755; }
+.worker-zone-select { width:100%; min-height:36px; margin-top:6px; background:var(--ink); color:var(--cream); border:1px solid var(--gold); border-radius:4px; padding:5px; }
+#operator-list { display:grid; gap:6px; padding-left:20px; }
+#inventory-list { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+#inventory-list > li { position:relative; min-width:0; min-height:94px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:3px; padding:7px 4px; }
+#inventory-list > li.inventory-empty-slot { min-height:94px; }
+#inventory-list > li.inventory-secret-log { border-color:#6e9b73; background:linear-gradient(145deg,#1c3422,#111b13); }
+@media (max-width:360px) { #hud { gap:3px; } #open-profile,#open-inventory { padding-inline:5px; } #money { font-size:10px; } #inventory-list { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 
 /* Sawmill becomes a single game-like dashboard rather than a row of anchor tabs. */
 body[data-screen="sawmill"] main#sawmill > nav[aria-label="Разделы лесопилки"] { display:none !important; }
@@ -1161,3 +1181,24 @@ body[data-screen="sawmill"] #stats .stat-row { gap:8px; }
   #inventory-list { grid-template-columns:repeat(3,minmax(0,1fr)); }
   body[data-screen="sawmill"] #safe .safe-balances { grid-template-columns:1fr; }
 }
+
+.operator-card { display:flex; align-items:center; gap:10px; padding:10px; border:1px solid var(--line); background:linear-gradient(135deg,rgba(88,58,32,.55),rgba(15,18,13,.9)); border-radius:6px; list-style:none; }
+.operator-card .worker-portrait { width:42px; height:42px; object-fit:cover; border:1px solid var(--gold); }
+.operator-card p { margin:3px 0 0; color:var(--cream-muted); font-size:.8em; }
+.event-zone-legend { padding:10px; border-left:3px solid var(--gold); background:rgba(226,182,87,.08); line-height:1.5; }
+.secret-log-icon { display:grid; place-items:center; width:42px; height:42px; font-size:28px; color:#9bd5a4; text-shadow:0 0 12px #7cdb8c88; }
+#zone-grid button[data-wood="pine"] { background-image:linear-gradient(135deg,#25402b,#15271a); }
+#zone-grid button[data-wood="oak"] { background-image:linear-gradient(135deg,#624222,#342315); }
+#zone-grid button[data-wood="birch"] { background-image:linear-gradient(135deg,#b7a97d,#61583e); }
+
+.machine-list { display:grid; gap:8px; padding:0; list-style:none; }
+.machine-card { padding:12px; background:linear-gradient(145deg,#392519,#17140f); border:1px solid var(--line); border-left:3px solid var(--gold); border-radius:5px; }
+.machine-card p { margin:5px 0 9px; color:var(--cream-soft); font-size:.82em; line-height:1.5; }
+.machine-actions { display:flex; flex-wrap:wrap; gap:7px; }
+.machine-actions button { min-height:38px; flex:1 1 130px; font-size:.8em; }
+
+.wood-stock-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.wood-stock-card { display:flex; flex-direction:column; gap:5px; padding:10px 7px; text-align:center; font-size:.78em; border:1px solid var(--line); border-radius:5px; background:#241a11; }
+.wood-stock-card data { color:var(--gold-light); font-family:var(--pixel); font-size:1.1em; }
+.wood-birch { border-top:3px solid #c4b58b; } .wood-pine { border-top:3px solid #5e9864; } .wood-oak { border-top:3px solid #a87342; }
+@media(max-width:360px){ .wood-stock-grid { gap:4px; } .wood-stock-card { padding:8px 3px; font-size:.7em; } }

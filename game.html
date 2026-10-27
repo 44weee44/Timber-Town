@@ -17,16 +17,16 @@
     }
 
     body[data-screen="map"] #world {
-      width: 100%;
-      height: 100%;
+      width: min(100%, calc(100cqh * 1.5));
+      height: auto;
       max-width: none;
       max-height: none;
-      flex: 0 1 auto;
-      aspect-ratio: auto;
+      flex: 0 0 auto;
+      aspect-ratio: 3 / 2;
     }
 
     body[data-screen="map"] #world img {
-      object-fit: fill;
+      object-fit: contain;
     }
 
     body[data-screen="map"] #world a {

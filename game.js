@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const GAME_MINUTE_MS = 7500;
   const DAY_MINUTES = 1440;
   const QUALITY = ['rotten', 'normal', 'good', 'excellent', 'perfect'];
@@ -15,26 +15,38 @@
 
   const AXES = {
     common: { name: 'Обычный', price: 150, max: 100, wearEvery: 1, rank: 0 },
-    rare: { name: 'Редкий', price: 500, max: 250, wearEvery: 3, rank: 1 },
-    legendary: { name: 'Легендарный', price: 1500, max: 500, wearEvery: 5, rank: 2 },
-    mythic: { name: 'Мифический', price: 4000, max: 1000, wearEvery: 10, rank: 3 }
+    reinforced: { name: 'Усиленный', price: 320, max: 180, wearEvery: 2, rank: 0.5 },
+    rare: { name: 'Редкий', price: 650, max: 280, wearEvery: 3, rank: 1 },
+    legendary: { name: 'Легендарный', price: 1800, max: 500, wearEvery: 5, rank: 2 },
+    mythic: { name: 'Мифический', price: 4500, max: 850, wearEvery: 8, rank: 3 }
   };
 
   const AXE_ICON = {
     common: '1axeskin.jpeg',
     rare: '2axeskin.jpeg',
     legendary: '3axeskin.jpeg',
-    mythic: '4aceskin.jpeg'
+    mythic: '4aceskin.jpeg',
+    reinforced: '5axeskin.jpeg'
   };
 
   const MACHINE = [
     null,
-    { price: 0, capacity: 10, minutes: 10, bonus: 0.01 },
-    { price: 250, capacity: 20, minutes: 9, bonus: 0.25 },
-    { price: 400, capacity: 30, minutes: 8, bonus: 0.50 },
-    { price: 750, capacity: 40, minutes: 7, bonus: 0.75 },
-    { price: 1000, capacity: 50, minutes: 5, bonus: 0.95 }
+    { price: 0, capacity: 10, minutes: 10, bonus: 0.02 },
+    { price: 350, capacity: 20, minutes: 9, bonus: 0.04 },
+    { price: 650, capacity: 30, minutes: 8, bonus: 0.06 },
+    { price: 1000, capacity: 40, minutes: 7, bonus: 0.08 },
+    { price: 1500, capacity: 50, minutes: 6, bonus: 0.10 },
+    { price: 2200, capacity: 60, minutes: 5, bonus: 0.12 },
+    { price: 3200, capacity: 70, minutes: 4, bonus: 0.14 },
+    { price: 4500, capacity: 80, minutes: 3, bonus: 0.16 },
+    { price: 6200, capacity: 90, minutes: 2, bonus: 0.18 },
+    { price: 8500, capacity: 100, minutes: 1, bonus: 0.20 }
   ];
+  const MAX_MACHINE_LEVEL = 10;
+  const MACHINE_BASE = () => ({ level: 1, durability: 100, isRunning: false, queue: Object.fromEntries(QUALITY.map(q => [q, 0])), remaining: 0, processed: 0, queueSchemaVersion: 2, operatorId: null });
+  const SECRET_LOG_NAME = 'Секретное бревно';
+  const WOOD_TYPES = ['birch','pine','oak'];
+  const WOOD_LABEL = { birch:'Берёза', pine:'Сосна', oak:'Дуб' };
 
   const MAX_LEVEL = 15;
 
@@ -81,10 +93,20 @@
 
   function telegramUser() {
     try {
-      return window.Telegram?.WebApp?.initDataUnsafe?.user || null;
-    } catch {
+      const app = window.Telegram?.WebApp;
+      if (app?.initDataUnsafe?.user) return app.initDataUnsafe.user;
+      // Fallback for WebViews where initDataUnsafe is populated late. This is
+      // used only to select a save namespace/display ID, never as server auth.
+      const raw = app?.initData;
+      if (raw) {
+        const encoded = new URLSearchParams(raw).get('user');
+        if (encoded) {
+          const parsed = JSON.parse(encoded);
+          if (parsed && parsed.id != null) return parsed;
+        }
+      }
       return null;
-    }
+    } catch { return null; }
   }
 
   function getTelegramId() {
@@ -94,7 +116,47 @@
       : 'browser';
   }
 
-  const STORAGE_KEY = `timber-town:${getTelegramId()}:v${VERSION}`;
+  function storageKey() { return `timber-town:${getTelegramId()}:v${VERSION}`; }
+  const CLOUD_PREFIX = 'timbertown_v2';
+  function cloudStorage() { return window.Telegram?.WebApp?.CloudStorage || null; }
+  function cloudCall(method, ...args) {
+    const cloud = cloudStorage();
+    if (!cloud || typeof cloud[method] !== 'function') return Promise.resolve(null);
+    return new Promise(resolve => {
+      let settled = false;
+      const done = (error, result) => { if (settled) return; settled = true; resolve(error ? null : result); };
+      try {
+        const maybe = cloud[method](...args, (error, result) => done(error, result));
+        if (maybe && typeof maybe.then === 'function') maybe.then(v => done(null, v)).catch(() => done(true, null));
+      } catch { done(true, null); }
+      window.setTimeout(() => done(true, null), 2500);
+    });
+  }
+  async function cloudSaveState(serialized) {
+    if (getTelegramId() === 'browser' || !cloudStorage()) return false;
+    const chunks = serialized.match(/[\s\S]{1,3000}/g) || ['{}'];
+    const oldMeta = await cloudCall('getItem', `${CLOUD_PREFIX}_meta`);
+    const oldCount = Number(String(oldMeta || '').split(':')[0]) || 0;
+    for (let i = 0; i < chunks.length; i++) {
+      if (await cloudCall('setItem', `${CLOUD_PREFIX}_${i}`, chunks[i]) === null) return false;
+    }
+    if (await cloudCall('setItem', `${CLOUD_PREFIX}_meta`, `${chunks.length}:${Date.now()}`) === null) return false;
+    for (let i = chunks.length; i < oldCount; i++) await cloudCall('removeItem', `${CLOUD_PREFIX}_${i}`);
+    return true;
+  }
+  async function cloudLoadState() {
+    if (getTelegramId() === 'browser' || !cloudStorage()) return null;
+    const meta = await cloudCall('getItem', `${CLOUD_PREFIX}_meta`);
+    const count = Number(String(meta || '').split(':')[0]);
+    if (!Number.isInteger(count) || count < 1 || count > 100) return null;
+    let raw = '';
+    for (let i = 0; i < count; i++) {
+      const chunk = await cloudCall('getItem', `${CLOUD_PREFIX}_${i}`);
+      if (typeof chunk !== 'string') return null;
+      raw += chunk;
+    }
+    try { return sanitize(JSON.parse(raw)); } catch { return null; }
+  }
 
   function axeIconSrc(rarity) {
     return AXE_ICON[rarity] || '';
@@ -157,6 +219,30 @@
     };
   }
 
+  function createInitialEvents() {
+    const ids = Array.from({length:28}, (_,i)=>i+1).sort(()=>Math.random()-0.5);
+    return { rotten: ids[0], empty: Math.random()<0.5 ? ids[1] : null, ideal: Math.random()<0.2 ? ids[2] : null };
+  }
+  function createInitialZoneKinds() {
+    const kinds = {};
+    for (let z=1; z<=28; z++) kinds[z] = ['birch','pine','oak'][Math.floor(Math.random()*3)];
+    return kinds;
+  }
+
+  function createWoodQualityStock() {
+    return Object.fromEntries(WOOD_TYPES.map(wood => [wood, Object.fromEntries(QUALITY.map(q => [q, 0]))]));
+  }
+  function consumeWoodForQuality(quality, amount) {
+    let left = amount;
+    for (const wood of WOOD_TYPES) {
+      const stock = state.sawmill.logsByWoodQuality?.[wood]?.[quality] || 0;
+      const take = Math.min(stock, left);
+      state.sawmill.logsByWoodQuality[wood][quality] -= take;
+      left -= take;
+      if (left <= 0) break;
+    }
+  }
+
   function createState() {
     return {
       version: VERSION,
@@ -169,24 +255,21 @@
       overdueDays: 0,
       lastLogin: Date.now(),
 
-      inventory: { axes: [] },
+      inventory: { axes: [], secretLogs: 0 },
 
       sawmill: {
         zones: 1,
         zoneStock: 200000,
+        eventZones: createInitialEvents(),
+        zoneKinds: createInitialZoneKinds(),
+        extraMachines: [],
+        operators: [],
         logs: { rotten: 0, normal: 0, good: 0, excellent: 0, perfect: 0 },
+        logsByWoodQuality: createWoodQualityStock(),
         planks: 0,
         safeMoney: 0,
         safeExposure: null,
-        machine: {
-          level: 1,
-          durability: 100,
-          isRunning: false,
-          queue: {},
-          remaining: 0,
-          processed: 0,
-          queueSchemaVersion: 2
-        },
+        machine: MACHINE_BASE(),
         workers: [],
         logsToday: 0,
         logsAll: 0,
@@ -220,6 +303,7 @@
     const s = { ...defaults, ...input };
 
     s.inventory = { ...defaults.inventory, ...(s.inventory || {}) };
+    s.inventory.secretLogs = num(s.inventory.secretLogs);
     s.inventory.axes = Array.isArray(s.inventory.axes)
       ? s.inventory.axes
           .filter(a => a && AXES[a.rarity])
@@ -231,11 +315,22 @@
       : [];
 
     s.sawmill = { ...defaults.sawmill, ...(s.sawmill || {}) };
-    s.sawmill.logs = Object.fromEntries(
-      QUALITY.map(q => [q, num(s.sawmill.logs?.[q])])
-    );
+    s.sawmill.logs = Object.fromEntries(QUALITY.map(q => [q, num(s.sawmill.logs?.[q])]));
+    const hadWoodStock = s.sawmill.logsByWoodQuality && typeof s.sawmill.logsByWoodQuality === 'object';
+    s.sawmill.logsByWoodQuality = createWoodQualityStock();
+    if (hadWoodStock) {
+      WOOD_TYPES.forEach(wood => QUALITY.forEach(q => {
+        s.sawmill.logsByWoodQuality[wood][q] = num(input.sawmill?.logsByWoodQuality?.[wood]?.[q]);
+      }));
+    } else {
+      QUALITY.forEach(q => { s.sawmill.logsByWoodQuality.birch[q] = s.sawmill.logs[q]; });
+    }
     s.sawmill.zones = clamp(num(s.sawmill.zones, 1), 1, 28);
     s.sawmill.zoneStock = num(s.sawmill.zoneStock, 0);
+    s.sawmill.eventZones = { ...createInitialEvents(), ...(s.sawmill.eventZones || {}) };
+    s.sawmill.zoneKinds = { ...createInitialZoneKinds(), ...(s.sawmill.zoneKinds || {}) };
+    s.sawmill.extraMachines = Array.isArray(s.sawmill.extraMachines) ? s.sawmill.extraMachines.slice(0, 139).map(m => ({ ...MACHINE_BASE(), ...(m || {}), queue: Object.fromEntries(QUALITY.map(q => [q, num(m?.queue?.[q])])), level: clamp(num(m?.level,1),1,MAX_MACHINE_LEVEL), durability: clamp(num(m?.durability,100),0,100), remaining: clamp(num(m?.remaining),0,100000), isRunning: Boolean(m?.isRunning) })) : [];
+    s.sawmill.operators = Array.isArray(s.sawmill.operators) ? s.sawmill.operators.filter(o => o && typeof o.id === 'string').map(o => ({ id:o.id, name:String(o.name || 'Станочник').slice(0,32), skin:clamp(num(o.skin,1),1,4), machineIndex:clamp(num(o.machineIndex),0,139), hireCost:num(o.hireCost) })) : [];
 
     s.sawmill.workers = Array.isArray(s.sawmill.workers)
       ? s.sawmill.workers
@@ -265,6 +360,7 @@
               level,
               xp,
               hireCost: num(w.hireCost),
+              zoneId: clamp(num(w.zoneId, 1), 1, Math.max(1, s.sawmill.zones)),
               axe: rarity
                 ? {
                     rarity,
@@ -277,8 +373,8 @@
           })
       : [];
 
-    s.sawmill.machine = { ...defaults.sawmill.machine, ...(s.sawmill.machine || {}) };
-    s.sawmill.machine.level = clamp(num(s.sawmill.machine.level, 1), 1, 5);
+    s.sawmill.machine = { ...MACHINE_BASE(), ...(s.sawmill.machine || {}) };
+    s.sawmill.machine.level = clamp(num(s.sawmill.machine.level, 1), 1, MAX_MACHINE_LEVEL);
     s.sawmill.machine.durability = clamp(num(s.sawmill.machine.durability), 0, 100);
     s.sawmill.machine.remaining = clamp(Number(s.sawmill.machine.remaining) || 0, 0, 100000);
     s.sawmill.machine.processed = num(s.sawmill.machine.processed);
@@ -303,6 +399,7 @@
         QUALITY.forEach(quality => {
           if (quality !== keep && q[quality] > 0) {
             s.sawmill.logs[quality] += q[quality];
+            s.sawmill.logsByWoodQuality.birch[quality] += q[quality];
             returned += q[quality];
             q[quality] = 0;
           }
@@ -391,7 +488,7 @@
 
   function loadState() {
     try {
-      const current = localStorage.getItem(STORAGE_KEY);
+      const current = localStorage.getItem(storageKey());
       if (current) return sanitize(JSON.parse(current));
 
       // Preserve progress when a version number changes. Only migrate keys
@@ -400,7 +497,7 @@
       const candidates = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (!key || key === STORAGE_KEY || !key.startsWith(identityPrefix)) continue;
+        if (!key || key === storageKey() || !key.startsWith(identityPrefix)) continue;
         try {
           const parsed = JSON.parse(localStorage.getItem(key));
           if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -429,7 +526,7 @@
       candidates.sort((a, b) => b.lastLogin - a.lastLogin);
       const migrated = sanitize(candidates[0].value);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        localStorage.setItem(storageKey(), JSON.stringify(migrated));
       } catch (error) {
         console.warn('Прогресс загружен, но не удалось записать новую копию сохранения:', error);
       }
@@ -442,6 +539,9 @@
   }
 
   let state = loadState();
+  let cloudSaveTimer = null;
+  let lastCloudSerialized = '';
+  let lastCloudSaveAt = 0;
   let busy = false;
   let selectedZone = null;
   let selectedWorkerId = null;
@@ -454,7 +554,23 @@
   function saveState() {
     state.lastLogin = Date.now();
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const serialized = JSON.stringify(state);
+      localStorage.setItem(storageKey(), serialized);
+      const badge = $('save-status');
+      if (getTelegramId() === 'browser') {
+        if (badge) badge.textContent = 'Локальное сохранение активно';
+      } else if (serialized !== lastCloudSerialized && !cloudSaveTimer && Date.now() - lastCloudSaveAt > 15000) {
+        cloudSaveTimer = window.setTimeout(() => {
+          cloudSaveTimer = null;
+          const snapshot = JSON.stringify(state);
+          cloudSaveState(snapshot).then(ok => {
+            lastCloudSaveAt = Date.now();
+            if (ok) lastCloudSerialized = snapshot;
+            const status = $('save-status');
+            if (status) status.textContent = ok ? 'Сохранено в Telegram Cloud' : 'Локально сохранено · Telegram Cloud недоступен';
+          });
+        }, 400);
+      }
     } catch (error) {
       console.error('Не удалось сохранить прогресс:', error);
       notify('Не удалось сохранить прогресс. Проверьте свободное место.', 'error');
@@ -586,6 +702,10 @@
     );
 
     const weights = [80, 11.9, 5, 3, 0.1];
+    const zoneId = clamp(num(worker.zoneId, 1), 1, state.sawmill.zones);
+    const wood = state.sawmill.zoneKinds?.[zoneId] || 'birch';
+    if (wood === 'pine') { weights[0] -= 5; weights[1] += 5; }
+    if (wood === 'oak') { weights[0] -= 8; weights[2] += 4; weights[3] += 3; weights[4] += 1; }
 
     const shift = Math.min(weights[0] - 1, boost * 60);
     weights[0] -= shift;
@@ -598,8 +718,14 @@
     return weights.map(weight => weight / total);
   }
 
-  function getQuality(worker) {
+  function getQuality(worker, perfectBonus = 0) {
     const weights = getQualityWeights(worker);
+    if (perfectBonus > 0) {
+      const target = Math.min(0.95, weights[4] + perfectBonus);
+      const otherTotal = sum(weights.slice(0, 4));
+      for (let i = 0; i < 4; i++) weights[i] = otherTotal > 0 ? weights[i] / otherTotal * (1 - target) : (1 - target) / 4;
+      weights[4] = target;
+    }
     const roll = Math.random();
     let cumulative = 0;
 
@@ -625,9 +751,16 @@
       return;
     }
 
-    const quality = getQuality(worker);
+    const zoneId = clamp(num(worker.zoneId, 1), 1, state.sawmill.zones);
+    const events = state.sawmill.eventZones || {};
+    const zoneEvent = Object.keys(events).find(key => events[key] === zoneId) || null;
+    if (zoneEvent && Math.random() < 0.01) state.inventory.secretLogs = Math.min(999999, num(state.inventory.secretLogs) + 1);
+    if (zoneEvent === 'empty') return;
+    const quality = zoneEvent === 'rotten' ? 'rotten' : getQuality(worker, zoneEvent === 'ideal' ? 0.60 : 0);
 
+    const woodType = state.sawmill.zoneKinds?.[zoneId] || 'birch';
     state.sawmill.logs[quality]++;
+    state.sawmill.logsByWoodQuality[woodType][quality]++;
     state.sawmill.zoneStock--;
     state.sawmill.logsToday++;
     state.sawmill.logsAll++;
@@ -666,53 +799,46 @@
   }
 
   function machineTick(gameMinutes = 1) {
-    const machine = state.sawmill.machine;
-
-    if (!machine.isRunning || machine.durability <= 0) return;
-
-    const config = MACHINE[machine.level];
-    machine.remaining -= gameMinutes;
-
-    while (
-      machine.remaining <= 0 &&
-      machineQueueTotal() > 0 &&
-      machine.durability > 0
-    ) {
-      const quality = QUALITY.find(q => machine.queue[q] > 0);
-      if (!quality) break;
-
-      machine.queue[quality]--;
-      machine.processed++;
-
-      const chances = {
-        rotten: 0.85, normal: 0.95, good: 0.75, excellent: 0.85, perfect: 0.95
-      };
-      const yields = {
-        rotten: 1, normal: 1, good: 2, excellent: 3, perfect: 3
-      };
-
-      let planks = Math.random() < chances[quality] ? yields[quality] : 0;
-      if (planks > 0 && Math.random() < config.bonus) planks++;
-
-      state.sawmill.planks += planks;
-
-      if (machine.processed % 5 === 0) {
-        machine.durability = Math.max(0, machine.durability - 3);
+    const machines = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])];
+    machines.forEach((machine, machineIndex) => {
+      const operator = state.sawmill.operators.find(o => o.machineIndex === machineIndex);
+      const queueTotal = () => sum(QUALITY.map(q => machine.queue[q] || 0));
+      if (operator && !machine.isRunning && machine.durability > 0 && sum(QUALITY.map(q => state.sawmill.logs[q])) > 0) {
+        const quality = QUALITY.slice().reverse().find(q => state.sawmill.logs[q] > 0);
+        if (quality) {
+          const amount = Math.min(MACHINE[machine.level].capacity, state.sawmill.logs[quality]);
+          machine.queue = Object.fromEntries(QUALITY.map(q => [q, q === quality ? amount : 0]));
+          state.sawmill.logs[quality] -= amount;
+          consumeWoodForQuality(quality, amount);
+          machine.remaining = MACHINE[machine.level].minutes + 10;
+          machine.isRunning = true;
+        }
       }
-
-      if (machineQueueTotal() > 0) {
-        machine.remaining += config.minutes;
+      if (!machine.isRunning || machine.durability <= 0) return;
+      const config = MACHINE[machine.level];
+      machine.remaining -= gameMinutes;
+      while (machine.remaining <= 0 && queueTotal() > 0 && machine.durability > 0) {
+        const quality = QUALITY.find(q => machine.queue[q] > 0);
+        if (!quality) break;
+        machine.queue[quality]--;
+        machine.processed++;
+        const chances = { rotten: 0.85, normal: 0.95, good: 0.75, excellent: 0.85, perfect: 0.95 };
+        const yields = { rotten: 1, normal: 1, good: 2, excellent: 3, perfect: 3 };
+        let planks = Math.random() < chances[quality] ? yields[quality] : 0;
+        if (planks > 0 && Math.random() < config.bonus) planks++;
+        state.sawmill.planks += planks;
+        if (machine.processed % 5 === 0) machine.durability = Math.max(0, machine.durability - 3);
+        if (queueTotal() > 0) machine.remaining += config.minutes + (operator ? 10 : 0);
       }
-    }
-
-    if (machineQueueTotal() <= 0) {
-      machine.isRunning = false;
-      machine.remaining = 0;
-      notify('Производство завершено.');
-    } else if (machine.durability <= 0) {
-      machine.isRunning = false;
-      notify('Станок сломался. Отремонтируйте его.', 'error');
-    }
+      if (queueTotal() <= 0) {
+        machine.isRunning = false;
+        machine.remaining = 0;
+        if (!operator && machineIndex === 0) notify('Производство завершено.');
+      } else if (machine.durability <= 0) {
+        machine.isRunning = false;
+        notify('Станок сломался. Отремонтируйте его.', 'error');
+      }
+    });
   }
 
   function deliveryTick(gameMinutes = 1) {
@@ -730,6 +856,31 @@
     }
   }
 
+  function refreshEventZones() {
+    const totalZones = 28;
+    const pick = used => { const options = Array.from({length: totalZones}, (_,i)=>i+1).filter(z=>!used.has(z)); if (!options.length) return null; const z=options[Math.floor(Math.random()*options.length)]; used.add(z); return z; };
+    const used = new Set();
+    const events = { rotten: pick(used), empty: Math.random() < 0.5 ? pick(used) : null, ideal: Math.random() < 0.2 ? pick(used) : null };
+    state.sawmill.eventZones = events;
+    state.sawmill.zoneKinds = state.sawmill.zoneKinds || {};
+    for (let z=1; z<=28; z++) if (!state.sawmill.zoneKinds[z]) state.sawmill.zoneKinds[z] = ['birch','pine','oak'][Math.floor(Math.random()*3)];
+  }
+
+  function moveHourlyEventZones() {
+    const events = state.sawmill.eventZones || {};
+    const occupied = new Set([events.rotten].filter(Boolean));
+    ['empty','ideal'].forEach(kind => {
+      const current = events[kind];
+      if (!current) return;
+      if (Math.random() < 0.5) { events[kind] = null; return; }
+      const options = Array.from({length:28},(_,i)=>i+1).filter(z=>!occupied.has(z) && z !== events.rotten);
+      if (!options.length) { events[kind] = null; return; }
+      const next = options[Math.floor(Math.random()*options.length)];
+      events[kind] = next; occupied.add(next);
+    });
+    state.sawmill.eventZones = events;
+  }
+
   function dayTick() {
     if (state.taxDebt + state.taxPenalty > 0) {
       state.overdueDays++;
@@ -741,6 +892,7 @@
     state.day++;
     state.sawmill.zoneStock = 200000;
     state.sawmill.logsToday = 0;
+    refreshEventZones();
     state.taxDebt += 50;
 
     if (state.overdueDays === 5) {
@@ -755,6 +907,7 @@
 
       state.sawmill.workers = [];
       state.sawmill.logs = Object.fromEntries(QUALITY.map(q => [q, 0]));
+      state.sawmill.logsByWoodQuality = createWoodQualityStock();
       state.sawmill.planks = 0;
       state.sawmill.machine.queue = Object.fromEntries(QUALITY.map(q => [q, 0]));
       state.sawmill.machine.isRunning = false;
@@ -813,7 +966,7 @@
     try {
       for (let i = 0; i < fullMinutes; i++) {
         state.gameMinutes = (state.gameMinutes + 1) % DAY_MINUTES;
-
+        if (state.gameMinutes % 60 === 0) moveHourlyEventZones();
         if (state.gameMinutes === 420) dayTick();
 
         if (state.overdueDays < 5) {
@@ -1105,14 +1258,21 @@
       const src = axeIconSrc(axe.rarity);
       if (icon && icon.getAttribute('src') !== src) icon.src = src;
       const name = item.querySelector('.axe-name');
-      if (name) name.textContent = `${AXES[axe.rarity].name} ( ${({common:'обычная',rare:'редкая',legendary:'легендарная',mythic:'мифическая'})[axe.rarity] || 'обычная'} )`;
+      if (name) name.textContent = `${AXES[axe.rarity].name} ( ${({common:'обычная',reinforced:'усиленная',rare:'редкая',legendary:'легендарная',mythic:'мифическая'})[axe.rarity] || 'обычная'} )`;
       const count = item.querySelector('.axe-count');
       if (count) count.textContent = axe.count > 1 ? `×${axe.count}` : '';
       const dur = item.querySelector('.axe-durability');
       if (dur) dur.textContent = `${axe.durability}/${AXES[axe.rarity].max}`;
       fragment.append(item);
     });
-    const occupied = state.inventory.axes.length;
+    if (state.inventory.secretLogs > 0) {
+      const item = document.createElement('li'); item.className = 'inventory-secret-log';
+      const icon = document.createElement('span'); icon.className = 'secret-log-icon'; icon.textContent = '✦'; icon.setAttribute('aria-hidden','true');
+      const name = document.createElement('span'); name.className = 'axe-name'; name.textContent = SECRET_LOG_NAME;
+      const count = document.createElement('span'); count.className = 'axe-count'; count.textContent = `×${state.inventory.secretLogs}`;
+      item.append(icon,name,count); fragment.append(item);
+    }
+    const occupied = state.inventory.axes.length + (state.inventory.secretLogs > 0 ? 1 : 0);
     for (let i = occupied; i < 20; i++) {
       const slot = document.createElement('li');
       slot.className = 'inventory-empty-slot';
@@ -1121,7 +1281,7 @@
     }
     list.replaceChildren(fragment);
     const empty = $('inventory-empty');
-    if (empty) empty.hidden = state.inventory.axes.length > 0;
+    if (empty) empty.hidden = state.inventory.axes.length > 0 || state.inventory.secretLogs > 0;
   }
 
   function renderCrewList() {
@@ -1208,6 +1368,21 @@
       const choices = row.querySelector('.axe-choices');
 
       if (name) name.textContent = worker.name;
+      let zoneSelect = row.querySelector('.worker-zone-select');
+      if (!zoneSelect) {
+        zoneSelect = document.createElement('select'); zoneSelect.className = 'worker-zone-select'; zoneSelect.setAttribute('aria-label', `Зона работы: ${worker.name}`);
+        row.append(zoneSelect);
+        zoneSelect.addEventListener('change', () => {
+          const current = state.sawmill.workers.find(w => w.id === row.dataset.workerId);
+          if (current) { current.zoneId = clamp(num(zoneSelect.value,1),1,state.sawmill.zones); saveState(); render(); }
+        });
+      }
+      const zoneSignature = Array.from({length:state.sawmill.zones},(_,i)=>i+1).join(',');
+      if (zoneSelect.dataset.signature !== zoneSignature) {
+        zoneSelect.dataset.signature = zoneSignature; zoneSelect.replaceChildren();
+        for(let z=1; z<=state.sawmill.zones; z++){ const opt=document.createElement('option'); opt.value=String(z); opt.textContent=`Зона ${z} · ${({birch:'берёза',pine:'сосна',oak:'дуб'})[state.sawmill.zoneKinds?.[z]||'birch']}`; zoneSelect.append(opt); }
+      }
+      zoneSelect.value = String(clamp(num(worker.zoneId,1),1,state.sawmill.zones));
 
       const prog = expProgress(worker);
       if (level) {
@@ -1413,7 +1588,7 @@
       el.textContent = String(id);
       el.classList.remove('muted');
     } else {
-      el.textContent = 'ID доступен при запуске через Telegram';
+      el.textContent = window.Telegram?.WebApp ? 'Telegram не передал user.id. Открой игру через кнопку бота в Telegram.' : 'Telegram WebApp не обнаружен — открой игру внутри Telegram.';
       el.classList.add('muted');
     }
   }
@@ -1440,6 +1615,33 @@
     setText('zone-count', state.sawmill.zones);
     setText('worker-cap', state.sawmill.zones * 10);
     setText('worker-count', state.sawmill.workers.length);
+    setText('machine-count', 1 + (state.sawmill.extraMachines || []).length);
+    setText('operator-count', (state.sawmill.operators || []).length);
+    const eventLabel = $('event-zones-summary');
+    if (eventLabel) eventLabel.textContent = Object.entries(state.sawmill.eventZones || {}).filter(([,z])=>z).map(([kind,z])=>`Зона ${z}: ${{rotten:'только гнилые брёвна',empty:'пустые брёвна',ideal:'идеальные брёвна'}[kind]}`).join(' · ') || 'Сегодня особых зон нет';
+    const machineList = $('machine-list');
+    if (machineList) {
+      machineList.replaceChildren();
+      [state.sawmill.machine, ...(state.sawmill.extraMachines || [])].forEach((machine, index) => {
+        const card=document.createElement('li'); card.className='machine-card';
+        const title=document.createElement('strong'); title.textContent=`Станок ${index+1} · уровень ${machine.level}/${MAX_MACHINE_LEVEL}`;
+        const details=document.createElement('p'); details.textContent=`Партия до ${MACHINE[machine.level].capacity} брёвен · ${MACHINE[machine.level].minutes} мин/доску · прочность ${machine.durability}/100`;
+        const actions=document.createElement('div'); actions.className='machine-actions';
+        if (machine.level < MAX_MACHINE_LEVEL) { const up=document.createElement('button'); up.type='button'; up.dataset.machineAction='upgrade'; up.dataset.machineIndex=String(index); up.textContent=`Улучшить · ${MACHINE[machine.level+1].price}$`; actions.append(up); }
+        if (machine.durability < 100) { const fix=document.createElement('button'); fix.type='button'; fix.dataset.machineAction='repair'; fix.dataset.machineIndex=String(index); fix.textContent=`Ремонт · ${(100-machine.durability)*2}$`; actions.append(fix); }
+        card.append(title,details,actions); machineList.append(card);
+      });
+    }
+    const operatorList = $('operator-list');
+    if (operatorList) {
+      operatorList.replaceChildren();
+      (state.sawmill.operators || []).forEach(op => {
+        const li=document.createElement('li'); li.className='operator-card';
+        const img=document.createElement('img'); img.className='worker-portrait small'; img.src=`${clamp(num(op.skin,1),1,4)}skin.jpeg`; img.alt=`Станочник ${op.name}`; img.loading='lazy'; img.decoding='async'; attachImgFallback(img,FALLBACK_WORKER_SVG);
+        const info=document.createElement('div'); const name=document.createElement('strong'); name.textContent=op.name; const detail=document.createElement('p'); detail.textContent=`Станок ${op.machineIndex+1} · цикл ${MACHINE[( [state.sawmill.machine,...state.sawmill.extraMachines][op.machineIndex] || MACHINE_BASE()).level].minutes+10} мин · без уровня`;
+        info.append(name,detail); li.append(img,info); operatorList.append(li);
+      });
+    }
 
     setText('planks', state.sawmill.planks);
     setText('plank-price', `${dailyPrice()} $`);
@@ -1455,6 +1657,7 @@
     );
 
     QUALITY.forEach(q => setText(`logs-${q}`, state.sawmill.logs[q]));
+    WOOD_TYPES.forEach(wood => setText(`wood-${wood}-logs`, sum(QUALITY.map(q => state.sawmill.logsByWoodQuality?.[wood]?.[q] || 0))));
 
     setText('hours-worked', state.sawmill.hoursWorked.toFixed(1));
     setText('logs-today', state.sawmill.logsToday);
@@ -1612,7 +1815,7 @@
 
     const upgradeMachine = $('upgrade-machine');
     if (upgradeMachine) {
-      if (machine.level >= 5) {
+      if (machine.level >= MAX_MACHINE_LEVEL) {
         upgradeMachine.disabled = true;
         upgradeMachine.textContent = 'Максимальный уровень';
       } else {
@@ -1629,6 +1832,14 @@
 
       button.disabled = owned || zone !== state.sawmill.zones + 1;
       button.dataset.owned = String(owned);
+      const eventType = Object.keys(state.sawmill.eventZones || {}).find(k => state.sawmill.eventZones[k] === zone) || '';
+      button.dataset.event = eventType;
+      const wood = state.sawmill.zoneKinds?.[zone] || 'birch';
+      button.dataset.wood = wood;
+      const woodLabel = ({birch:'Берёза',pine:'Сосна',oak:'Дуб'})[wood] || 'Берёза';
+      const eventLabel = ({rotten:'гнилые',empty:'пустые',ideal:'идеальные'})[eventType] || '';
+      button.title = `Зона ${zone} · ${woodLabel}${eventLabel ? ` · событие: ${eventLabel}` : ''}${owned ? ' · ваша' : ' · не куплена'}`;
+      button.textContent = `${zone} · ${{birch:'Б',pine:'С',oak:'Д'}[wood]}${eventType ? ({rotten:' Г',empty:' Ø',ideal:' ★'})[eventType] : ''}`;
       button.setAttribute(
         'aria-label',
         owned ? `Зона ${zone}, куплена` : `Зона ${zone}`
@@ -1813,9 +2024,7 @@
     if (close) close.closest('.toast')?.remove();
   });
 
-  Object.keys(AXES).forEach(rarity => {
-    bind(`buy-${rarity}`, () => buyAxe(rarity));
-  });
+  Object.keys(AXES).forEach(rarity => { bind(`buy-${rarity}`, () => buyAxe(rarity)); });
 
   bind('hire', () => transaction('Найм работника', () => {
     const workers = state.sawmill.workers;
@@ -1836,6 +2045,7 @@
       level: 1,
       xp: 0,
       hireCost: cost,
+      zoneId: 1,
       axe: null,
       isWorking: false
     });
@@ -1847,10 +2057,57 @@
     );
   }));
 
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-machine-action]');
+    if (!button) return;
+    const index = num(button.dataset.machineIndex);
+    const machines = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])];
+    const machine = machines[index];
+    if (!machine) return;
+    if (button.dataset.machineAction === 'upgrade') {
+      transaction(`Улучшение станка ${index+1}`, () => {
+        if (machine.level >= MAX_MACHINE_LEVEL) return false;
+        const next = machine.level + 1;
+        if (!spend(MACHINE[next].price)) return false;
+        machine.level = next;
+        notify(`Станок ${index+1} улучшен до ${next} уровня.`);
+      });
+    } else if (button.dataset.machineAction === 'repair') {
+      transaction(`Ремонт станка ${index+1}`, () => {
+        if (machine.durability >= 100) return false;
+        const cost = (100-machine.durability)*2;
+        if (!spend(cost)) return false;
+        machine.durability = 100;
+        notify(`Станок ${index+1} отремонтирован за ${cost}$.`);
+      });
+    }
+  });
+
+  bind('buy-machine', () => transaction('Покупка станка', () => {
+    const maxMachines = 5 + Math.max(0, state.sawmill.zones - 1) * 5;
+    const total = 1 + state.sawmill.extraMachines.length;
+    if (total >= maxMachines) { notify(`Лимит станков: ${maxMachines}.`, 'error'); return false; }
+    const cost = 2500 + (total - 1) * 1800;
+    if (!spend(cost)) return false;
+    state.sawmill.extraMachines.push(MACHINE_BASE());
+    notify(`Дополнительный станок куплен за ${cost}$.`);
+  }));
+
+  bind('hire-operator', () => transaction('Найм станочника', () => {
+    const machines = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])];
+    const freeIndex = machines.findIndex((m, i) => !state.sawmill.operators.some(o => o.machineIndex === i));
+    if (freeIndex < 0) { notify('Нет свободного станка для станочника.', 'error'); return false; }
+    const cost = 1500 + state.sawmill.operators.length * 1000;
+    if (!spend(cost)) return false;
+    const names = ['Богдан','Валентин','Виталий','Вячеслав','Геннадий','Данил','Евгений','Игорь','Лев','Марат','Назар','Павел','Семён','Тарас','Филипп','Ян'];
+    state.sawmill.operators.push({ id: uid(), name: names[Math.floor(Math.random()*names.length)], skin: 1 + Math.floor(Math.random()*4), machineIndex: freeIndex, hireCost: cost });
+    notify(`Станочник нанят за ${cost}$. Он будет перерабатывать брёвна автоматически.`);
+  }));
+
   bind('upgrade-machine', () => transaction('Улучшение станка', () => {
     const machine = state.sawmill.machine;
 
-    if (machine.level >= 5) {
+    if (machine.level >= MAX_MACHINE_LEVEL) {
       notify('Станок уже максимального уровня.');
       return false;
     }
@@ -2019,6 +2276,7 @@
 
     QUALITY.forEach(q => {
       state.sawmill.logs[q] -= queue[q];
+      if (queue[q] > 0) consumeWoodForQuality(q, queue[q]);
     });
 
     machine.queue = queue;
@@ -2163,6 +2421,7 @@
     if (!spend(1500)) return false;
 
     state.sawmill.zones++;
+    state.sawmill.zoneKinds[state.sawmill.zones] = ['birch','pine','oak'][Math.floor(Math.random()*3)];
     selectedZone = null;
     $('zone-buy')?.close?.();
 
@@ -2330,7 +2589,7 @@
     $('reset-step-2')?.close?.();
 
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(storageKey());
       state = createState();
       openAxeChoosers.clear();
       saveState();
@@ -2343,36 +2602,32 @@
     }
   });
 
-  function initialize() {
+  async function initialize() {
+    try {
+      const tg = window.Telegram?.WebApp;
+      tg?.ready?.(); tg?.expand?.();
+    } catch {}
     renderProfileTab();
+    document.querySelectorAll('img.axe-icon').forEach(img => attachImgFallback(img, FALLBACK_AXE_SVG));
+    document.querySelectorAll('img.worker-portrait').forEach(img => attachImgFallback(img, FALLBACK_WORKER_SVG));
 
-    document.querySelectorAll('img.axe-icon').forEach(img => {
-      attachImgFallback(img, FALLBACK_AXE_SVG);
-    });
-    document.querySelectorAll('img.worker-portrait').forEach(img => {
-      attachImgFallback(img, FALLBACK_WORKER_SVG);
-    });
-
+    // Telegram CloudStorage is per-user. Prefer the newest valid snapshot and keep local fallback.
+    const cloudState = await cloudLoadState();
+    if (cloudState && num(cloudState.lastLogin) > num(state.lastLogin)) state = cloudState;
     const elapsed = Math.max(0, Date.now() - num(state.lastLogin, Date.now()));
-
-    if (elapsed > 0) {
-      advanceTime(elapsed);
-    } else {
-      saveState();
-    }
-
+    if (elapsed > 0) advanceTime(elapsed); else saveState();
     render();
   }
 
-  initialize();
-
-  window.setInterval(() => {
-    const now = Date.now();
-    const elapsed = Math.max(0, now - lastTick);
-    lastTick = now;
-
-    advanceTime(elapsed);
-  }, 1000);
+  initialize().then(() => {
+    lastTick = Date.now();
+    window.setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.max(0, now - lastTick);
+      lastTick = now;
+      advanceTime(elapsed);
+    }, 1000);
+  });
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
@@ -2380,7 +2635,7 @@
     }
   });
 
-  window.addEventListener('pagehide', saveState);
+  window.addEventListener('pagehide', () => { saveState(); if (getTelegramId() !== 'browser') cloudSaveState(JSON.stringify(state)); });
 
   window.TimberTown = Object.freeze({
     getState: () => JSON.parse(JSON.stringify(state)),

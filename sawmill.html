@@ -337,6 +337,11 @@
           <data class="stat-value" id="planks" value="0">0</data>
         </div>
       </div>
+      <div class="wood-stock-grid" aria-label="Запасы древесины по породам">
+        <div class="wood-stock-card wood-birch">Берёза <data id="wood-birch-logs" value="0">0</data></div>
+        <div class="wood-stock-card wood-pine">Сосна <data id="wood-pine-logs" value="0">0</data></div>
+        <div class="wood-stock-card wood-oak">Дуб <data id="wood-oak-logs" value="0">0</data></div>
+      </div>
       <ul id="log-piles">
         <li>Гнилое <data id="logs-rotten" value="0">0</data></li>
         <li>Обычное <data id="logs-normal" value="0">0</data></li>
@@ -347,9 +352,20 @@
       <p>Цена доски <data id="plank-price" value="">ещё не назначена</data></p>
     </section>
 
+    <section id="station-crew" aria-labelledby="station-crew-title">
+      <h2 id="station-crew-title">Станочники</h2>
+      <p>Работники без уровня, автоматически обслуживают назначенные станки. Они работают офлайн, пока есть брёвна и прочность станка.</p>
+      <ul id="machine-list" class="machine-list"></ul>
+      <ul id="operator-list"></ul>
+      <p>Всего станков: <data id="machine-count" value="1">1</data> · станочников: <data id="operator-count" value="0">0</data></p>
+      <p><a href="shop.html#machine-purchase">Купить станок или нанять станочника</a></p>
+    </section>
+
     <section id="zones" aria-labelledby="zones-title">
       <h2 id="zones-title">Карта зон</h2>
       <p>Зон <data id="zone-count" value="1">1</data> из 28. Мест для людей <data id="worker-cap" value="10">10</data>. В зоне 200 000 брёвен, запас возвращается каждый игровой день.</p>
+      <p class="event-zone-legend">События сегодняшнего дня: <strong id="event-zones-summary">События рассчитываются…</strong></p>
+      <p>Типы делянок: берёза — обычная добыча; сосна — повышенный выход обычной древесины; дуб — более ценные брёвна. Перемещайте работников между своими зонами в профиле.</p>
       <div id="zone-grid" role="group" aria-label="28 зон">
         <button type="button" data-zone="1" data-owned="true" aria-label="Зона 1, куплена">1</button>
         <button type="button" data-zone="2" data-owned="false" aria-label="Зона 2">2</button>
