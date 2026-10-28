@@ -66,10 +66,48 @@
           "type": "object"
         },
         "workers": {
-          "type": "array"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stars": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "hireCost": {
+                "type": "number",
+                "minimum": 0
+              },
+              "axe": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            }
+          }
         },
         "operators": {
-          "type": "array"
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stars": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "hireCost": {
+                "type": "number",
+                "minimum": 0
+              },
+              "machineIndex": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
         },
         "machine": {
           "type": "object"
@@ -78,10 +116,21 @@
           "type": "array"
         }
       }
+    },
+    "freeHiresUsed": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2,
+      "description": "Количество использованных бесплатных наймов; не уменьшается при увольнении."
+    },
+    "paidHiresCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Счётчик платных наймов для предотвращения перебора рейтинга через увольнение."
     }
   },
   "storage": {
-    "local": "timber-town:<telegramId>:v1.2.0",
+    "local": "timber-town:<telegramId>:v1.3.0",
     "telegramCloudStorage": "tt_save_<telegramId>_meta and tt_save_<telegramId>_<chunkIndex>",
     "cloudChunkSize": 3500
   }

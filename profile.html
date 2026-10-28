@@ -50,7 +50,7 @@
 <body data-screen="profile">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -129,6 +129,15 @@
 
     <section id="tab-crew" hidden aria-labelledby="tab-crew-title">
       <h2 id="tab-crew-title">Работники</h2>
+      <div id="crew-filters" class="crew-filters" aria-label="Фильтры работников">
+        <label>Поиск по имени<input id="crew-search" type="search" placeholder="Имя работника" autocomplete="off"></label>
+        <label>Звёзды<select id="crew-stars"><option value="all">Любой рейтинг</option><option value="5">5 звёзд</option><option value="4">4 звезды</option><option value="3">3 звезды</option><option value="2">2 звезды</option><option value="1">1 звезда</option><option value="4plus">4–5 звёзд</option></select></label>
+        <label>Топор<select id="crew-axe"><option value="all">Любой статус</option><option value="yes">Есть топор</option><option value="no">Нет топора</option></select></label>
+        <label>Работа<select id="crew-status"><option value="all">Все работники</option><option value="working">Работают</option><option value="idle">Не работают</option></select></label>
+        <label>Сортировка<select id="crew-sort"><option value="stars-desc">Сначала лучшие звёзды</option><option value="stars-asc">Сначала слабые звёзды</option><option value="name">По имени</option><option value="salary">По цене найма</option></select></label>
+      </div>
+      <p id="crew-results" class="muted"></p>
+      <div id="crew-pagination" class="crew-pagination"><button type="button" id="crew-prev" disabled>← Назад</button><span id="crew-page-label">1 / 1</span><button type="button" id="crew-next" disabled>Далее →</button></div>
       <p id="profile-crew-empty">Работников нет.</p>
       <ul id="profile-crew"></ul>
     </section>
@@ -136,6 +145,7 @@
       <li data-worker-id="">
         <img class="worker-portrait" alt="" loading="lazy" decoding="async">
         <p class="worker-name"></p>
+        <p class="worker-stars"></p>
         <p class="worker-level"></p>
         <div class="exp-bar"><div class="exp-bar-fill" style="width:0%"></div></div>
         <p class="worker-skin" hidden></p>

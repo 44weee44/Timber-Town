@@ -9,7 +9,7 @@
 <body data-screen="foundry">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -41,6 +41,7 @@
   <main id="foundry">
     <p><a href="game.html">На карту</a></p>
     <h1>Литейная</h1>
+    <div class="building-guide"><img src="1skin.jpeg" alt="Служащий здания" loading="lazy" decoding="async"><p>«Проверяй документы перед отправкой товара. Порядок в бумагах экономит деньги и время.»</p></div>
     <p id="stamp-status" aria-live="polite">Докладную выдают на складе при продаже досок. Сначала поставьте печать — потом оплатите доставку в управе.</p>
     <button type="button" id="stamp" disabled aria-describedby="stamp-status">Поставить печать</button>
     <p>Печать требует торговую лицензию. После печати докладную оплачивают в управе.</p>

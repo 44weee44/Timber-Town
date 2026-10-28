@@ -1,7 +1,9 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.2.0';
+  const VERSION = '1.3.0';
+  const WORKER_DAILY_SALARY = 10;
+  const FREE_WORKER_LIMIT = 2;
   const GAME_MINUTE_MS = 7500;
   const DAY_MINUTES = 1440;
   const QUALITY = ['rotten', 'normal', 'good', 'excellent', 'perfect'];
@@ -291,6 +293,8 @@
       taxDebt: 0,
       taxPenalty: 0,
       overdueDays: 0,
+      freeHiresUsed: 0,
+      paidHiresCount: 0,
       lastLogin: Date.now(),
 
       inventory: { axes: [], secretLogs: 0 },
@@ -382,7 +386,7 @@
     s.sawmill.eventZones = { ...createInitialEvents(), ...(s.sawmill.eventZones || {}) };
     s.sawmill.zoneKinds = { ...createInitialZoneKinds(), ...(s.sawmill.zoneKinds || {}) };
     s.sawmill.extraMachines = Array.isArray(s.sawmill.extraMachines) ? s.sawmill.extraMachines.slice(0, 139).map(m => ({ ...MACHINE_BASE(), ...(m || {}), queue: Object.fromEntries(QUALITY.map(q => [q, num(m?.queue?.[q])])), level: clamp(num(m?.level,1),1,MAX_MACHINE_LEVEL), durability: clamp(num(m?.durability,100),0,100), remaining: clamp(num(m?.remaining),0,100000), isRunning: Boolean(m?.isRunning) })) : [];
-    s.sawmill.operators = Array.isArray(s.sawmill.operators) ? s.sawmill.operators.filter(o => o && typeof o.id === 'string').map(o => ({ id:o.id, name:String(o.name || 'Станочник').slice(0,32), skin:clamp(num(o.skin,1),1,4), machineIndex:clamp(num(o.machineIndex),0,139), hireCost:num(o.hireCost) })) : [];
+    s.sawmill.operators = Array.isArray(s.sawmill.operators) ? s.sawmill.operators.filter(o => o && typeof o.id === 'string').map(o => ({ id:o.id, name:String(o.name || 'Станочник').slice(0,32), skin:clamp(num(o.skin,1),1,4), stars:clamp(Number.isFinite(Number(o.stars)) && o.stars !== null ? Number(o.stars) : 1 + Math.floor(Math.random()*5),1,5), machineIndex:clamp(num(o.machineIndex),0,139), hireCost:num(o.hireCost) })) : [];
 
     s.sawmill.workers = Array.isArray(s.sawmill.workers)
       ? s.sawmill.workers
@@ -412,6 +416,7 @@
               level,
               xp,
               hireCost: num(w.hireCost),
+              stars: clamp(Number.isFinite(Number(w.stars)) && w.stars !== null ? Number(w.stars) : 1 + Math.floor(Math.random() * 5), 1, 5),
               zoneId: clamp(num(w.zoneId, 1), 1, Math.max(1, s.sawmill.zones)),
               axe: rarity
                 ? {
@@ -487,6 +492,8 @@
     s.taxDebt = num(s.taxDebt);
     s.taxPenalty = num(s.taxPenalty);
     s.overdueDays = num(s.overdueDays);
+    s.freeHiresUsed = clamp(num(s.freeHiresUsed, Math.min(FREE_WORKER_LIMIT, s.sawmill.workers.filter(w => num(w.hireCost) === 0).length)), 0, FREE_WORKER_LIMIT);
+    s.paidHiresCount = Math.max(num(s.paidHiresCount), s.sawmill.workers.filter(w => num(w.hireCost) > 0).length);
     s.sawmill.planks = num(s.sawmill.planks);
     s.sawmill.safeMoney = num(s.sawmill.safeMoney);
     s.sawmill.hoursWorked = Math.max(0, Number(s.sawmill.hoursWorked) || 0);
@@ -600,6 +607,8 @@
   let busy = false;
   let selectedZone = null;
   let selectedWorkerId = null;
+  let crewPage = 0;
+  const CREW_PAGE_SIZE = 25;
   let lastTick = Date.now();
   let timeRemainderMs = 0;
   let suppressNotifications = false;
@@ -786,9 +795,15 @@
       : 0;
 
     const axeBonus = worker.axe && AXES[worker.axe.rarity] ? AXES[worker.axe.rarity].qualityBonus : 0;
-    const boost = Math.min(0.72, Math.max(0, worker.level - 1) * 0.025 + axeBonus + rank * 0.025);
+    const starQualityBonus = (clamp(Number(worker.stars) || 3, 1, 5) - 3) * 0.025;
+    const boost = Math.min(0.72, Math.max(0, worker.level - 1) * 0.025 + axeBonus + rank * 0.025 + starQualityBonus);
 
     const weights = [80, 11.9, 5, 3, 0.1];
+    const starShift = (clamp(Number(worker.stars) || 3, 1, 5) - 3) * 1.5;
+    weights[0] -= starShift;
+    weights[2] += starShift * 0.5;
+    weights[3] += starShift * 0.35;
+    weights[4] += starShift * 0.15;
     const zoneId = clamp(num(worker.zoneId, 1), 1, state.sawmill.zones);
     const wood = state.sawmill.zoneKinds?.[zoneId] || 'birch';
     if (wood === 'pine') { weights[0] -= 5; weights[1] += 5; }
@@ -850,7 +865,9 @@
     const quality = zoneEvent === 'rotten' ? 'rotten' : getQuality(worker, zoneEvent === 'ideal' ? 0.60 : 0);
 
     const woodType = state.sawmill.zoneKinds?.[zoneId] || 'birch';
-    const extraLog = zoneEvent === 'rotten' ? Math.random() < axeStats.extraLogChance : Math.random() < axeStats.extraLogChance;
+    const starBonus = (clamp(Number(worker.stars) || 3, 1, 5) - 3) * 0.025;
+    const extraLogChance = clamp(axeStats.extraLogChance + starBonus, 0, 0.15);
+    const extraLog = Math.random() < extraLogChance;
     const produced = 1 + (extraLog ? 1 : 0);
     const actualProduced = Math.min(produced, zoneStats.stock);
     state.sawmill.logs[quality] += actualProduced;
@@ -903,7 +920,7 @@
       if (operator && machine.durability > 0) {
         if (queueTotal() > 0 && !machine.isRunning) {
           // Resume a paused/previously interrupted batch; never overwrite it.
-          machine.remaining = Math.max(1, Number(machine.remaining) || 0) + 10;
+          machine.remaining = Math.max(1, Number(machine.remaining) || 0) + Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2);
           machine.isRunning = true;
         } else if (!machine.isRunning && queueTotal() === 0 && sum(QUALITY.map(q => state.sawmill.logs[q])) > 0) {
           const quality = QUALITY.slice().reverse().find(q => state.sawmill.logs[q] > 0);
@@ -912,7 +929,7 @@
             machine.queue = Object.fromEntries(QUALITY.map(q => [q, q === quality ? amount : 0]));
             state.sawmill.logs[quality] -= amount;
             consumeWoodForQuality(quality, amount);
-            machine.remaining = MACHINE[machine.level].minutes + 10;
+            machine.remaining = MACHINE[machine.level].minutes + Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2);
             machine.isRunning = true;
           }
         }
@@ -931,7 +948,7 @@
         if (planks > 0 && Math.random() < config.bonus) planks++;
         state.sawmill.planks += planks;
         if (machine.processed % 5 === 0) machine.durability = Math.max(0, machine.durability - 3);
-        if (queueTotal() > 0) machine.remaining += config.minutes + (operator ? 10 : 0);
+        if (queueTotal() > 0) machine.remaining += config.minutes + (operator ? Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2) : 0);
       }
       if (queueTotal() <= 0) {
         machine.isRunning = false;
@@ -1010,7 +1027,9 @@
     state.sawmill.zoneStock = state.sawmill.zones * 200000;
     state.sawmill.logsToday = 0;
     refreshEventZones();
-    state.taxDebt += 50;
+    const dailyWages = (state.sawmill.workers.length + state.sawmill.operators.length) * WORKER_DAILY_SALARY;
+    state.taxDebt += 50 + dailyWages;
+
 
     if (state.overdueDays === 5) {
       state.sawmill.workers.forEach(worker => { worker.isWorking = false; });
@@ -1471,6 +1490,10 @@
     const profileCrew = $('profile-crew');
     if (!profileCrew) return;
 
+    const filteredWorkers = getFilteredCrew();
+    const pageCount = Math.max(1, Math.ceil(filteredWorkers.length / CREW_PAGE_SIZE));
+    crewPage = clamp(crewPage, 0, pageCount - 1);
+    const visibleIds = new Set(filteredWorkers.slice(crewPage * CREW_PAGE_SIZE, (crewPage + 1) * CREW_PAGE_SIZE).map(worker => worker.id));
     reconcileWorkerRows(profileCrew, 'profile-worker').forEach(({ worker, row }) => {
       if (!row) return;
 
@@ -1485,6 +1508,12 @@
       const choices = row.querySelector('.axe-choices');
 
       if (name) name.textContent = worker.name;
+      const stars = row.querySelector('.worker-stars');
+      if (stars) { stars.textContent = `${'★'.repeat(worker.stars || 3)}${'☆'.repeat(5-(worker.stars || 3))}`; stars.setAttribute('aria-label', `Квалификация: ${worker.stars || 3} из 5 звёзд`); }
+      row.hidden = !visibleIds.has(worker.id);
+      let wage = row.querySelector('.worker-wage');
+      if (!wage) { wage = document.createElement('p'); wage.className = 'worker-wage'; row.insertBefore(wage, row.querySelector('.worker-level')); }
+      wage.textContent = `Зарплата: ${WORKER_DAILY_SALARY}$ за игровые сутки`;
       let zoneSelect = row.querySelector('.worker-zone-select');
       if (!zoneSelect) {
         zoneSelect = document.createElement('select'); zoneSelect.className = 'worker-zone-select'; zoneSelect.setAttribute('aria-label', `Зона работы: ${worker.name}`);
@@ -1577,7 +1606,36 @@
     });
 
     const empty = $('profile-crew-empty');
-    if (empty) empty.hidden = state.sawmill.workers.length > 0;
+    if (empty) empty.hidden = filteredWorkers.length > 0;
+    setText('crew-results', `Найдено: ${filteredWorkers.length} из ${state.sawmill.workers.length}`);
+    setText('crew-page-label', `${crewPage + 1} / ${pageCount}`);
+    const prev = $('crew-prev'); if (prev) prev.disabled = crewPage <= 0;
+    const next = $('crew-next'); if (next) next.disabled = crewPage >= pageCount - 1;
+  }
+
+  function getFilteredCrew() {
+    const search = String($('crew-search')?.value || '').trim().toLocaleLowerCase('ru-RU');
+    const stars = $('crew-stars')?.value || 'all';
+    const axe = $('crew-axe')?.value || 'all';
+    const status = $('crew-status')?.value || 'all';
+    const sort = $('crew-sort')?.value || 'stars-desc';
+    const workers = state.sawmill.workers.filter(worker => {
+      if (search && !worker.name.toLocaleLowerCase('ru-RU').includes(search)) return false;
+      if (stars === '4plus' && worker.stars < 4) return false;
+      if (stars !== 'all' && stars !== '4plus' && worker.stars !== Number(stars)) return false;
+      if (axe === 'yes' && !worker.axe) return false;
+      if (axe === 'no' && worker.axe) return false;
+      if (status === 'working' && !(worker.isWorking && worker.axe && worker.axe.durability > 0)) return false;
+      if (status === 'idle' && worker.isWorking && worker.axe && worker.axe.durability > 0) return false;
+      return true;
+    });
+    workers.sort((a,b) => {
+      if (sort === 'stars-asc') return a.stars - b.stars || a.name.localeCompare(b.name, 'ru');
+      if (sort === 'name') return a.name.localeCompare(b.name, 'ru');
+      if (sort === 'salary') return a.hireCost - b.hireCost || b.stars - a.stars;
+      return b.stars - a.stars || a.name.localeCompare(b.name, 'ru');
+    });
+    return workers;
   }
 
   function renderBrokenAxes() {
@@ -1716,6 +1774,8 @@
     setText('day', state.day);
     setText('gold', state.gold);
     setText('tax-debt', `${taxDue.toLocaleString('ru-RU')} $`);
+    setText('daily-wages', `${((state.sawmill.workers.length + state.sawmill.operators.length) * WORKER_DAILY_SALARY).toLocaleString('ru-RU')} $`);
+    setText('daily-total', `${(50 + (state.sawmill.workers.length + state.sawmill.operators.length) * WORKER_DAILY_SALARY).toLocaleString('ru-RU')} $`);
     setText('tax-penalty', `${state.taxPenalty.toLocaleString('ru-RU')} $`);
     setText('overdue-days', state.overdueDays);
 
@@ -1797,9 +1857,9 @@
         const machine = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])][op.machineIndex];
         const name = li.querySelector('strong');
         const detail = li.querySelector('p');
-        if (name) name.textContent = op.name;
+        if (name) name.textContent = `${op.name} · ${'★'.repeat(op.stars || 3)}${'☆'.repeat(5-(op.stars || 3))}`;
         if (detail) detail.textContent = machine
-          ? `Станок ${op.machineIndex + 1} · ${MACHINE[machine.level].minutes + 10} мин на бревно · без уровня`
+          ? `Станок ${op.machineIndex + 1} · зарплата ${WORKER_DAILY_SALARY}$/день · задержка ${Math.max(5, 15 - clamp(Number(op.stars) || 3, 1, 5) * 2)} мин` 
           : 'Нет назначенного станка';
         fragment.append(li);
       });
@@ -2149,7 +2209,7 @@
         hireButton.textContent = 'Нет свободных мест';
       } else {
         hireButton.disabled = false;
-        const cost = count < 2 ? 0 : (count - 1) * 200;
+        const cost = state.freeHiresUsed < FREE_WORKER_LIMIT ? 0 : 200 + state.paidHiresCount * 200;
         hireButton.textContent = cost > 0
           ? `Нанять за ${cost}$`
           : 'Нанять бесплатно';
@@ -2158,7 +2218,6 @@
 
     renderInventory();
     renderCrewList();
-    renderHiredList();
     renderProfileCrew();
     renderBrokenAxes();
     renderChances();
@@ -2198,7 +2257,8 @@
       return false;
     }
 
-    const cost = workers.length < 2 ? 0 : (workers.length - 1) * 200;
+    const isFreeHire = state.freeHiresUsed < FREE_WORKER_LIMIT;
+    const cost = isFreeHire ? 0 : 200 + state.paidHiresCount * 200;
     if (cost > 0 && !spend(cost)) return false;
 
     workers.push({
@@ -2208,15 +2268,19 @@
       level: 1,
       xp: 0,
       hireCost: cost,
+      stars: isFreeHire ? 2 + Math.floor(Math.random() * 2) : 1 + Math.floor(Math.random() * 5),
       zoneId: 1,
       axe: null,
       isWorking: false
     });
 
+    if (isFreeHire) state.freeHiresUsed++;
+    else state.paidHiresCount++;
+    const hired = workers[workers.length - 1];
     notify(
       cost > 0
-        ? `Работник нанят за ${cost}$. Выдайте ему топор в профиле.`
-        : 'Работник нанят бесплатно. Выдайте ему топор в профиле.'
+        ? `${hired.name} нанят за ${cost}$ · ${'★'.repeat(hired.stars)}${'☆'.repeat(5-hired.stars)}. Выдайте ему топор в профиле.`
+        : `${hired.name} нанят бесплатно · ${'★'.repeat(hired.stars)}${'☆'.repeat(5-hired.stars)}. Выдайте ему топор в профиле.`
     );
   }));
 
@@ -2263,8 +2327,9 @@
     const cost = 1500 + state.sawmill.operators.length * 1000;
     if (!spend(cost)) return false;
     const names = ['Богдан','Валентин','Виталий','Вячеслав','Геннадий','Данил','Евгений','Игорь','Лев','Марат','Назар','Павел','Семён','Тарас','Филипп','Ян','Артём','Борис','Вадим','Глеб','Денис','Егор','Кирилл','Максим','Роман','Станислав','Тимур','Юрий'];
-    state.sawmill.operators.push({ id: uid(), name: names[Math.floor(Math.random()*names.length)], skin: 1 + Math.floor(Math.random()*4), machineIndex: freeIndex, hireCost: cost });
-    notify(`Станочник нанят за ${cost}$. Он будет перерабатывать брёвна автоматически.`);
+    const stars = 1 + Math.floor(Math.random() * 5);
+    state.sawmill.operators.push({ id: uid(), name: names[Math.floor(Math.random()*names.length)], skin: 1 + Math.floor(Math.random()*4), stars, machineIndex: freeIndex, hireCost: cost });
+    notify(`Станочник нанят за ${cost}$ · ${'★'.repeat(stars)}${'☆'.repeat(5-stars)}. Квалификация фиксирована; станок будет работать автоматически.`);
   }));
 
   bind('upgrade-machine', () => transaction('Улучшение станка', () => {
@@ -2539,7 +2604,7 @@
       return false;
     }
 
-    if (!spend(500)) return false;
+    if (!spend(100)) return false;
 
     state.licenses.trade.active = true;
     state.licenses.trade.expiresDay = state.day + 19;
@@ -2746,6 +2811,14 @@
     selectedWorkerId = null;
     $('fire-confirm')?.close?.();
   });
+
+  ['crew-search','crew-stars','crew-axe','crew-status','crew-sort'].forEach(id => {
+    const control = $(id);
+    if (!control) return;
+    control.addEventListener(id === 'crew-search' ? 'input' : 'change', () => { crewPage = 0; renderProfileCrew(); });
+  });
+  bind('crew-prev', () => { crewPage = Math.max(0, crewPage - 1); renderProfileCrew(); });
+  bind('crew-next', () => { crewPage++; renderProfileCrew(); });
 
   function renderProfileTab() {
     const hash = window.location.hash;

@@ -1335,3 +1335,27 @@ body[data-screen="boot"] #boot-art {
   object-fit: cover;
   object-position: center center;
 }
+
+
+/* Worker management: compact filters and paginated roster for large crews. */
+.crew-filters { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:8px; margin:10px 0; }
+.crew-filters label { display:flex; flex-direction:column; gap:4px; color:var(--cream-soft); font-size:12px; }
+.crew-filters input, .crew-filters select { min-width:0; width:100%; min-height:38px; padding:7px 9px; color:var(--cream); background:var(--ink); border:1px solid var(--cream-line); border-radius:4px; }
+.crew-pagination { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0 12px; }
+.crew-pagination button { min-height:36px; padding:6px 12px; }
+#crew-results, #crew-page-label { color:var(--cream-soft); font-size:12px; }
+.worker-stars { color:var(--gold-light); letter-spacing:1px; margin:2px 0; }
+.daily-costs { margin-top:8px; }
+#world a[aria-disabled="true"] { background:transparent !important; box-shadow:none !important; border:0 !important; }
+#world img { background:transparent; }
+body[data-screen="foundry"] { min-height:100dvh; background:#17130e url("liteynaya.jpeg") center center / cover fixed no-repeat; }
+body[data-screen="foundry"] #foundry { width:100%; min-height:calc(100dvh - var(--hud-height, 56px)); margin:0; padding:12px clamp(12px,3vw,28px) max(24px,env(safe-area-inset-bottom)); align-items:stretch; background:linear-gradient(180deg,rgba(13,12,10,.48),rgba(13,12,10,.84)); }
+body[data-screen="foundry"] #foundry > p:first-child { align-self:flex-start; }
+body[data-screen="foundry"] #foundry > h1 { color:var(--gold-light); text-shadow:2px 2px #16100a; }
+body[data-screen="foundry"] #foundry > #stamp-status, body[data-screen="foundry"] #foundry > p:not(:first-child) { max-width:720px; padding:10px 12px; background:rgba(16,13,10,.78); border-left:3px solid var(--gold); }
+@media (max-width:480px) { .crew-filters { grid-template-columns:1fr 1fr; } .crew-filters label:first-child { grid-column:1/-1; } }
+
+.building-guide { display:flex; align-items:center; gap:12px; max-width:760px; width:100%; margin:4px 0 12px; padding:10px 12px; background:rgba(15,13,10,.78); border-left:3px solid var(--gold); }
+.building-guide img { width:58px; height:58px; flex:0 0 58px; object-fit:cover; image-rendering:pixelated; }
+.building-guide p { margin:0; line-height:1.45; }
+body[data-screen="foundry"] .building-guide { background:rgba(15,13,10,.82); }

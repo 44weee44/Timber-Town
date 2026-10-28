@@ -84,7 +84,7 @@
 <body data-screen="uprava">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -116,14 +116,15 @@
   <main id="uprava">
     <p><a href="game.html">На карту</a></p>
     <h1>Управа</h1>
+    <div class="building-guide"><img src="1skin.jpeg" alt="Служащий здания" loading="lazy" decoding="async"><p>«Налог и зарплата учитываются вместе. Следи за ежедневными расходами, и предприятие будет работать спокойно.»</p></div>
     <img src="The_Board.jpeg" width="1168" height="784" alt="Управа">
-    <p>Налог 50$ в день. Сейф для него закрыт. Четыре дня долг копится, на пятый лесопилка встаёт, дальше пеня 10$ в день. На тридцатый день просрочки — конфискация людей, брёвен и досок. Золото и здания остаются.</p>
+    <p>Налог 50$ в день. Зарплаты работников списываются вместе с налогом: 10$ за каждого работника и станочника в игровые сутки. Сейф для него закрыт. Четыре дня долг копится, на пятый лесопилка встаёт, дальше пеня 10$ в день. На тридцатый день просрочки — конфискация людей, брёвен и досок. Золото и здания остаются.</p>
 
     <section id="taxes" aria-labelledby="taxes-title">
       <h2 id="taxes-title">Налог</h2>
       <div class="stat-row">
         <div class="stat">
-          <span class="stat-label">Долг</span>
+          <span class="stat-label">Долг: налог + зарплаты</span>
           <data class="stat-value" id="tax-debt" value="0">0$</data>
         </div>
         <div class="stat">
@@ -134,6 +135,10 @@
           <span class="stat-label">Пеня всего</span>
           <data class="stat-value" id="tax-penalty" value="0">0$</data>
         </div>
+      </div>
+      <div class="stat-row daily-costs">
+        <div class="stat"><span class="stat-label">Зарплаты за сутки</span><data class="stat-value" id="daily-wages" value="0">0 $</data></div>
+        <div class="stat"><span class="stat-label">Налог + зарплаты за сутки</span><data class="stat-value" id="daily-total" value="50">50 $</data></div>
       </div>
       <label for="tax-amount">Сумма</label>
       <input id="tax-amount" type="number" min="1" step="1" value="0" inputmode="numeric">
@@ -155,7 +160,7 @@
       <p id="chop-license">Рубка активна до дня <data id="chop-until-text" value="20">20</data></p>
       <button type="button" id="renew-chop">Продлить рубку</button>
       <p id="trade-license">Торговая лицензия: ещё не выдана</p>
-      <button type="button" id="buy-trade-license">Купить торговую лицензию · 500$</button>
+      <button type="button" id="buy-trade-license">Купить торговую лицензию · 100$</button>
     </section>
 
     <section id="hiring" aria-labelledby="hiring-title">
@@ -188,13 +193,6 @@
       <button type="button" id="pay-delivery" disabled>Оплатить доставку</button>
     </section>
 
-    <template id="hired-worker">
-      <li data-worker-id="">
-        <img class="worker-portrait small" alt="" loading="lazy" decoding="async">
-        <p class="worker-name"></p>
-      </li>
-    </template>
-    <ul id="hired-list"></ul>
   </main>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="game.js" defer></script>
