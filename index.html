@@ -11,254 +11,340 @@
   <link rel="prefetch" href="game.js">
   <title>Timber Town</title>
   <style>
-    /* Плавное появление элементов стартового экрана. */
     @keyframes boot-fade-up {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     @keyframes boot-fade-in {
       from { opacity: 0; }
       to   { opacity: 1; }
     }
-
-    /* Пульсация кнопки «Играть»: золотое кольцо расходится от кнопки. */
     @keyframes play-pulse {
-      0%, 100% {
-        box-shadow:
-          4px 4px 0 var(--ink),
-          0 0 0 0 rgba(226, 182, 87, 0.55);
-      }
-      50% {
-        box-shadow:
-          4px 4px 0 var(--ink),
-          0 0 0 10px rgba(226, 182, 87, 0);
-      }
+      0%, 100% { box-shadow: 0 4px 0 #1a0e07, 0 0 0 0 rgba(226, 182, 87, 0.55); }
+      50%      { box-shadow: 0 4px 0 #1a0e07, 0 0 0 8px rgba(226, 182, 87, 0); }
+    }
+    @keyframes bar-glow {
+      0%, 100% { filter: brightness(1); }
+      50%      { filter: brightness(1.18); }
     }
 
-    /* Видимый заголовок «Timber Town» — переопределяет sr-only из style.css
-       за счёт более высокой специфичности. */
-    body[data-screen="boot"] #boot h1 {
-      position: absolute;
-      z-index: 3;
-      top: calc(env(safe-area-inset-top, 0px) + 5vh);
-      left: 50%;
-      translate: -50% 0;
-      width: auto;
-      height: auto;
-      overflow: visible;
-      clip: auto;
-      font-family: var(--pixel);
-      font-size: clamp(22px, 7.2vw, 44px);
-      line-height: 1.1;
-      letter-spacing: 0.08em;
-      text-align: center;
-      text-transform: uppercase;
-      white-space: nowrap;
-      color: var(--gold);
-      text-shadow:
-        3px 3px 0 var(--ink),
-        -1px -1px 0 var(--ink),
-        1px -1px 0 var(--ink),
-        -1px 1px 0 var(--ink),
-        0 0 24px rgba(226, 182, 87, 0.45);
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-      animation: boot-fade-up 700ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    body[data-screen="boot"] {
+      min-height: 100dvh;
+      overflow: hidden;
+      background: #070b08;
+    }
+    body[data-screen="boot"]::before,
+    body[data-screen="boot"]::after {
+      content: none;
     }
 
-    /* Верхний градиент-затемнение для читаемости заголовка. */
-    body[data-screen="boot"]::before {
-      content: "";
+    #boot-bg {
       position: fixed;
-      z-index: 1;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: calc(22vh + env(safe-area-inset-top, 0px));
-      background: linear-gradient(
-        180deg,
-        rgba(20, 14, 9, 0.72) 0%,
-        rgba(20, 14, 9, 0.35) 55%,
-        rgba(20, 14, 9, 0) 100%
-      );
+      inset: -24px;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(20, 14, 9, 0.15), rgba(5, 8, 6, 0.72) 70%),
+        url("loading.jpeg") center / cover no-repeat;
+      filter: blur(14px) saturate(1.05) brightness(0.42);
+      transform: scale(1.06);
       pointer-events: none;
+    }
+
+    #boot {
+      position: relative;
+      z-index: 1;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding:
+        max(12px, env(safe-area-inset-top))
+        12px
+        max(14px, env(safe-area-inset-bottom));
+    }
+
+    #boot-stage {
+      position: relative;
+      container-type: size;
+      width: min(100%, calc((100dvh - 12.2rem) * 1500 / 1007), 1080px);
+      aspect-ratio: 1500 / 1007;
+      border: 4px solid #3a2414;
+      box-shadow:
+        0 0 0 2px #e2b657,
+        0 0 0 7px #1a100a,
+        0 22px 48px rgba(0, 0, 0, 0.55);
+      animation: boot-fade-in 700ms ease both;
     }
 
     #boot-art {
-      animation: boot-fade-in 900ms 0ms ease both;
-      object-fit: cover;
-      object-position: left center;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      object-position: center;
     }
 
-    body[data-screen="boot"] #boot h1 { display:none; }
-    #tip-list { display:none !important; }
-    #tip { bottom: calc(8.1rem + env(safe-area-inset-bottom)); width:min(30rem,calc(100% - 24px)); padding:8px 10px; border-radius:8px; background:rgba(20,14,9,.78); font-size:clamp(8px,2.4vw,11px); }
-    #load-bar { position:fixed; z-index:4; left:8%; top:63%; bottom:auto; translate:none; width:min(42vw,470px); height:clamp(8px,2.2vw,16px); border:2px solid #4b3219; border-radius:3px; background:#301c0d; box-shadow:0 0 8px rgba(244,211,130,.35); overflow:hidden; }
-    #load-bar::-webkit-progress-value { background:linear-gradient(90deg,#e2a62e,#ffe08a); transition:width 160ms linear; }
-    #load-bar::-moz-progress-bar { background:linear-gradient(90deg,#e2a62e,#ffe08a); }
-    #play { z-index:5; bottom:calc(1rem + env(safe-area-inset-bottom)); width:min(22rem,calc(100% - 36px)); }
-    #play[aria-disabled="true"] { opacity:.48; pointer-events:none; filter:grayscale(.45); }
-    #loading-status { position:fixed; z-index:4; left:50%; bottom:calc(5.1rem + env(safe-area-inset-bottom)); translate:-50% 0; width:min(28rem,calc(100% - 28px)); margin:0; padding:8px 10px; text-align:center; background:rgba(20,14,9,.78); border:1px solid rgba(226,182,87,.3); color:var(--cream); border-radius:8px; font-size:clamp(8px,2.3vw,10px); }
-    @media (min-width:700px) { #boot-art { object-position:center center; } #load-bar { left:9%; top:62%; width:min(38vw,460px); } #loading-status { bottom:calc(5.2rem + env(safe-area-inset-bottom)); } }
-    @media (max-width:699px) { #boot-art { object-position:left center; } #boot::after { content:""; position:fixed; z-index:1; inset:42% 0 0; pointer-events:none; background:linear-gradient(180deg,transparent,rgba(20,14,9,.65)); } #load-bar { left:7%; top:64%; width:40vw; } }
-
-    #tip,
-    #tip-list {
-      animation: boot-fade-up 700ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-      transition: opacity 200ms ease;
-    }
-
-    #tip.is-fading {
-      opacity: 0;
-    }
-
-    #play {
-      animation:
-        boot-fade-up 700ms 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
-        play-pulse 2.4s 1400ms ease-out infinite;
-    }
-
-    @media (hover: hover) {
-      #play:hover {
-        background: var(--gold-light, #f4d382);
-        filter: brightness(1.06);
-      }
-    }
-
-    #boot-storage-warning {
-      animation: boot-fade-up 500ms 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-
-    #boot-divider {
-      position: fixed;
+    #boot-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
       z-index: 2;
-      top: calc(env(safe-area-inset-top, 0px) + 10vh + clamp(48px, 12vw, 74px));
-      left: 50%;
-      translate: -50% 0;
-      width: min(220px, 55vw);
-      height: 2px;
-      border: 0;
-      border-radius: var(--r-pill, 999px);
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        var(--gold-wash, rgba(226, 182, 87, 0.18)) 20%,
-        var(--gold) 50%,
-        var(--gold-wash, rgba(226, 182, 87, 0.18)) 80%,
-        transparent 100%
-      );
-      opacity: 0.85;
       pointer-events: none;
-      animation: boot-fade-in 700ms 220ms ease both;
+      background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(0, 0, 0, 0.34) 100%);
     }
 
-    #boot-storage-warning {
-      position: fixed;
-      z-index: 2;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 6.9rem);
+    body[data-screen="boot"] #boot h1 {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    #load-bar {
+      position: absolute;
+      z-index: 4;
+      left: 27%;
+      top: 79.35%;
+      width: 46.9%;
+      height: 3.85%;
+      margin: 0;
+      border: 0;
+      border-radius: 1px;
+      background: transparent;
+      box-shadow: 0 0 10px rgba(255, 186, 64, 0.28);
+      appearance: none;
+      -webkit-appearance: none;
+      overflow: hidden;
+      translate: none;
+      bottom: auto;
+    }
+    #load-bar::-webkit-progress-bar {
+      background: transparent;
+    }
+    #load-bar::-webkit-progress-value {
+      background:
+        linear-gradient(180deg, rgba(255, 248, 214, 0.95) 0%, rgba(255, 214, 120, 0.2) 38%, rgba(160, 78, 8, 0.15) 100%),
+        linear-gradient(90deg, #b86a12 0%, #ffd36a 42%, #fff1b8 50%, #f0a02a 58%, #c97816 100%);
+      box-shadow: 0 0 8px rgba(255, 196, 70, 0.85);
+      transition: width 180ms linear;
+      animation: bar-glow 1.6s ease-in-out infinite;
+    }
+    #load-bar::-moz-progress-bar {
+      background: linear-gradient(90deg, #b86a12, #ffd36a 46%, #fff1b8 50%, #e29220);
+      transition: width 180ms linear;
+    }
+
+    #load-pct {
+      position: absolute;
+      z-index: 5;
       left: 50%;
-      translate: -50% 0;
-      width: min(28rem, calc(100% - 32px));
+      top: 88.7%;
       margin: 0;
-      padding: 10px 14px;
-      text-align: center;
-      font-size: var(--fs-tiny, 10px);
-      color: var(--danger-ink);
-      line-height: 1.5;
-      background: var(--danger-wash, rgba(157, 51, 44, 0.18));
-      border: 1px solid rgba(240, 192, 187, 0.3);
-      border-radius: var(--r-md, 10px);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-
-    /* Авторское обозначение в углу. */
-    #boot-credit {
-      position: fixed;
-      right: max(12px, env(safe-area-inset-right, 0px));
-      top: calc(env(safe-area-inset-top, 0px) + 12px);
-      margin: 0;
-      font-family: var(--ui, "Russo One", sans-serif);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--cream-muted);
-      opacity: 0.55;
-      z-index: 2;
+      translate: -50% -50%;
+      font-family: var(--pixel);
+      font-size: clamp(8px, 2.35cqh, 15px);
+      line-height: 1;
+      letter-spacing: 0.04em;
+      color: #f4e7c8;
+      text-shadow: 1px 1px 0 #140e09, -1px 0 0 #140e09, 0 0 6px rgba(0, 0, 0, 0.85);
       pointer-events: none;
       user-select: none;
-      -webkit-user-select: none;
-      animation: boot-fade-in 900ms 500ms ease both;
     }
 
-    /* Если JavaScript отключён — понятное сообщение. */
+    #boot-dock {
+      width: min(28rem, 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      animation: boot-fade-up 700ms 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    #load-readout {
+      display: none;
+      margin: 0;
+      font-family: var(--pixel);
+      font-size: clamp(13px, 4.2vw, 18px);
+      letter-spacing: 0.08em;
+      color: var(--gold);
+      text-shadow: 2px 2px 0 #140e09;
+    }
+
+    #loading-status,
+    #tip,
+    #boot-storage-warning {
+      position: relative;
+      left: auto;
+      right: auto;
+      top: auto;
+      bottom: auto;
+      translate: none;
+      width: 100%;
+      margin: 0;
+    }
+
+    #loading-status {
+      padding: 0;
+      background: none;
+      border: 0;
+      border-radius: 0;
+      text-align: center;
+      color: var(--cream);
+      font-family: var(--pixel);
+      font-size: clamp(8px, 2.3vw, 10px);
+      line-height: 1.6;
+      text-shadow: 1px 1px 0 #140e09;
+    }
+
+    #tip {
+      padding: 8px 12px;
+      text-align: center;
+      color: var(--cream);
+      font-size: clamp(8px, 2.35vw, 10px);
+      line-height: 1.55;
+      background: rgba(28, 18, 11, 0.88);
+      border: 2px solid rgba(226, 182, 87, 0.55);
+      box-shadow: 3px 3px 0 #140e09;
+    }
+    #tip.is-fading { opacity: 0; }
+    #tip-list { display: none !important; }
+    #boot-divider { display: none; }
+
+    #play {
+      position: relative;
+      left: auto;
+      right: auto;
+      top: auto;
+      bottom: auto;
+      translate: none;
+      z-index: 5;
+      width: min(20rem, 100%);
+      min-height: 3rem;
+      margin-top: 2px;
+      font-family: var(--pixel);
+      font-size: clamp(11px, 3.4vw, 14px);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #2a1608;
+      background: linear-gradient(180deg, #f6d48a 0%, #e2b657 42%, #b8892e 100%);
+      border: 3px solid #1a0e07;
+      box-shadow: 0 4px 0 #1a0e07, inset 0 1px 0 rgba(255, 244, 210, 0.75);
+      animation:
+        boot-fade-up 700ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
+        play-pulse 2.4s 1.2s ease-out infinite;
+    }
+    #play:active {
+      translate: none;
+      transform: translate(2px, 2px);
+      box-shadow: 0 2px 0 #1a0e07;
+    }
+    #play[aria-disabled="true"] {
+      opacity: 0.72;
+      pointer-events: none;
+      filter: grayscale(0.35) brightness(0.86);
+      animation: boot-fade-up 700ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @media (hover: hover) {
+      #play:hover { filter: brightness(1.06); }
+    }
+
+    #boot-storage-warning {
+      padding: 8px 12px;
+      text-align: center;
+      font-size: 10px;
+      line-height: 1.5;
+      color: var(--danger-ink);
+      background: var(--danger-wash);
+      border: 1px solid rgba(240, 192, 187, 0.35);
+      box-shadow: 3px 3px 0 #140e09;
+    }
+
+    #boot-credit {
+      position: fixed;
+      right: max(12px, env(safe-area-inset-right));
+      top: calc(env(safe-area-inset-top) + 12px);
+      margin: 0;
+      font-family: var(--ui);
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--cream);
+      opacity: 0.5;
+      z-index: 2;
+      pointer-events: none;
+      text-shadow: 1px 1px 0 #140e09;
+    }
+
     .boot-noscript {
       position: fixed;
-      z-index: 3;
+      z-index: 6;
       left: 50%;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem);
+      bottom: calc(env(safe-area-inset-bottom) + 1.2rem);
       translate: -50% 0;
       width: min(28rem, calc(100% - 32px));
       margin: 0;
       padding: 12px 16px;
       text-align: center;
-      font-family: var(--ui, "Russo One", sans-serif);
+      font-family: var(--ui);
       font-size: 12px;
       line-height: 1.5;
       color: var(--danger-ink);
-      background: var(--danger-wash, rgba(157, 51, 44, 0.18));
-      border: 1px solid rgba(240, 192, 187, 0.35);
-      border-radius: var(--r-md, 10px);
+      background: rgba(28, 16, 12, 0.92);
+      border: 2px solid rgba(226, 182, 87, 0.4);
+    }
+
+    @media (max-width: 699px) {
+      #load-pct { display: none; }
+      #load-readout { display: block; }
+      #boot { gap: 14px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      body[data-screen="boot"] #boot h1,
-      #boot-art,
-      #tip,
-      #tip-list,
+      #boot-stage,
+      #boot-dock,
       #play,
-      #boot-storage-warning,
-      #boot-divider,
-      #boot-credit {
-        animation-duration: 0.001ms !important;
-        animation-delay: 0ms !important;
-      }
-
-      #tip {
-        transition: none !important;
-      }
-
-      #play {
+      #load-bar::-webkit-progress-value {
         animation: none !important;
+        transition: none !important;
       }
     }
   </style>
 </head>
 <body data-screen="boot">
+  <div id="boot-bg" aria-hidden="true"></div>
   <main id="boot">
-    <h1>Timber Town</h1>
-    <img id="boot-art" src="idex_fon.jpeg" width="1168" height="784" alt="Timber Town — лесной город у реки">
-    <progress id="load-bar" max="100" value="0" aria-label="Загрузка ресурсов игры"></progress>
-    <p id="loading-status" role="status" aria-live="polite">Загружаем ресурсы игры…</p>
-    <hr id="boot-divider" aria-hidden="true">
-    <p id="tip">Первые два лесоруба в управе бесплатны.</p>
-    <ul id="tip-list" hidden>
-      <li>Первые два лесоруба в управе бесплатны.</li>
-      <li>Без топора работник уходит домой.</li>
-      <li>Деньги в сейфе налог не трогает.</li>
-      <li>Один игровой час длится 7,5 минут.</li>
-      <li>На пятый день долга лесопилка встаёт.</li>
-      <li>Обычный топор теряет 1% за каждое бревно.</li>
-      <li>Снятое из сейфа нужно потратить за игровой час.</li>
-      <li>Одинаковые топоры складываются в рюкзаке.</li>
-    </ul>
-    <p id="boot-storage-warning" hidden>
-      Прогресс не будет сохраняться: браузер запретил localStorage.
-      Играть можно, но после закрытия вкладки всё начнётся заново.
-    </p>
+    <div id="boot-stage">
+      <h1>Timber Town</h1>
+      <img id="boot-art" src="loading.jpeg" width="1500" height="1007" alt="Timber Town — лесопилка у реки на закате">
+      <progress id="load-bar" max="100" value="0" aria-label="Загрузка ресурсов игры"></progress>
+      <p id="load-pct" aria-hidden="true">0%</p>
+    </div>
+    <div id="boot-dock">
+      <p id="load-readout" aria-hidden="true">0%</p>
+      <p id="loading-status" role="status" aria-live="polite">Загружаем ресурсы игры…</p>
+      <p id="tip">Первые два лесоруба в управе бесплатны.</p>
+      <ul id="tip-list" hidden>
+        <li>Первые два лесоруба в управе бесплатны.</li>
+        <li>Без топора работник уходит домой.</li>
+        <li>Деньги в сейфе налог не трогает.</li>
+        <li>Один игровой час длится 7,5 минут.</li>
+        <li>На пятый день долга лесопилка встаёт.</li>
+        <li>Обычный топор теряет 1% за каждое бревно.</li>
+        <li>Снятое из сейфа нужно потратить за игровой час.</li>
+        <li>Одинаковые топоры складываются в рюкзаке.</li>
+      </ul>
+      <p id="boot-storage-warning" hidden>
+        Прогресс не будет сохраняться: браузер запретил localStorage.
+        Играть можно, но после закрытия вкладки всё начнётся заново.
+      </p>
+      <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Подготовка мира…</a>
+    </div>
     <p id="boot-credit" aria-hidden="true">© Timber Town</p>
-    <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Подготовка мира…</a>
+    <hr id="boot-divider" hidden aria-hidden="true">
   </main>
   <noscript>
     <p class="boot-noscript">
@@ -272,6 +358,8 @@
       const play = document.getElementById('play');
       const bar = document.getElementById('load-bar');
       const status = document.getElementById('loading-status');
+      const pct = document.getElementById('load-pct');
+      const readout = document.getElementById('load-readout');
       const art = document.getElementById('boot-art');
       const tg = window.Telegram?.WebApp;
       try { tg?.ready?.(); tg?.expand?.(); } catch (_) {}
@@ -288,14 +376,21 @@
       const resources = [
         'style.css','game.js','game.html','profile.html','sawmill.html','shop.html','sklad.html','sklad-lesa.html','uprava.html','master.html','liteynaya.html',
         '1skin.jpeg','2skin.jpeg','3skin.jpeg','4skin.jpeg','1axeskin.jpeg','2axeskin.jpeg','3axeskin.jpeg','4aceskin.jpeg','5axeskin.jpeg','Backpack.jpeg',
-        'The_Board.jpeg','Trad_Center.jpeg','Warehouse.jpeg','Workshop.jpeg','World_map_day.jpeg','World_map_Night.jpeg','World_map_Sunrise.jpeg','World_map_Sunset.jpeg','idex_fon.jpeg'
+        'The_Board.jpeg','Trad_Center.jpeg','Warehouse.jpeg','Workshop.jpeg','World_map_day.jpeg','World_map_Night.jpeg','World_map_Sunrise.jpeg','World_map_Sunset.jpeg','loading.jpeg','idex_fon.jpeg'
       ];
       let loaded = 0;
       const total = resources.length + 2;
+      const paint = (value, label) => {
+        const safe = Math.max(0, Math.min(100, value));
+        if (bar) bar.value = safe;
+        const text = safe + '%';
+        if (pct) pct.textContent = text;
+        if (readout) readout.textContent = text;
+        if (status && label) status.textContent = label;
+      };
       const update = (label) => {
         loaded = Math.min(total, loaded + 1);
-        if (bar) bar.value = Math.round(loaded / total * 100);
-        if (status && label) status.textContent = label;
+        paint(Math.round(loaded / total * 100), label);
       };
       const timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
       const settleResource = path => new Promise(resolve => {
@@ -325,13 +420,11 @@
         await Promise.all([resourcePromise, identityPromise]);
         await Promise.race([document.fonts?.ready || Promise.resolve(), timeout(1200)]);
         if (art && !art.complete) await Promise.race([new Promise(resolve => { art.addEventListener('load',resolve,{once:true}); art.addEventListener('error',resolve,{once:true}); }), timeout(1800)]);
-        if (bar) bar.value = 100;
-        if (status) status.textContent = !storageOk ? 'Предупреждение: браузер ограничил локальное сохранение.' : user?.id != null ? 'Мир готов. Профиль Telegram подключён.' : 'Мир готов. Запуск без Telegram-профиля.';
+        if (bar) paint(100, !storageOk ? 'Предупреждение: браузер ограничил локальное сохранение.' : user?.id != null ? 'Мир готов. Профиль Telegram подключён.' : 'Мир готов. Запуск без Telegram-профиля.');
         if (play) { play.textContent = 'Играть'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
       })().catch(error => {
         console.warn('Loader fallback:', error);
-        if (bar) bar.value = 100;
-        if (status) status.textContent = 'Ресурсы проверены. Можно начинать игру.';
+        if (bar) paint(100, 'Ресурсы проверены. Можно начинать игру.');
         if (play) { play.textContent='Играть'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
       });
     })();
