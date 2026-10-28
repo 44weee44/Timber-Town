@@ -11,166 +11,156 @@
   <link rel="prefetch" href="game.js">
   <title>Timber Town</title>
   <style>
-    @keyframes boot-fade-up {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes boot-fade-in {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-    @keyframes play-pulse {
-      0%, 100% { box-shadow: 0 4px 0 #1a0e07, 0 0 0 0 rgba(226, 182, 87, 0.55); }
-      50%      { box-shadow: 0 4px 0 #1a0e07, 0 0 0 8px rgba(226, 182, 87, 0); }
-    }
-    @keyframes bar-glow {
-      0%, 100% { filter: brightness(1); }
-      50%      { filter: brightness(1.18); }
-    }
-
     body[data-screen="boot"] {
       min-height: 100dvh;
+      height: 100dvh;
       overflow: hidden;
       background: #070b08;
     }
     body[data-screen="boot"]::before,
-    body[data-screen="boot"]::after {
-      content: none;
-    }
-
-    #boot-bg {
-      position: fixed;
-      inset: -24px;
-      z-index: 0;
-      background:
-        radial-gradient(ellipse at 50% 40%, rgba(20, 14, 9, 0.15), rgba(5, 8, 6, 0.72) 70%),
-        url("loading.jpeg") center / cover no-repeat;
-      filter: blur(14px) saturate(1.05) brightness(0.42);
-      transform: scale(1.06);
-      pointer-events: none;
-    }
-
-    #boot {
-      position: relative;
-      z-index: 1;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding:
-        max(12px, env(safe-area-inset-top))
-        12px
-        max(14px, env(safe-area-inset-bottom));
-    }
-
-    #boot-stage {
-      position: relative;
-      container-type: size;
-      width: min(100%, calc((100dvh - 12.2rem) * 1500 / 1007), 1080px);
-      aspect-ratio: 1500 / 1007;
-      border: 4px solid #3a2414;
-      box-shadow:
-        0 0 0 2px #e2b657,
-        0 0 0 7px #1a100a,
-        0 22px 48px rgba(0, 0, 0, 0.55);
-      animation: boot-fade-in 700ms ease both;
-    }
+    body[data-screen="boot"]::after { content: none; }
 
     #boot-art {
-      position: absolute;
+      position: fixed;
       inset: 0;
+      z-index: 0;
       width: 100%;
       height: 100%;
-      object-fit: fill;
-      object-position: center;
+      object-fit: cover;
+      object-position: center center;
+      image-rendering: auto;
+      pointer-events: none;
     }
 
-    #boot-stage::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      z-index: 2;
-      pointer-events: none;
-      background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(0, 0, 0, 0.34) 100%);
+    body.boot-portrait #boot-art {
+      object-fit: fill;
+      object-position: center top;
+      width: auto;
+      height: 230%;
+      max-width: none;
+      top: 0;
+      left: 58%;
+      right: auto;
+      transform: translateX(-50%);
     }
+
+    #boot { position: relative; z-index: 1; min-height: 100dvh; }
 
     body[data-screen="boot"] #boot h1 {
       position: absolute;
       width: 1px;
       height: 1px;
+      margin: 0;
       overflow: hidden;
       clip: rect(0 0 0 0);
+    }
+    body.boot-portrait #boot h1 {
+      position: fixed;
+      z-index: 5;
+      top: calc(env(safe-area-inset-top) + 22px);
+      left: 16px;
+      right: 16px;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      font-family: var(--pixel);
+      font-size: clamp(20px, 7vw, 34px);
+      line-height: 1.35;
+      letter-spacing: 0.06em;
+      text-align: center;
+      color: #f4e7c8;
+      text-shadow:
+        3px 3px 0 #140e09,
+        -1px -1px 0 #140e09,
+        1px -1px 0 #140e09,
+        -1px 1px 0 #140e09;
+      pointer-events: none;
     }
 
     #load-bar {
       position: absolute;
-      z-index: 4;
-      left: 27%;
-      top: 79.35%;
-      width: 46.9%;
-      height: 3.85%;
+      width: 1px;
+      height: 1px;
       margin: 0;
-      border: 0;
-      border-radius: 1px;
-      background: transparent;
-      box-shadow: 0 0 10px rgba(255, 186, 64, 0.28);
-      appearance: none;
-      -webkit-appearance: none;
       overflow: hidden;
-      translate: none;
-      bottom: auto;
+      clip: rect(0 0 0 0);
+      border: 0;
+      appearance: none;
     }
-    #load-bar::-webkit-progress-bar {
+
+    #load-slot {
+      position: fixed;
+      z-index: 4;
+      overflow: hidden;
       background: transparent;
+      pointer-events: none;
+      border-radius: 0;
+      box-shadow: none;
     }
-    #load-bar::-webkit-progress-value {
-      background:
-        linear-gradient(180deg, rgba(255, 248, 214, 0.95) 0%, rgba(255, 214, 120, 0.2) 38%, rgba(160, 78, 8, 0.15) 100%),
-        linear-gradient(90deg, #b86a12 0%, #ffd36a 42%, #fff1b8 50%, #f0a02a 58%, #c97816 100%);
-      box-shadow: 0 0 8px rgba(255, 196, 70, 0.85);
-      transition: width 180ms linear;
-      animation: bar-glow 1.6s ease-in-out infinite;
+    #load-fill {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background-color: #e2a31a;
+      background-image: linear-gradient(
+        180deg,
+        #fff6d2 0%,
+        #fff6d2 26%,
+        #f0b423 26%,
+        #f0b423 68%,
+        #c47a12 68%,
+        #c47a12 100%
+      );
     }
-    #load-bar::-moz-progress-bar {
-      background: linear-gradient(90deg, #b86a12, #ffd36a 46%, #fff1b8 50%, #e29220);
-      transition: width 180ms linear;
+    #load-slot.is-screen {
+      left: 50%;
+      top: auto;
+      bottom: calc(7.4rem + env(safe-area-inset-bottom));
+      width: min(22rem, calc(100vw - 40px));
+      height: 14px;
+      translate: -50% 0;
+      background: #120c08;
+      border: 2px solid #b7b7ae;
+      box-shadow: 0 0 0 2px #2a241c, 3px 3px 0 #0c0805;
     }
 
     #load-pct {
-      position: absolute;
+      position: fixed;
       z-index: 5;
-      left: 50%;
-      top: 88.7%;
       margin: 0;
       translate: -50% -50%;
       font-family: var(--pixel);
-      font-size: clamp(8px, 2.35cqh, 15px);
       line-height: 1;
-      letter-spacing: 0.04em;
       color: #f4e7c8;
-      text-shadow: 1px 1px 0 #140e09, -1px 0 0 #140e09, 0 0 6px rgba(0, 0, 0, 0.85);
+      text-shadow: 2px 2px 0 #140e09, -1px 0 0 #140e09, 0 0 2px #140e09;
       pointer-events: none;
-      user-select: none;
     }
+    #load-pct[hidden] { display: none; }
 
-    #boot-dock {
-      width: min(28rem, 100%);
+    #boot-hud {
+      position: fixed;
+      z-index: 6;
+      left: 0;
+      right: 0;
+      bottom: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 8px;
-      animation: boot-fade-up 700ms 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+      background: linear-gradient(180deg, rgba(7, 11, 8, 0) 0%, rgba(7, 11, 8, 0.28) 100%);
+      pointer-events: none;
     }
+    #boot-hud a { pointer-events: auto; }
 
-    #load-readout {
-      display: none;
-      margin: 0;
+    #load-readout { display: none; margin: 0; }
+    body.boot-portrait #load-readout {
+      display: block;
       font-family: var(--pixel);
-      font-size: clamp(13px, 4.2vw, 18px);
+      font-size: 14px;
       letter-spacing: 0.08em;
-      color: var(--gold);
+      color: #f4e7c8;
       text-shadow: 2px 2px 0 #140e09;
     }
 
@@ -183,105 +173,123 @@
       top: auto;
       bottom: auto;
       translate: none;
-      width: 100%;
+      width: min(28rem, 100%);
       margin: 0;
     }
-
     #loading-status {
       padding: 0;
-      background: none;
       border: 0;
-      border-radius: 0;
+      background: none;
       text-align: center;
-      color: var(--cream);
+      color: #f4e7c8;
       font-family: var(--pixel);
-      font-size: clamp(8px, 2.3vw, 10px);
+      font-size: clamp(8px, 2.2vw, 10px);
       line-height: 1.6;
-      text-shadow: 1px 1px 0 #140e09;
+      text-shadow: 2px 2px 0 #140e09;
     }
-
     #tip {
-      padding: 8px 12px;
+      padding: 0;
+      border: 0;
+      background: none;
+      box-shadow: none;
       text-align: center;
-      color: var(--cream);
-      font-size: clamp(8px, 2.35vw, 10px);
-      line-height: 1.55;
-      background: rgba(28, 18, 11, 0.88);
-      border: 2px solid rgba(226, 182, 87, 0.55);
-      box-shadow: 3px 3px 0 #140e09;
+      color: #d9c7a2;
+      font-family: var(--pixel);
+      font-size: clamp(7px, 2vw, 9px);
+      line-height: 1.6;
+      text-shadow: 2px 2px 0 #140e09;
     }
-    #tip.is-fading { opacity: 0; }
-    #tip-list { display: none !important; }
-    #boot-divider { display: none; }
+    #tip-list,
+    #boot-divider { display: none !important; }
 
-    #play {
+    #boot-storage-warning {
+      padding: 8px 10px;
+      text-align: center;
+      font-size: 10px;
+      line-height: 1.5;
+      color: var(--danger-ink);
+      background: rgba(28, 14, 12, 0.9);
+      border: 2px solid rgba(226, 182, 87, 0.35);
+    }
+
+    body[data-screen="boot"] #play {
       position: relative;
       left: auto;
       right: auto;
       top: auto;
       bottom: auto;
       translate: none;
-      z-index: 5;
-      width: min(20rem, 100%);
-      min-height: 3rem;
-      margin-top: 2px;
+      transform: none;
+      width: auto;
+      min-width: 10.5rem;
+      min-height: 0;
+      margin: 2px 0 0;
+      padding: 13px 28px 12px;
       font-family: var(--pixel);
-      font-size: clamp(11px, 3.4vw, 14px);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #2a1608;
-      background: linear-gradient(180deg, #f6d48a 0%, #e2b657 42%, #b8892e 100%);
-      border: 3px solid #1a0e07;
-      box-shadow: 0 4px 0 #1a0e07, inset 0 1px 0 rgba(255, 244, 210, 0.75);
-      animation:
-        boot-fade-up 700ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
-        play-pulse 2.4s 1.2s ease-out infinite;
+      font-size: 13px;
+      letter-spacing: 0.04em;
+      line-height: 1.4;
+      text-transform: none;
+      text-decoration: none;
+      color: #f4e7c8;
+      background: #5b3a22;
+      border: 0;
+      border-radius: 2px;
+      box-shadow:
+        0 0 0 3px #1a100a,
+        0 0 0 6px #8a6840,
+        4px 4px 0 #0c0805;
+      text-shadow: 2px 2px 0 #140e09;
+      animation: none;
+      filter: none;
     }
-    #play:active {
+    body[data-screen="boot"] #play::before,
+    body[data-screen="boot"] #play::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      width: 6px;
+      height: 6px;
+      background: #d5d8dc;
+      box-shadow: 0 0 0 1px #1a120c, inset 0 0 0 1px #8b9096;
+    }
+    body[data-screen="boot"] #play::before { left: 8px; }
+    body[data-screen="boot"] #play::after { right: 8px; }
+    body[data-screen="boot"] #play:active {
       translate: none;
       transform: translate(2px, 2px);
-      box-shadow: 0 2px 0 #1a0e07;
+      box-shadow:
+        0 0 0 3px #1a100a,
+        0 0 0 6px #8a6840,
+        2px 2px 0 #0c0805;
     }
-    #play[aria-disabled="true"] {
-      opacity: 0.72;
+    body[data-screen="boot"] #play[aria-disabled="true"] {
+      opacity: 0.45;
+      filter: none;
       pointer-events: none;
-      filter: grayscale(0.35) brightness(0.86);
-      animation: boot-fade-up 700ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    @media (hover: hover) {
-      #play:hover { filter: brightness(1.06); }
-    }
-
-    #boot-storage-warning {
-      padding: 8px 12px;
-      text-align: center;
-      font-size: 10px;
-      line-height: 1.5;
-      color: var(--danger-ink);
-      background: var(--danger-wash);
-      border: 1px solid rgba(240, 192, 187, 0.35);
-      box-shadow: 3px 3px 0 #140e09;
+      animation: none;
     }
 
     #boot-credit {
       position: fixed;
-      right: max(12px, env(safe-area-inset-right));
-      top: calc(env(safe-area-inset-top) + 12px);
+      z-index: 5;
+      right: max(10px, env(safe-area-inset-right));
+      top: calc(env(safe-area-inset-top) + 10px);
       margin: 0;
       font-family: var(--ui);
       font-size: 10px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--cream);
-      opacity: 0.5;
-      z-index: 2;
-      pointer-events: none;
+      color: #f4e7c8;
+      opacity: 0.7;
       text-shadow: 1px 1px 0 #140e09;
+      pointer-events: none;
     }
+    body.boot-portrait #boot-credit { display: none; }
 
     .boot-noscript {
       position: fixed;
-      z-index: 6;
+      z-index: 7;
       left: 50%;
       bottom: calc(env(safe-area-inset-bottom) + 1.2rem);
       translate: -50% 0;
@@ -293,38 +301,20 @@
       font-size: 12px;
       line-height: 1.5;
       color: var(--danger-ink);
-      background: rgba(28, 16, 12, 0.92);
+      background: rgba(20, 14, 9, 0.92);
       border: 2px solid rgba(226, 182, 87, 0.4);
-    }
-
-    @media (max-width: 699px) {
-      #load-pct { display: none; }
-      #load-readout { display: block; }
-      #boot { gap: 14px; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #boot-stage,
-      #boot-dock,
-      #play,
-      #load-bar::-webkit-progress-value {
-        animation: none !important;
-        transition: none !important;
-      }
     }
   </style>
 </head>
 <body data-screen="boot">
-  <div id="boot-bg" aria-hidden="true"></div>
+  <img id="boot-art" src="loading.jpeg" width="1500" height="1007" alt="Timber Town — лесопилка у реки на закате">
   <main id="boot">
-    <div id="boot-stage">
-      <h1>Timber Town</h1>
-      <img id="boot-art" src="loading.jpeg" width="1500" height="1007" alt="Timber Town — лесопилка у реки на закате">
-      <progress id="load-bar" max="100" value="0" aria-label="Загрузка ресурсов игры"></progress>
-      <p id="load-pct" aria-hidden="true">0%</p>
-    </div>
-    <div id="boot-dock">
-      <p id="load-readout" aria-hidden="true">0%</p>
+    <h1>Timber Town</h1>
+    <div id="load-slot" aria-hidden="true"><i id="load-fill"></i></div>
+    <p id="load-pct">0%</p>
+    <progress id="load-bar" max="100" value="0" aria-label="Загрузка ресурсов игры"></progress>
+    <div id="boot-hud">
+      <p id="load-readout">0%</p>
       <p id="loading-status" role="status" aria-live="polite">Загружаем ресурсы игры…</p>
       <p id="tip">Первые два лесоруба в управе бесплатны.</p>
       <ul id="tip-list" hidden>
@@ -341,7 +331,7 @@
         Прогресс не будет сохраняться: браузер запретил localStorage.
         Играть можно, но после закрытия вкладки всё начнётся заново.
       </p>
-      <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Подготовка мира…</a>
+      <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Играть</a>
     </div>
     <p id="boot-credit" aria-hidden="true">© Timber Town</p>
     <hr id="boot-divider" hidden aria-hidden="true">
@@ -360,7 +350,39 @@
       const status = document.getElementById('loading-status');
       const pct = document.getElementById('load-pct');
       const readout = document.getElementById('load-readout');
+      const fill = document.getElementById('load-fill');
+      const slot = document.getElementById('load-slot');
       const art = document.getElementById('boot-art');
+      const ART_W = 1500, ART_H = 1007;
+      const place = () => {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const portrait = vh > vw * 1.05;
+        document.body.classList.toggle('boot-portrait', portrait);
+        if (!slot) return;
+        if (portrait) {
+          slot.classList.add('is-screen');
+          slot.style.left = slot.style.top = slot.style.width = slot.style.height = '';
+          if (pct) pct.hidden = true;
+          return;
+        }
+        slot.classList.remove('is-screen');
+        if (pct) pct.hidden = false;
+        const scale = Math.max(vw / ART_W, vh / ART_H);
+        const ox = (vw - ART_W * scale) / 2;
+        const oy = (vh - ART_H * scale) / 2;
+        slot.style.left = (ox + 398 * scale) + 'px';
+        slot.style.top = (oy + 796 * scale) + 'px';
+        slot.style.width = (718 * scale) + 'px';
+        slot.style.height = (45 * scale) + 'px';
+        if (pct) {
+          pct.style.left = (ox + 754 * scale) + 'px';
+          pct.style.top = (oy + 896 * scale) + 'px';
+          pct.style.fontSize = Math.max(10, Math.round(14 * scale)) + 'px';
+        }
+      };
+      place();
+      window.addEventListener('resize', place);
       const tg = window.Telegram?.WebApp;
       try { tg?.ready?.(); tg?.expand?.(); } catch (_) {}
       const readTelegramUser = () => {
@@ -383,6 +405,7 @@
       const paint = (value, label) => {
         const safe = Math.max(0, Math.min(100, value));
         if (bar) bar.value = safe;
+        if (fill) fill.style.width = safe + '%';
         const text = safe + '%';
         if (pct) pct.textContent = text;
         if (readout) readout.textContent = text;
