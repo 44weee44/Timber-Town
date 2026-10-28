@@ -1280,3 +1280,58 @@ body[data-screen="sawmill"] #stats .stat-row { gap:8px; }
 @media (max-width: 380px) {
   #open-inventory, #open-profile { min-height: 38px; height: 38px; }
 }
+
+
+/* === Timber Town: premium pixel MMO + compact game workspace === */
+:root { --tt-panel: rgba(37, 27, 18, .94); --tt-panel-soft: rgba(29, 25, 17, .9); }
+/* Calm screen entrance: fade only, no sliding or layout-shifting animation. */
+@keyframes tt-soft-appear { from { opacity: 0; } to { opacity: 1; } }
+body[data-screen]:not([data-screen="boot"]) main:not(#map) {
+  animation: tt-soft-appear 160ms ease-out both;
+}
+body[data-screen]:not([data-screen="boot"]) #hud {
+  animation: tt-soft-appear 140ms ease-out both;
+}
+/* One visual surface per card: remove nested/inset frames and heavy shadows. */
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > form,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > ul,
+body[data-screen]:not([data-screen="boot"]) .machine-card,
+body[data-screen]:not([data-screen="boot"]) .operator-card,
+body[data-screen]:not([data-screen="boot"]) .wood-stock-card,
+body[data-screen]:not([data-screen="boot"]) .zone-detail-grid > div {
+  box-shadow: none;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section {
+  border-width: 1px;
+  border-color: rgba(226, 182, 87, .22);
+  background: linear-gradient(145deg, rgba(57, 39, 24, .94), rgba(29, 24, 17, .96));
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section > div {
+  box-shadow: none;
+}
+#hud { box-shadow: none; }
+#wallet { box-shadow: none; border-width: 1px; border-color: rgba(226, 182, 87, .3); }
+#open-inventory, #open-profile { box-shadow: none; }
+#open-inventory { gap: 0; }
+#open-inventory .hud-icon { display: none !important; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button, a[role="button"] { transition: background-color 140ms ease, border-color 140ms ease, filter 140ms ease, opacity 140ms ease; }
+button:active, a[role="button"]:active { transform: none; filter: brightness(1.12); }
+@media (prefers-reduced-motion: reduce) {
+  body[data-screen]:not([data-screen="boot"]) main:not(#map),
+  body[data-screen]:not([data-screen="boot"]) #hud { animation: none !important; }
+}
+
+/* The boot artwork must cover the actual viewport, including mobile safe-area edges. */
+body[data-screen="boot"] #boot-art {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  min-width: 100vw;
+  min-height: 100dvh;
+  object-fit: cover;
+  object-position: center center;
+}

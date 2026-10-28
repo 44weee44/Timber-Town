@@ -704,7 +704,14 @@
 
     try {
       const result = action();
-      if (result !== false) saveState();
+      if (result !== false) {
+        // Persist every successful economy action locally immediately and queue
+        // its cloud snapshot. The local write is synchronous; cloud writes are serialized.
+        const saved = saveState();
+        if (!saved) {
+          notify(`«${label}» выполнено, но сохранить локальный прогресс не удалось. Проверь свободное место браузера.`, 'error');
+        }
+      }
       return result !== false;
     } catch (error) {
       console.error(error);
