@@ -84,7 +84,7 @@
 <body data-screen="uprava">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -172,6 +172,12 @@
       </div>
       <p>Первый и второй — бесплатно, третий 200$, каждый следующий ещё на 200$ дороже. Имя закрепляется навсегда.</p>
       <button type="button" id="hire">Нанять бесплатно</button>
+      <hr>
+      <h2>Станочники</h2>
+      <p>Первый станочник стоит 1 500$, каждый следующий — на 1 000$ дороже. Один станочник обслуживает один свободный станок.</p>
+      <button type="button" id="hire-operator">Нанять станочника · 1 500$</button>
+      <p>Всего станочников: <data id="operator-count" value="0">0</data></p>
+      <ul id="operator-list" class="operator-list"></ul>
     </section>
 
     <section id="delivery-pay" aria-labelledby="delivery-title">

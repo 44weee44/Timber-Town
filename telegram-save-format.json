@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Timber Town Telegram save format",
+  "description": "Формат сериализованного состояния игры. Это схема данных, а не серверная база: в Telegram данные пользователя записываются через WebApp CloudStorage, локальная копия хранится в localStorage.",
+  "type": "object",
+  "required": [
+    "version",
+    "telegramId",
+    "money",
+    "day",
+    "gameMinutes",
+    "lastLogin",
+    "inventory",
+    "sawmill"
+  ],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "telegramId": {
+      "type": [
+        "string",
+        "number",
+        "null"
+      ],
+      "description": "Идентификатор показывается в UI; сервер должен валидировать initData при чувствительных операциях."
+    },
+    "money": {
+      "type": "number",
+      "minimum": 0
+    },
+    "day": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "gameMinutes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1439
+    },
+    "lastLogin": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "inventory": {
+      "type": "object",
+      "properties": {
+        "axes": {
+          "type": "array"
+        },
+        "secretLogs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "sawmill": {
+      "type": "object",
+      "properties": {
+        "zones": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 28
+        },
+        "zoneStats": {
+          "type": "object"
+        },
+        "workers": {
+          "type": "array"
+        },
+        "operators": {
+          "type": "array"
+        },
+        "machine": {
+          "type": "object"
+        },
+        "extraMachines": {
+          "type": "array"
+        }
+      }
+    }
+  },
+  "storage": {
+    "local": "timber-town:<telegramId>:v1.2.0",
+    "telegramCloudStorage": "tt_save_<telegramId>_meta and tt_save_<telegramId>_<chunkIndex>",
+    "cloudChunkSize": 3500
+  }
+}

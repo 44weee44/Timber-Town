@@ -60,8 +60,8 @@ body {
   background: var(--ink);
   color: var(--cream);
   font-family: var(--pixel);
-  font-size: 12px;
-  line-height: 1.8;
+  font-size: 11px;
+  line-height: 1.7;
 }
 
 img {
@@ -98,6 +98,7 @@ button,
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: transform 140ms ease, filter 160ms ease, background-color 180ms ease, box-shadow 140ms ease;
 }
 
 button:active:not(:disabled),
@@ -425,8 +426,9 @@ data {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 0.4rem;
-  padding: max(0.4rem, env(safe-area-inset-top)) 0.45rem 0.4rem;
+  gap: clamp(3px, 0.7vw, 8px);
+  min-height: 54px;
+  padding: max(0.32rem, env(safe-area-inset-top)) 0.42rem 0.32rem;
   background: var(--wood-deep);
   box-shadow: 0 4px 0 var(--ink);
 }
@@ -439,37 +441,62 @@ data {
 }
 
 #wallet {
+  display: flex;
   flex: 1 1 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(4px, 1vw, 10px);
   min-width: 0;
   overflow: hidden;
-  padding: var(--s1);
+  padding: 0.3rem 0.48rem;
   border: 2px solid var(--ink);
-  font-size: 11px;
-  line-height: 1.15;
+  font-size: clamp(8px, 2.2vw, 10px);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+#wallet > span {
+  flex: 0 0 auto;
+  color: var(--cream-muted);
 }
 
 #money {
-  display: block;
-  font-size: 16px;
+  display: inline-block;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: visible;
+  font-size: clamp(10px, 3.1vw, 15px);
   line-height: 1.1;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: right;
   white-space: nowrap;
+  letter-spacing: -0.035em;
 }
 
 #open-inventory,
 #open-profile {
-  flex: none;
-  min-height: var(--hit);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 42px;
+  height: 42px;
   border: var(--stroke) solid var(--ink);
   background: var(--wood);
   color: var(--cream);
-  box-shadow: var(--offset) var(--offset) 0 var(--ink);
-  padding: var(--s1);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 0.25rem 0.45rem;
   text-decoration: none;
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: clamp(8px, 2.1vw, 10px);
+  line-height: 1.15;
+  vertical-align: middle;
+  white-space: nowrap;
 }
+
+#open-profile { align-self: center; text-align: center; }
+.hud-icon { width: 19px; height: 19px; object-fit: contain; image-rendering: pixelated; flex: 0 0 auto; }
+#open-inventory > span, #open-profile { transform: none; }
+#clock { flex: 0 0 auto; min-width: 48px; text-align: center; }
 
 #clock {
   padding: 0.35rem 0.4rem;
@@ -917,6 +944,28 @@ progress.worker-carry::-moz-progress-bar {
   background: var(--moss);
 }
 
+/* Warehouse and zone-detail UX */
+#log-details { margin-top: 10px; padding: 12px; background: rgba(0,0,0,.25); border: 1px solid var(--line-strong); border-radius: var(--r-md); }
+#log-details[hidden] { display:none !important; }
+#log-details h3 { margin: 10px 0 6px; color: var(--gold-light); font-size: 0.85rem; }
+.log-quality-details { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; list-style:none; margin:0; padding:0; }
+.log-quality-details li { display:flex; justify-content:space-between; gap:8px; padding:6px 8px; background:var(--ink); border-radius:4px; }
+.log-quality-details data { color:var(--gold); }
+.log-details-toggle { display:block; min-height:32px; margin-top:8px; padding:5px 8px; font-size:0.75rem; }
+.warehouse-sell-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.warehouse-sell-actions button { flex:1 1 130px; }
+.zone-detail-dialog { width:min(440px,calc(100% - 22px)); }
+.zone-detail-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin:12px 0 16px; }
+.zone-detail-grid > div { display:flex; flex-direction:column; gap:4px; min-width:0; padding:10px; background:var(--ink); border:1px solid var(--line-strong); border-radius:var(--r-sm); }
+.zone-detail-grid span { color:var(--cream-muted); font-size:0.72rem; }
+.zone-detail-grid strong { color:var(--gold-light); font-size:0.9rem; overflow-wrap:anywhere; }
+#machine-repair-list { display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none; }
+#machine-repair-list > li { padding:12px; background:var(--ink); border:1px solid var(--line-strong); border-radius:var(--r-sm); }
+#machine-repair-list .empty-note { color:var(--moss-light); }
+#machine-repair-list button { margin-top:8px; }
+.operator-list { display:flex; flex-direction:column; gap:8px; margin:0; padding:0; list-style:none; }
+.operator-card { display:flex; gap:10px; align-items:center; padding:10px; background:var(--ink); border:1px solid var(--line); border-radius:var(--r-sm); }
+
 /* === Hover-эффекты только для десктопа ===
    @media (hover: hover) отсекает тач-устройства, чтобы после
    касания не оставалось «залипшего» :hover. */
@@ -1024,6 +1073,7 @@ progress.worker-carry::-moz-progress-bar {
   dialog[open] {
     animation-duration: 0.001ms !important;
   }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; }
 }
 
 /* === Timber Town UI polish: compact HUD, MMO-style inventory and full-screen map === */
@@ -1202,3 +1252,31 @@ body[data-screen="sawmill"] #stats .stat-row { gap:8px; }
 .wood-stock-card data { color:var(--gold-light); font-family:var(--pixel); font-size:1.1em; }
 .wood-birch { border-top:3px solid #c4b58b; } .wood-pine { border-top:3px solid #5e9864; } .wood-oak { border-top:3px solid #a87342; }
 @media(max-width:360px){ .wood-stock-grid { gap:4px; } .wood-stock-card { padding:8px 3px; font-size:.7em; } }
+
+@media (max-width: 380px) {
+  #hud { gap: 3px; padding-left: 4px; padding-right: 4px; }
+  #wallet { padding: 0.25rem 0.3rem; }
+  #open-inventory, #open-profile { padding: 0.2rem 0.32rem; min-height: 39px; height: 39px; }
+  .hud-icon { width: 16px; height: 16px; }
+  #clock { min-width: 42px; padding: 0.2rem; }
+}
+
+
+/* Final compact HUD alignment: keep anchor text vertically centered on every screen size. */
+#hud { align-items: center; }
+#open-inventory, #open-profile, #clock {
+  box-sizing: border-box;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  line-height: 1.25 !important;
+  vertical-align: middle;
+  margin: 0;
+}
+#open-profile { padding-top: 0.3rem; padding-bottom: 0.3rem; transform: none !important; }
+#open-inventory > span { display: inline-block; line-height: 1.25; }
+@media (max-width: 380px) {
+  #open-inventory, #open-profile { min-height: 38px; height: 38px; }
+}

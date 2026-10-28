@@ -203,7 +203,7 @@
 <body data-screen="sawmill">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -322,34 +322,17 @@
     </template>
 
     <section id="stats" aria-labelledby="stats-title">
-      <h2 id="stats-title">Статистика</h2>
+      <h2 id="stats-title">Делянки и добыча</h2>
       <div class="stat-row">
         <div class="stat">
-          <span class="stat-label">Брёвен на дворе</span>
-          <data class="stat-value" id="logs-total" value="0">0</data>
-        </div>
-        <div class="stat">
-          <span class="stat-label">На делянке</span>
+          <span class="stat-label">Остаток на купленных делянках</span>
           <data class="stat-value" id="zone-stock" value="200000">200 000</data>
         </div>
         <div class="stat">
-          <span class="stat-label">Досок</span>
-          <data class="stat-value" id="planks" value="0">0</data>
+          <span class="stat-label">Брёвен собрано всего</span>
+          <data class="stat-value" id="logs-all" value="0">0</data>
         </div>
       </div>
-      <div class="wood-stock-grid" aria-label="Запасы древесины по породам">
-        <div class="wood-stock-card wood-birch">Берёза <data id="wood-birch-logs" value="0">0</data></div>
-        <div class="wood-stock-card wood-pine">Сосна <data id="wood-pine-logs" value="0">0</data></div>
-        <div class="wood-stock-card wood-oak">Дуб <data id="wood-oak-logs" value="0">0</data></div>
-      </div>
-      <ul id="log-piles">
-        <li>Гнилое <data id="logs-rotten" value="0">0</data></li>
-        <li>Обычное <data id="logs-normal" value="0">0</data></li>
-        <li>Хорошее <data id="logs-good" value="0">0</data></li>
-        <li>Отличное <data id="logs-excellent" value="0">0</data></li>
-        <li>Идеальное <data id="logs-perfect" value="0">0</data></li>
-      </ul>
-      <p>Цена доски <data id="plank-price" value="">ещё не назначена</data></p>
     </section>
 
     <section id="station-crew" aria-labelledby="station-crew-title">
@@ -358,7 +341,7 @@
       <ul id="machine-list" class="machine-list"></ul>
       <ul id="operator-list"></ul>
       <p>Всего станков: <data id="machine-count" value="1">1</data> · станочников: <data id="operator-count" value="0">0</data></p>
-      <p><a href="shop.html#machine-purchase">Купить станок или нанять станочника</a></p>
+      <p><a href="shop.html#machine-purchase">Купить станок</a> · <a href="uprava.html#hiring">Нанять станочника</a></p>
     </section>
 
     <section id="zones" aria-labelledby="zones-title">
@@ -397,6 +380,18 @@
         <button type="button" data-zone="28" data-owned="false" aria-label="Зона 28">28</button>
       </div>
     </section>
+    <dialog id="zone-detail" class="zone-detail-dialog" aria-labelledby="zone-detail-title">
+      <h2 id="zone-detail-title">Делянка</h2>
+      <div class="zone-detail-grid">
+        <div><span>Древесина</span><strong id="zone-detail-wood">Берёза</strong></div>
+        <div><span>Остаток в делянке</span><strong id="zone-detail-stock">200 000</strong></div>
+        <div><span>Срублено сегодня</span><strong id="zone-detail-cut-today">0</strong></div>
+        <div><span>Срублено всего</span><strong id="zone-detail-cut-all">0</strong></div>
+        <div><span>Работников назначено</span><strong id="zone-detail-workers">0</strong></div>
+        <div><span>Событие</span><strong id="zone-detail-event">Обычная делянка</strong></div>
+      </div>
+      <button type="button" id="zone-detail-close">Закрыть</button>
+    </dialog>
     <dialog id="zone-buy" aria-labelledby="zone-buy-title">
       <h2 id="zone-buy-title">Новая делянка</h2>
       <p id="zone-buy-text">+10 мест работников, +1 территория, 1 500$.</p>
@@ -406,6 +401,7 @@
   </main>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="game.js" defer></script>
+  <script>document.getElementById('zone-detail-close')?.addEventListener('click', () => document.getElementById('zone-detail')?.close());</script>
   <script>
     (() => {
       'use strict';

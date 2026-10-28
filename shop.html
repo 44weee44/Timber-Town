@@ -9,7 +9,7 @@
 <body data-screen="shop">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -47,48 +47,39 @@
       <li data-rarity="common">
         <img class="axe-icon" src="1axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Обычный</h2>
-        <p>150$ · прочность 100 · −1% за 1 бревно</p>
+        <p>150$ · прочность 100 · качество +0% · бонусный объём 0%</p>
         <button type="button" id="buy-common">Купить</button>
       </li>
       <li data-rarity="reinforced">
         <img class="axe-icon" src="5axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Усиленный</h2>
-        <p>320$ · прочность 180 · −1% за 2 бревна</p>
+        <p>320$ · прочность 180 · качество +2% · шанс +1 бревно: 1%</p>
         <button type="button" id="buy-reinforced">Купить</button>
       </li>
       <li data-rarity="rare">
         <img class="axe-icon" src="2axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Редкий</h2>
-        <p>500$ · прочность 250 · −1% за 3 бревна</p>
+        <p>650$ · прочность 280 · качество +5% · шанс +1 бревно: 2%</p>
         <button type="button" id="buy-rare">Купить</button>
       </li>
       <li data-rarity="legendary">
         <img class="axe-icon" src="3axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Легендарный</h2>
-        <p>1 500$ · прочность 500 · −1% за 5 брёвен</p>
+        <p>1 800$ · прочность 500 · качество +8% · шанс +1 бревно: 3,5%</p>
         <button type="button" id="buy-legendary">Купить</button>
       </li>
       <li data-rarity="mythic">
         <img class="axe-icon" src="4aceskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Мифический</h2>
-        <p>4 000$ · прочность 1000 · −1% за 10 брёвен</p>
+        <p>4 500$ · прочность 850 · качество +11% · шанс +1 бревно: 5%</p>
         <button type="button" id="buy-mythic">Купить</button>
       </li>
     </ul>
-    <section id="machine-upgrade">
-      <h2>Улучшение станка</h2>
-      <p>Сейчас <data id="machine-level" value="1" aria-live="polite">1</data> уровень.</p>
-      <button type="button" id="upgrade-machine">Улучшить станок</button>
-    </section>
     <section id="machine-purchase">
       <h2>Производственный парк</h2>
-      <p>Станков: <data id="machine-count" value="1">1</data>. Лимит: 5 при одной зоне и +5 за каждую дополнительную зону.</p>
-      <button type="button" id="buy-machine">Купить станок · от 2 500$</button>
-      <ul id="machine-list" class="machine-list"></ul>
-      <p>Станочники: <data id="operator-count" value="0">0</data></p>
-      <button type="button" id="hire-operator">Нанять станочника · 1 500$</button>
-      <p>Станочник автоматически загружает до максимальной партии станка и работает до исчерпания брёвен или износа.</p>
-      <ul id="operator-list"></ul>
+      <p>Станков: <data id="machine-count" value="1">1</data>. Лимит зависит от количества купленных делянок.</p>
+      <button type="button" id="buy-machine">Купить дополнительный станок · от 2 500$</button>
+      <p>Улучшение и ремонт оборудования доступны в лесопилке и мастерской соответственно. Станочников нанимают в управе.</p>
     </section>
   </main>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>

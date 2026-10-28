@@ -9,7 +9,7 @@
 <body data-screen="master">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -57,9 +57,9 @@
       </li>
     </template>
     <section id="machine-repair">
-      <h2>Станок</h2>
-      <p>Прочность <data id="machine-durability" value="100" aria-live="polite">100</data>%</p>
-      <button type="button" id="repair-machine" disabled>Починить станок</button>
+      <h2>Ремонт станков</h2>
+      <p>Мастерская восстанавливает прочность за 2$ за каждый процент. Исправные станки не требуют ремонта.</p>
+      <ul id="machine-repair-list" class="machine-list"></ul>
     </section>
   </main>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>

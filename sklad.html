@@ -87,7 +87,7 @@
 <body data-screen="sklad">
   <header id="hud">
     <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
-    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory">Рюкзак</button>
+    <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><img class="hud-icon" src="Backpack.jpeg" alt="" aria-hidden="true" onerror="this.hidden=true"> <span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
     <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
   </header>
@@ -125,9 +125,10 @@
           <span class="stat-label">Цена сегодня</span>
           <data class="stat-value" id="plank-price" value="">ещё не назначена</data>
         </div>
-        <div class="stat">
+        <div class="stat stat-logs-detail">
           <span class="stat-label">Брёвен на дворе</span>
           <data class="stat-value" id="logs-total" value="0">0</data>
+          <button type="button" id="toggle-log-details" class="ghost log-details-toggle" aria-expanded="false" aria-controls="log-details">Состав брёвен</button>
         </div>
         <div class="stat">
           <span class="stat-label">Станок</span>
@@ -138,6 +139,22 @@
           <data class="stat-value" id="machine-durability" value="100">100</data>
         </div>
       </div>
+      <div id="log-details" class="log-details" hidden>
+        <h3>По качеству</h3>
+        <ul class="log-quality-details">
+          <li>Гнилые <data id="logs-rotten" value="0">0</data></li>
+          <li>Обычные <data id="logs-normal" value="0">0</data></li>
+          <li>Хорошие <data id="logs-good" value="0">0</data></li>
+          <li>Отличные <data id="logs-excellent" value="0">0</data></li>
+          <li>Идеальные <data id="logs-perfect" value="0">0</data></li>
+        </ul>
+        <h3>По породе</h3>
+        <ul class="log-quality-details">
+          <li>Берёза <data id="wood-birch-logs" value="0">0</data></li>
+          <li>Сосна <data id="wood-pine-logs" value="0">0</data></li>
+          <li>Дуб <data id="wood-oak-logs" value="0">0</data></li>
+        </ul>
+      </div>
     </section>
 
     <section id="sell" aria-labelledby="sell-title">
@@ -145,7 +162,10 @@
       <form id="sell-form">
         <label for="plank-qty">Сколько досок в докладную</label>
         <input id="plank-qty" type="number" min="1" step="1" value="1" inputmode="numeric">
-        <button type="button" id="sell-planks" disabled>Продать доски</button>
+        <div class="warehouse-sell-actions">
+          <button type="button" id="sell-planks" disabled>Продать доски</button>
+          <button type="button" id="sell-all-planks" class="gold-action" disabled>Продать всё</button>
+        </div>
       </form>
       <p id="report-status">Докладная: нет</p>
     </section>
@@ -221,16 +241,21 @@
     </section>
 
     <table id="machine-tiers">
-      <caption>Уровни станка</caption>
+      <caption>Справочник уровней станка · улучшение доступно в лесопилке</caption>
       <thead>
         <tr><th>Уровень</th><th>Цена</th><th>Брёвен</th><th>Минут на бревно</th><th>Лишняя доска</th></tr>
       </thead>
       <tbody>
-        <tr><td>1</td><td>старт</td><td>10</td><td>10</td><td>1%</td></tr>
-        <tr><td>2</td><td>250$</td><td>20</td><td>9</td><td>25%</td></tr>
-        <tr><td>3</td><td>400$</td><td>30</td><td>8</td><td>50%</td></tr>
-        <tr><td>4</td><td>750$</td><td>40</td><td>7</td><td>75%</td></tr>
-        <tr><td>5</td><td>1 000$</td><td>50</td><td>5</td><td>95%</td></tr>
+        <tr><td>1</td><td>Старт</td><td>10</td><td>10</td><td>2%</td></tr>
+        <tr><td>2</td><td>350$</td><td>20</td><td>9</td><td>4%</td></tr>
+        <tr><td>3</td><td>650$</td><td>30</td><td>8</td><td>6%</td></tr>
+        <tr><td>4</td><td>1 000$</td><td>40</td><td>7</td><td>8%</td></tr>
+        <tr><td>5</td><td>1 500$</td><td>50</td><td>6</td><td>10%</td></tr>
+        <tr><td>6</td><td>2 200$</td><td>60</td><td>5</td><td>12%</td></tr>
+        <tr><td>7</td><td>3 200$</td><td>70</td><td>4</td><td>14%</td></tr>
+        <tr><td>8</td><td>4 500$</td><td>80</td><td>3</td><td>16%</td></tr>
+        <tr><td>9</td><td>6 200$</td><td>90</td><td>2</td><td>18%</td></tr>
+        <tr><td>10</td><td>8 500$</td><td>100</td><td>1</td><td>20%</td></tr>
       </tbody>
     </table>
   </main>

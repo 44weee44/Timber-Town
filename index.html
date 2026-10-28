@@ -87,7 +87,21 @@
 
     #boot-art {
       animation: boot-fade-in 900ms 0ms ease both;
+      object-fit: cover;
+      object-position: left center;
     }
+
+    body[data-screen="boot"] #boot h1 { display:none; }
+    #tip-list { display:none !important; }
+    #tip { bottom: calc(8.1rem + env(safe-area-inset-bottom)); width:min(30rem,calc(100% - 24px)); padding:8px 10px; border-radius:8px; background:rgba(20,14,9,.78); font-size:clamp(8px,2.4vw,11px); }
+    #load-bar { position:fixed; z-index:4; left:8%; top:63%; bottom:auto; translate:none; width:min(42vw,470px); height:clamp(8px,2.2vw,16px); border:2px solid #4b3219; border-radius:3px; background:#301c0d; box-shadow:0 0 8px rgba(244,211,130,.35); overflow:hidden; }
+    #load-bar::-webkit-progress-value { background:linear-gradient(90deg,#e2a62e,#ffe08a); transition:width 160ms linear; }
+    #load-bar::-moz-progress-bar { background:linear-gradient(90deg,#e2a62e,#ffe08a); }
+    #play { z-index:5; bottom:calc(1rem + env(safe-area-inset-bottom)); width:min(22rem,calc(100% - 36px)); }
+    #play[aria-disabled="true"] { opacity:.48; pointer-events:none; filter:grayscale(.45); }
+    #loading-status { position:fixed; z-index:4; left:50%; bottom:calc(5.1rem + env(safe-area-inset-bottom)); translate:-50% 0; width:min(28rem,calc(100% - 28px)); margin:0; padding:8px 10px; text-align:center; background:rgba(20,14,9,.78); border:1px solid rgba(226,182,87,.3); color:var(--cream); border-radius:8px; font-size:clamp(8px,2.3vw,10px); }
+    @media (min-width:700px) { #boot-art { object-position:center center; } #load-bar { left:9%; top:62%; width:min(38vw,460px); } #loading-status { bottom:calc(5.2rem + env(safe-area-inset-bottom)); } }
+    @media (max-width:699px) { #boot-art { object-position:left center; } #boot::after { content:""; position:fixed; z-index:1; inset:42% 0 0; pointer-events:none; background:linear-gradient(180deg,transparent,rgba(20,14,9,.65)); } #load-bar { left:7%; top:64%; width:40vw; } }
 
     #tip,
     #tip-list {
@@ -224,7 +238,9 @@
 <body data-screen="boot">
   <main id="boot">
     <h1>Timber Town</h1>
-    <img id="boot-art" src="idex_fon.jpeg" width="768" height="1152" alt="Лесопилка у реки на рассвете">
+    <img id="boot-art" src="idex_fon.jpeg" width="1168" height="784" alt="Timber Town — лесной город у реки">
+    <progress id="load-bar" max="100" value="0" aria-label="Загрузка ресурсов игры"></progress>
+    <p id="loading-status" role="status" aria-live="polite">Загружаем ресурсы игры…</p>
     <hr id="boot-divider" aria-hidden="true">
     <p id="tip">Первые два лесоруба в управе бесплатны.</p>
     <ul id="tip-list" hidden>
@@ -242,61 +258,82 @@
       Играть можно, но после закрытия вкладки всё начнётся заново.
     </p>
     <p id="boot-credit" aria-hidden="true">© Timber Town</p>
-    <a href="game.html" id="play" role="button">Играть</a>
+    <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Подготовка мира…</a>
   </main>
   <noscript>
     <p class="boot-noscript">
       Timber Town требует JavaScript. Включите его в настройках браузера, чтобы начать игру.
     </p>
   </noscript>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     (() => {
       'use strict';
-
-      const tips = Array.from(
-        document.querySelectorAll('#tip-list li')
-      ).map(li => li.textContent.trim()).filter(Boolean);
-
-      const tip = document.getElementById('tip');
-
-      if (tip && tips.length > 1) {
-        let index = 0;
-        tip.textContent = tips[0];
-
-        window.setInterval(() => {
-          index = (index + 1) % tips.length;
-
-          // Плавная смена подсказки: снять класс → дождаться фейда →
-          // обновить текст → вернуть класс.
-          tip.classList.add('is-fading');
-          window.setTimeout(() => {
-            tip.textContent = tips[index];
-            tip.classList.remove('is-fading');
-          }, 200);
-        }, 6000);
-      }
-
+      const play = document.getElementById('play');
+      const bar = document.getElementById('load-bar');
+      const status = document.getElementById('loading-status');
       const art = document.getElementById('boot-art');
-      if (art) {
-        art.addEventListener('error', () => {
-          art.style.visibility = 'hidden';
-        }, { once: true });
-      }
+      const tg = window.Telegram?.WebApp;
+      try { tg?.ready?.(); tg?.expand?.(); } catch (_) {}
+      const readTelegramUser = () => {
+        const app = window.Telegram?.WebApp;
+        if (app?.initDataUnsafe?.user) return app.initDataUnsafe.user;
+        try {
+          const encoded = app?.initData ? new URLSearchParams(app.initData).get('user') : null;
+          const parsed = encoded ? JSON.parse(encoded) : null;
+          return parsed && parsed.id != null ? parsed : null;
+        } catch (_) { return null; }
+      };
 
-      let storageOk = false;
-      try {
-        const testKey = '__tt_probe__';
-        window.localStorage.setItem(testKey, '1');
-        window.localStorage.removeItem(testKey);
-        storageOk = true;
-      } catch (_) {
-        storageOk = false;
-      }
+      const resources = [
+        'style.css','game.js','game.html','profile.html','sawmill.html','shop.html','sklad.html','sklad-lesa.html','uprava.html','master.html','liteynaya.html',
+        '1skin.jpeg','2skin.jpeg','3skin.jpeg','4skin.jpeg','1axeskin.jpeg','2axeskin.jpeg','3axeskin.jpeg','4aceskin.jpeg','5axeskin.jpeg','Backpack.jpeg',
+        'The_Board.jpeg','Trad_Center.jpeg','Warehouse.jpeg','Workshop.jpeg','World_map_day.jpeg','World_map_Night.jpeg','World_map_Sunrise.jpeg','World_map_Sunset.jpeg','idex_fon.jpeg'
+      ];
+      let loaded = 0;
+      const total = resources.length + 2;
+      const update = (label) => {
+        loaded = Math.min(total, loaded + 1);
+        if (bar) bar.value = Math.round(loaded / total * 100);
+        if (status && label) status.textContent = label;
+      };
+      const timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const settleResource = path => new Promise(resolve => {
+        if (/\.(?:jpe?g|png|webp|svg)$/i.test(path)) {
+          const image = new Image();
+          image.onload = () => { update('Загружаем изображения и игровые ресурсы…'); resolve(); };
+          image.onerror = () => { update('Проверяем ресурсы игры…'); resolve(); };
+          image.src = path;
+        } else {
+          fetch(path, { cache: 'no-cache' }).then(() => update('Загружаем игровые системы…')).catch(() => update('Проверяем доступность ресурсов…')).finally(resolve);
+        }
+      });
 
-      if (!storageOk) {
-        const warn = document.getElementById('boot-storage-warning');
-        if (warn) warn.hidden = false;
-      }
+      (async () => {
+        const storageOk = (() => { try { const key='__tt_probe__'; localStorage.setItem(key,'1'); localStorage.removeItem(key); return true; } catch (_) { return false; } })();
+        const resourcePromise = Promise.all(resources.map(settleResource));
+        let user = readTelegramUser();
+        const identityPromise = (async () => {
+          const deadline = Date.now() + 5000;
+          while ((!user || user.id == null) && Date.now() < deadline) {
+            user = readTelegramUser();
+            if (user?.id != null) break;
+            await timeout(120);
+          }
+          update(user?.id != null ? 'Профиль Telegram загружен…' : 'Продолжаем в режиме браузера…');
+        })();
+        await Promise.all([resourcePromise, identityPromise]);
+        await Promise.race([document.fonts?.ready || Promise.resolve(), timeout(1200)]);
+        if (art && !art.complete) await Promise.race([new Promise(resolve => { art.addEventListener('load',resolve,{once:true}); art.addEventListener('error',resolve,{once:true}); }), timeout(1800)]);
+        if (bar) bar.value = 100;
+        if (status) status.textContent = !storageOk ? 'Предупреждение: браузер ограничил локальное сохранение.' : user?.id != null ? 'Мир готов. Профиль Telegram подключён.' : 'Мир готов. Запуск без Telegram-профиля.';
+        if (play) { play.textContent = 'Играть'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
+      })().catch(error => {
+        console.warn('Loader fallback:', error);
+        if (bar) bar.value = 100;
+        if (status) status.textContent = 'Ресурсы проверены. Можно начинать игру.';
+        if (play) { play.textContent='Играть'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
+      });
     })();
   </script>
 </body>

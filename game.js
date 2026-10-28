@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
   const GAME_MINUTE_MS = 7500;
   const DAY_MINUTES = 1440;
   const QUALITY = ['rotten', 'normal', 'good', 'excellent', 'perfect'];
@@ -14,11 +14,11 @@
   };
 
   const AXES = {
-    common: { name: 'Обычный', price: 150, max: 100, wearEvery: 1, rank: 0 },
-    reinforced: { name: 'Усиленный', price: 320, max: 180, wearEvery: 2, rank: 0.5 },
-    rare: { name: 'Редкий', price: 650, max: 280, wearEvery: 3, rank: 1 },
-    legendary: { name: 'Легендарный', price: 1800, max: 500, wearEvery: 5, rank: 2 },
-    mythic: { name: 'Мифический', price: 4500, max: 850, wearEvery: 8, rank: 3 }
+    common:    { name: 'Обычный',   price: 150,  max: 100, wearEvery: 1, rank: 0, qualityBonus: 0.00, extraLogChance: 0.00, secretFindBonus: 0.000 },
+    reinforced:{ name: 'Усиленный', price: 320,  max: 180, wearEvery: 2, rank: 0, qualityBonus: 0.02, extraLogChance: 0.01, secretFindBonus: 0.002 },
+    rare:      { name: 'Редкий',    price: 650,  max: 280, wearEvery: 3, rank: 1, qualityBonus: 0.05, extraLogChance: 0.02, secretFindBonus: 0.004 },
+    legendary: { name: 'Легендарный',price: 1800,max: 500, wearEvery: 5, rank: 2, qualityBonus: 0.08, extraLogChance: 0.035, secretFindBonus: 0.007 },
+    mythic:    { name: 'Мифический',price: 4500, max: 850, wearEvery: 8, rank: 3, qualityBonus: 0.11, extraLogChance: 0.05, secretFindBonus: 0.010 }
   };
 
   const AXE_ICON = {
@@ -111,47 +111,60 @@
 
   function getTelegramId() {
     const id = telegramUser()?.id;
-    return id != null && /^\d+$/.test(String(id))
-      ? String(id)
-      : 'browser';
+    return id != null && /^\d+$/.test(String(id)) ? String(id) : 'browser';
   }
 
   function storageKey() { return `timber-town:${getTelegramId()}:v${VERSION}`; }
-  const CLOUD_PREFIX = 'timbertown_v2';
+  function cloudPrefix() {
+    // CloudStorage is already isolated by Telegram bot/user; the ID in the key
+    // is an additional guard against accidentally mixing formats.
+    const id = getTelegramId();
+    return `tt_save_${id === 'browser' ? 'guest' : id}`;
+  }
   function cloudStorage() { return window.Telegram?.WebApp?.CloudStorage || null; }
   function cloudCall(method, ...args) {
     const cloud = cloudStorage();
     if (!cloud || typeof cloud[method] !== 'function') return Promise.resolve(null);
     return new Promise(resolve => {
       let settled = false;
-      const done = (error, result) => { if (settled) return; settled = true; resolve(error ? null : result); };
+      const timeoutId = window.setTimeout(() => finish(true, null), 3500);
+      const finish = (error, result) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        resolve(error ? null : (result === undefined ? true : result));
+      };
       try {
-        const maybe = cloud[method](...args, (error, result) => done(error, result));
-        if (maybe && typeof maybe.then === 'function') maybe.then(v => done(null, v)).catch(() => done(true, null));
-      } catch { done(true, null); }
-      window.setTimeout(() => done(true, null), 2500);
+        cloud[method](...args, (error, result) => finish(error, result));
+      } catch { finish(true, null); }
     });
   }
   async function cloudSaveState(serialized) {
     if (getTelegramId() === 'browser' || !cloudStorage()) return false;
-    const chunks = serialized.match(/[\s\S]{1,3000}/g) || ['{}'];
-    const oldMeta = await cloudCall('getItem', `${CLOUD_PREFIX}_meta`);
+    const prefix = cloudPrefix();
+    // Telegram CloudStorage values are limited to 4096 characters.
+    const chunks = serialized.match(/[\s\S]{1,3500}/g) || ['{}'];
+    if (chunks.length > 100) return false;
+    const oldMeta = await cloudCall('getItem', `${prefix}_meta`);
     const oldCount = Number(String(oldMeta || '').split(':')[0]) || 0;
     for (let i = 0; i < chunks.length; i++) {
-      if (await cloudCall('setItem', `${CLOUD_PREFIX}_${i}`, chunks[i]) === null) return false;
+      const ok = await cloudCall('setItem', `${prefix}_${i}`, chunks[i]);
+      if (ok !== true) return false;
     }
-    if (await cloudCall('setItem', `${CLOUD_PREFIX}_meta`, `${chunks.length}:${Date.now()}`) === null) return false;
-    for (let i = chunks.length; i < oldCount; i++) await cloudCall('removeItem', `${CLOUD_PREFIX}_${i}`);
+    const metaOk = await cloudCall('setItem', `${prefix}_meta`, `${chunks.length}:${Date.now()}`);
+    if (metaOk !== true) return false;
+    for (let i = chunks.length; i < oldCount; i++) await cloudCall('removeItem', `${prefix}_${i}`);
     return true;
   }
   async function cloudLoadState() {
     if (getTelegramId() === 'browser' || !cloudStorage()) return null;
-    const meta = await cloudCall('getItem', `${CLOUD_PREFIX}_meta`);
+    const prefix = cloudPrefix();
+    const meta = await cloudCall('getItem', `${prefix}_meta`);
     const count = Number(String(meta || '').split(':')[0]);
     if (!Number.isInteger(count) || count < 1 || count > 100) return null;
     let raw = '';
     for (let i = 0; i < count; i++) {
-      const chunk = await cloudCall('getItem', `${CLOUD_PREFIX}_${i}`);
+      const chunk = await cloudCall('getItem', `${prefix}_${i}`);
       if (typeof chunk !== 'string') return null;
       raw += chunk;
     }
@@ -228,24 +241,49 @@
     for (let z=1; z<=28; z++) kinds[z] = ['birch','pine','oak'][Math.floor(Math.random()*3)];
     return kinds;
   }
+  function createInitialZoneStats() {
+    const stats = {};
+    for (let z=1; z<=28; z++) stats[z] = { stock: 200000, cutToday: 0, cutAll: 0 };
+    return stats;
+  }
 
   function createWoodQualityStock() {
     return Object.fromEntries(WOOD_TYPES.map(wood => [wood, Object.fromEntries(QUALITY.map(q => [q, 0]))]));
   }
   function consumeWoodForQuality(quality, amount) {
-    let left = amount;
+    // Remove a proportional mix of the woods currently represented by this quality.
+    // Always remove exactly `amount` (or all available stock), without biasing birch.
+    const stock = Object.fromEntries(WOOD_TYPES.map(wood => [
+      wood, Math.max(0, num(state.sawmill.logsByWoodQuality?.[wood]?.[quality]))
+    ]));
+    const total = sum(Object.values(stock));
+    let left = Math.min(num(amount), total);
+    if (left <= 0 || total <= 0) return;
+    const takes = {};
     for (const wood of WOOD_TYPES) {
-      const stock = state.sawmill.logsByWoodQuality?.[wood]?.[quality] || 0;
-      const take = Math.min(stock, left);
-      state.sawmill.logsByWoodQuality[wood][quality] -= take;
-      left -= take;
-      if (left <= 0) break;
+      takes[wood] = Math.min(stock[wood], Math.floor(left * stock[wood] / total));
+    }
+    let removed = sum(Object.values(takes));
+    while (removed < left) {
+      let progressed = false;
+      for (const wood of WOOD_TYPES) {
+        if (takes[wood] < stock[wood] && removed < left) {
+          takes[wood]++;
+          removed++;
+          progressed = true;
+        }
+      }
+      if (!progressed) break;
+    }
+    for (const wood of WOOD_TYPES) {
+      state.sawmill.logsByWoodQuality[wood][quality] = Math.max(0, stock[wood] - takes[wood]);
     }
   }
 
   function createState() {
     return {
       version: VERSION,
+      telegramId: null,
       money: 1000,
       gold: 0,
       day: 1,
@@ -260,6 +298,7 @@
       sawmill: {
         zones: 1,
         zoneStock: 200000,
+        zoneStats: createInitialZoneStats(),
         eventZones: createInitialEvents(),
         zoneKinds: createInitialZoneKinds(),
         extraMachines: [],
@@ -327,6 +366,19 @@
     }
     s.sawmill.zones = clamp(num(s.sawmill.zones, 1), 1, 28);
     s.sawmill.zoneStock = num(s.sawmill.zoneStock, 0);
+    const oldZoneStats = input.sawmill?.zoneStats && typeof input.sawmill.zoneStats === 'object' ? input.sawmill.zoneStats : null;
+    s.sawmill.zoneStats = createInitialZoneStats();
+    for (let z = 1; z <= 28; z++) {
+      const old = oldZoneStats?.[z];
+      if (old) {
+        s.sawmill.zoneStats[z] = { stock: clamp(num(old.stock), 0, 200000), cutToday: num(old.cutToday), cutAll: num(old.cutAll) };
+      } else if (!oldZoneStats && z === 1) {
+        s.sawmill.zoneStats[z].stock = clamp(num(input.sawmill?.zoneStock, 200000), 0, 200000);
+        s.sawmill.zoneStats[z].cutToday = num(input.sawmill?.logsToday);
+        s.sawmill.zoneStats[z].cutAll = num(input.sawmill?.logsAll);
+      }
+    }
+    s.sawmill.zoneStock = Object.entries(s.sawmill.zoneStats).reduce((total, [id, zone]) => Number(id) <= s.sawmill.zones ? total + zone.stock : total, 0);
     s.sawmill.eventZones = { ...createInitialEvents(), ...(s.sawmill.eventZones || {}) };
     s.sawmill.zoneKinds = { ...createInitialZoneKinds(), ...(s.sawmill.zoneKinds || {}) };
     s.sawmill.extraMachines = Array.isArray(s.sawmill.extraMachines) ? s.sawmill.extraMachines.slice(0, 139).map(m => ({ ...MACHINE_BASE(), ...(m || {}), queue: Object.fromEntries(QUALITY.map(q => [q, num(m?.queue?.[q])])), level: clamp(num(m?.level,1),1,MAX_MACHINE_LEVEL), durability: clamp(num(m?.durability,100),0,100), remaining: clamp(num(m?.remaining),0,100000), isRunning: Boolean(m?.isRunning) })) : [];
@@ -441,7 +493,7 @@
     s.sawmill.logsToday = num(s.sawmill.logsToday);
     s.sawmill.logsAll = num(s.sawmill.logsAll);
     s.sawmill.spent = num(s.sawmill.spent);
-    s.lastLogin = num(s.lastLogin, Date.now());
+    s.lastLogin = Math.max(0, Number(s.lastLogin) || Date.now());
 
     if (s.sawmill.safeExposure && typeof s.sawmill.safeExposure === 'object') {
       s.sawmill.safeExposure = {
@@ -538,8 +590,11 @@
     }
   }
 
+  let loadedIdentity = getTelegramId();
   let state = loadState();
   let cloudSaveTimer = null;
+  let pendingCloudSnapshot = null;
+  let cloudSaveInFlight = Promise.resolve();
   let lastCloudSerialized = '';
   let lastCloudSaveAt = 0;
   let busy = false;
@@ -551,29 +606,56 @@
 
   const openAxeChoosers = new Set();
 
-  function saveState() {
-    state.lastLogin = Date.now();
+  function scheduleCloudSave(serialized, immediate = false) {
+    if (getTelegramId() === 'browser' || !cloudStorage()) return;
+    pendingCloudSnapshot = serialized;
+    const flush = () => {
+      cloudSaveTimer = null;
+      const snapshot = pendingCloudSnapshot;
+      pendingCloudSnapshot = null;
+      if (!snapshot) return;
+      cloudSaveInFlight = cloudSaveInFlight.then(async () => {
+        const ok = await cloudSaveState(snapshot);
+        lastCloudSaveAt = Date.now();
+        if (ok) lastCloudSerialized = snapshot;
+        const badge = $('save-status');
+        if (badge) badge.textContent = ok ? 'Сохранено в Telegram Cloud' : 'Локально сохранено · Telegram Cloud недоступен';
+        return ok;
+      }).catch(error => {
+        console.warn('Telegram CloudStorage save failed:', error);
+        return false;
+      });
+    };
+    if (immediate) {
+      if (cloudSaveTimer) window.clearTimeout(cloudSaveTimer);
+      cloudSaveTimer = null;
+      flush();
+    } else if (!cloudSaveTimer) {
+      // Local state is saved every second; batch cloud writes to reduce Telegram API calls.
+      cloudSaveTimer = window.setTimeout(flush, 15000);
+    }
+  }
+
+  function saveState(options = {}) {
+    // Keep the Telegram identity inside the JSON snapshot as well as in its storage key.
+    state.telegramId = getTelegramId() === 'browser' ? null : getTelegramId();
+    // Persist the wall-clock position of the last fully simulated game minute.
+    // Any in-memory fractional remainder is included in the next offline catch-up.
+    state.lastLogin = Math.max(0, Date.now() - timeRemainderMs);
     try {
       const serialized = JSON.stringify(state);
       localStorage.setItem(storageKey(), serialized);
       const badge = $('save-status');
       if (getTelegramId() === 'browser') {
         if (badge) badge.textContent = 'Локальное сохранение активно';
-      } else if (serialized !== lastCloudSerialized && !cloudSaveTimer && Date.now() - lastCloudSaveAt > 15000) {
-        cloudSaveTimer = window.setTimeout(() => {
-          cloudSaveTimer = null;
-          const snapshot = JSON.stringify(state);
-          cloudSaveState(snapshot).then(ok => {
-            lastCloudSaveAt = Date.now();
-            if (ok) lastCloudSerialized = snapshot;
-            const status = $('save-status');
-            if (status) status.textContent = ok ? 'Сохранено в Telegram Cloud' : 'Локально сохранено · Telegram Cloud недоступен';
-          });
-        }, 400);
+      } else if (serialized !== lastCloudSerialized) {
+        scheduleCloudSave(serialized, Boolean(options.cloudImmediate));
       }
+      return true;
     } catch (error) {
       console.error('Не удалось сохранить прогресс:', error);
       notify('Не удалось сохранить прогресс. Проверьте свободное место.', 'error');
+      return false;
     }
   }
 
@@ -696,10 +778,8 @@
       ? AXES[worker.axe.rarity].rank
       : 0;
 
-    const boost = Math.min(
-      0.72,
-      Math.max(0, worker.level - 1) * 0.025 + rank * 0.06
-    );
+    const axeBonus = worker.axe && AXES[worker.axe.rarity] ? AXES[worker.axe.rarity].qualityBonus : 0;
+    const boost = Math.min(0.72, Math.max(0, worker.level - 1) * 0.025 + axeBonus + rank * 0.025);
 
     const weights = [80, 11.9, 5, 3, 0.1];
     const zoneId = clamp(num(worker.zoneId, 1), 1, state.sawmill.zones);
@@ -746,24 +826,34 @@
       return;
     }
 
-    if (!worker.axe || worker.axe.durability <= 0 || state.sawmill.zoneStock <= 0) {
+    const zoneId = clamp(num(worker.zoneId, 1), 1, state.sawmill.zones);
+    const zoneStats = state.sawmill.zoneStats[zoneId] || (state.sawmill.zoneStats[zoneId] = { stock: 200000, cutToday: 0, cutAll: 0 });
+    if (!worker.axe || worker.axe.durability <= 0 || zoneStats.stock <= 0) {
       worker.isWorking = false;
       return;
     }
 
-    const zoneId = clamp(num(worker.zoneId, 1), 1, state.sawmill.zones);
     const events = state.sawmill.eventZones || {};
     const zoneEvent = Object.keys(events).find(key => events[key] === zoneId) || null;
-    if (zoneEvent && Math.random() < 0.01) state.inventory.secretLogs = Math.min(999999, num(state.inventory.secretLogs) + 1);
+    const axeStats = AXES[worker.axe.rarity] || AXES.common;
+    if (zoneEvent && Math.random() < Math.min(0.05, 0.01 + axeStats.secretFindBonus)) {
+      state.inventory.secretLogs = Math.min(999999, num(state.inventory.secretLogs) + 1);
+    }
     if (zoneEvent === 'empty') return;
     const quality = zoneEvent === 'rotten' ? 'rotten' : getQuality(worker, zoneEvent === 'ideal' ? 0.60 : 0);
 
     const woodType = state.sawmill.zoneKinds?.[zoneId] || 'birch';
-    state.sawmill.logs[quality]++;
-    state.sawmill.logsByWoodQuality[woodType][quality]++;
-    state.sawmill.zoneStock--;
-    state.sawmill.logsToday++;
-    state.sawmill.logsAll++;
+    const extraLog = zoneEvent === 'rotten' ? Math.random() < axeStats.extraLogChance : Math.random() < axeStats.extraLogChance;
+    const produced = 1 + (extraLog ? 1 : 0);
+    const actualProduced = Math.min(produced, zoneStats.stock);
+    state.sawmill.logs[quality] += actualProduced;
+    state.sawmill.logsByWoodQuality[woodType][quality] += actualProduced;
+    zoneStats.stock = Math.max(0, zoneStats.stock - actualProduced);
+    zoneStats.cutToday += actualProduced;
+    zoneStats.cutAll += actualProduced;
+    state.sawmill.zoneStock = Math.max(0, state.sawmill.zoneStock - actualProduced);
+    state.sawmill.logsToday += actualProduced;
+    state.sawmill.logsAll += actualProduced;
 
     if (worker.level < MAX_LEVEL) {
       worker.xp += 3;
@@ -803,15 +893,21 @@
     machines.forEach((machine, machineIndex) => {
       const operator = state.sawmill.operators.find(o => o.machineIndex === machineIndex);
       const queueTotal = () => sum(QUALITY.map(q => machine.queue[q] || 0));
-      if (operator && !machine.isRunning && machine.durability > 0 && sum(QUALITY.map(q => state.sawmill.logs[q])) > 0) {
-        const quality = QUALITY.slice().reverse().find(q => state.sawmill.logs[q] > 0);
-        if (quality) {
-          const amount = Math.min(MACHINE[machine.level].capacity, state.sawmill.logs[quality]);
-          machine.queue = Object.fromEntries(QUALITY.map(q => [q, q === quality ? amount : 0]));
-          state.sawmill.logs[quality] -= amount;
-          consumeWoodForQuality(quality, amount);
-          machine.remaining = MACHINE[machine.level].minutes + 10;
+      if (operator && machine.durability > 0) {
+        if (queueTotal() > 0 && !machine.isRunning) {
+          // Resume a paused/previously interrupted batch; never overwrite it.
+          machine.remaining = Math.max(1, Number(machine.remaining) || 0) + 10;
           machine.isRunning = true;
+        } else if (!machine.isRunning && queueTotal() === 0 && sum(QUALITY.map(q => state.sawmill.logs[q])) > 0) {
+          const quality = QUALITY.slice().reverse().find(q => state.sawmill.logs[q] > 0);
+          if (quality) {
+            const amount = Math.min(MACHINE[machine.level].capacity, state.sawmill.logs[quality]);
+            machine.queue = Object.fromEntries(QUALITY.map(q => [q, q === quality ? amount : 0]));
+            state.sawmill.logs[quality] -= amount;
+            consumeWoodForQuality(quality, amount);
+            machine.remaining = MACHINE[machine.level].minutes + 10;
+            machine.isRunning = true;
+          }
         }
       }
       if (!machine.isRunning || machine.durability <= 0) return;
@@ -868,15 +964,26 @@
 
   function moveHourlyEventZones() {
     const events = state.sawmill.eventZones || {};
-    const occupied = new Set([events.rotten].filter(Boolean));
-    ['empty','ideal'].forEach(kind => {
+    // The rotten-log event always moves to a new cell every game hour.
+    // Empty and ideal events can either disappear or relocate once per hour.
+    ['rotten', 'empty', 'ideal'].forEach(kind => {
       const current = events[kind];
       if (!current) return;
-      if (Math.random() < 0.5) { events[kind] = null; return; }
-      const options = Array.from({length:28},(_,i)=>i+1).filter(z=>!occupied.has(z) && z !== events.rotten);
-      if (!options.length) { events[kind] = null; return; }
-      const next = options[Math.floor(Math.random()*options.length)];
-      events[kind] = next; occupied.add(next);
+      if (kind !== 'rotten' && Math.random() < 0.5) {
+        events[kind] = null;
+        return;
+      }
+      const reserved = new Set(Object.entries(events)
+        .filter(([otherKind, zone]) => otherKind !== kind && Number.isInteger(zone))
+        .map(([, zone]) => zone));
+      const options = Array.from({ length: 28 }, (_, i) => i + 1)
+        .filter(zone => zone !== current && !reserved.has(zone));
+      if (!options.length) {
+        // With 28 cells this is only a defensive fallback; rotten must exist.
+        if (kind !== 'rotten') events[kind] = null;
+        return;
+      }
+      events[kind] = options[Math.floor(Math.random() * options.length)];
     });
     state.sawmill.eventZones = events;
   }
@@ -890,7 +997,10 @@
     }
 
     state.day++;
-    state.sawmill.zoneStock = 200000;
+    Object.entries(state.sawmill.zoneStats || {}).forEach(([id, zone]) => {
+      if (Number(id) <= state.sawmill.zones) { zone.stock = 200000; zone.cutToday = 0; }
+    });
+    state.sawmill.zoneStock = state.sawmill.zones * 200000;
     state.sawmill.logsToday = 0;
     refreshEventZones();
     state.taxDebt += 50;
@@ -1467,70 +1577,61 @@
     const list = $('broken-axes');
     if (!list) return;
 
-    list.replaceChildren();
     const damaged = [];
-
     state.inventory.axes.forEach(axe => {
       if (axe.durability < AXES[axe.rarity].max) {
-        damaged.push({
-          ...axe,
-          where: 'В рюкзаке',
-          workerId: null
-        });
+        damaged.push({ ...axe, where: 'В рюкзаке', workerId: null });
       }
     });
-
     state.sawmill.workers.forEach(worker => {
       if (worker.axe && worker.axe.durability < AXES[worker.axe.rarity].max) {
-        damaged.push({
-          ...worker.axe,
-          where: worker.name,
-          workerId: worker.id
-        });
+        damaged.push({ ...worker.axe, where: worker.name, workerId: worker.id });
       }
     });
 
-    damaged.forEach(axe => {
-      const row = cloneTemplate('broken-axe');
+    const existing = new Map();
+    Array.from(list.children).forEach(row => {
+      if (row.dataset.axeRowKey) existing.set(row.dataset.axeRowKey, row);
+    });
+    const fragment = document.createDocumentFragment();
+    damaged.forEach((axe, index) => {
+      const key = axe.workerId
+        ? `worker:${axe.workerId}:${axe.rarity}`
+        : `inventory:${axe.rarity}:${axe.durability}`;
+      let row = existing.get(key);
+      if (row) existing.delete(key);
+      else row = cloneTemplate('broken-axe');
       if (!row) return;
 
-      row.querySelectorAll('.axe-icon').forEach(icon => {
-        attachImgFallback(icon, FALLBACK_AXE_SVG);
-        if (axe.rarity) {
-          icon.src = axeIconSrc(axe.rarity);
-          icon.alt = '';
-          icon.loading = 'lazy';
-          icon.decoding = 'async';
-        }
-      });
-
+      row.dataset.axeRowKey = key;
       row.dataset.rarity = axe.rarity;
       row.dataset.durability = String(axe.durability);
       row.dataset.where = axe.where;
-
       if (axe.workerId) row.dataset.workerId = axe.workerId;
+      else delete row.dataset.workerId;
 
+      row.querySelectorAll('.axe-icon').forEach(icon => {
+        attachImgFallback(icon, FALLBACK_AXE_SVG);
+        const src = axeIconSrc(axe.rarity);
+        if (icon.getAttribute('src') !== src && !icon.classList.contains('img-fallback')) icon.setAttribute('src', src);
+        icon.alt = '';
+        icon.loading = 'lazy';
+        icon.decoding = 'async';
+      });
       const name = row.querySelector('.axe-name');
       const owner = row.querySelector('.axe-owner');
       const button = row.querySelector('.repair-axe');
-
-      if (name) {
-        name.textContent =
-          `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}`;
-      }
-
+      if (name) name.textContent = `${AXES[axe.rarity].name} · ${axe.durability}/${AXES[axe.rarity].max}`;
       if (owner) owner.textContent = axe.where;
-
       if (button) {
         button.dataset.rarity = axe.rarity;
         button.dataset.durability = String(axe.durability);
-
         if (axe.workerId) button.dataset.workerId = axe.workerId;
+        else delete button.dataset.workerId;
       }
-
-      list.append(row);
+      fragment.append(row);
     });
-
+    list.replaceChildren(fragment);
     const empty = $('axes-ok');
     if (empty) empty.hidden = damaged.length > 0;
   }
@@ -1611,12 +1712,25 @@
     setText('tax-penalty', `${state.taxPenalty.toLocaleString('ru-RU')} $`);
     setText('overdue-days', state.overdueDays);
 
-    setText('zone-stock', state.sawmill.zoneStock.toLocaleString('ru-RU'));
+    const ownedStock = Object.entries(state.sawmill.zoneStats || {}).reduce((total, [id, zone]) => Number(id) <= state.sawmill.zones ? total + num(zone.stock) : total, 0);
+    state.sawmill.zoneStock = ownedStock;
+    setText('zone-stock', ownedStock.toLocaleString('ru-RU'));
     setText('zone-count', state.sawmill.zones);
     setText('worker-cap', state.sawmill.zones * 10);
     setText('worker-count', state.sawmill.workers.length);
     setText('machine-count', 1 + (state.sawmill.extraMachines || []).length);
     setText('operator-count', (state.sawmill.operators || []).length);
+    const operatorHireButton = $('hire-operator');
+    if (operatorHireButton) {
+      const activeMachines = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])];
+      const assignedMachines = new Set((state.sawmill.operators || []).map(op => op.machineIndex));
+      const hasFreeMachine = activeMachines.some((_, index) => !assignedMachines.has(index));
+      const nextOperatorCost = 1500 + state.sawmill.operators.length * 1000;
+      operatorHireButton.disabled = !hasFreeMachine || state.money < nextOperatorCost;
+      operatorHireButton.textContent = hasFreeMachine ? `Нанять станочника · ${nextOperatorCost.toLocaleString('ru-RU')} $` : 'Нет свободных станков';
+    }
+    const sellAllButton = $('sell-all-planks');
+    if (sellAllButton) sellAllButton.disabled = state.sawmill.planks <= 0 || Boolean(state.report);
     const eventLabel = $('event-zones-summary');
     if (eventLabel) eventLabel.textContent = Object.entries(state.sawmill.eventZones || {}).filter(([,z])=>z).map(([kind,z])=>`Зона ${z}: ${{rotten:'только гнилые брёвна',empty:'пустые брёвна',ideal:'идеальные брёвна'}[kind]}`).join(' · ') || 'Сегодня особых зон нет';
     const machineList = $('machine-list');
@@ -1625,22 +1739,64 @@
       [state.sawmill.machine, ...(state.sawmill.extraMachines || [])].forEach((machine, index) => {
         const card=document.createElement('li'); card.className='machine-card';
         const title=document.createElement('strong'); title.textContent=`Станок ${index+1} · уровень ${machine.level}/${MAX_MACHINE_LEVEL}`;
-        const details=document.createElement('p'); details.textContent=`Партия до ${MACHINE[machine.level].capacity} брёвен · ${MACHINE[machine.level].minutes} мин/доску · прочность ${machine.durability}/100`;
+        const details=document.createElement('p'); details.textContent=`Партия до ${MACHINE[machine.level].capacity} брёвен · ${MACHINE[machine.level].minutes} мин/бревно · прочность ${machine.durability}/100`;
         const actions=document.createElement('div'); actions.className='machine-actions';
-        if (machine.level < MAX_MACHINE_LEVEL) { const up=document.createElement('button'); up.type='button'; up.dataset.machineAction='upgrade'; up.dataset.machineIndex=String(index); up.textContent=`Улучшить · ${MACHINE[machine.level+1].price}$`; actions.append(up); }
-        if (machine.durability < 100) { const fix=document.createElement('button'); fix.type='button'; fix.dataset.machineAction='repair'; fix.dataset.machineIndex=String(index); fix.textContent=`Ремонт · ${(100-machine.durability)*2}$`; actions.append(fix); }
+        if (machine.level < MAX_MACHINE_LEVEL && document.body.dataset.screen === 'sawmill') { const up=document.createElement('button'); up.type='button'; up.dataset.machineAction='upgrade'; up.dataset.machineIndex=String(index); up.textContent=`Улучшить · ${MACHINE[machine.level+1].price}$`; actions.append(up); }
+        if (!actions.children.length) actions.hidden = true;
         card.append(title,details,actions); machineList.append(card);
       });
     }
+    const repairList = $('machine-repair-list');
+    if (repairList) {
+      repairList.replaceChildren();
+      const machines = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])];
+      let broken = 0;
+      machines.forEach((machine, index) => {
+        if (machine.durability >= 100) return;
+        broken++;
+        const card = document.createElement('li'); card.className = 'machine-card';
+        const title = document.createElement('strong'); title.textContent = `Станок ${index + 1}`;
+        const detail = document.createElement('p'); detail.textContent = `Прочность ${machine.durability}/100 · цена ремонта ${(100 - machine.durability) * 2}$`;
+        const fix = document.createElement('button'); fix.type='button'; fix.dataset.machineAction='repair'; fix.dataset.machineIndex=String(index); fix.textContent='Починить';
+        card.append(title, detail, fix); repairList.append(card);
+      });
+      if (!broken) { const empty = document.createElement('li'); empty.className='empty-note'; empty.textContent='Все станки исправны.'; repairList.append(empty); }
+    }
     const operatorList = $('operator-list');
     if (operatorList) {
-      operatorList.replaceChildren();
+      const existing = new Map(Array.from(operatorList.children)
+        .filter(row => row.dataset.operatorId)
+        .map(row => [row.dataset.operatorId, row]));
+      const fragment = document.createDocumentFragment();
       (state.sawmill.operators || []).forEach(op => {
-        const li=document.createElement('li'); li.className='operator-card';
-        const img=document.createElement('img'); img.className='worker-portrait small'; img.src=`${clamp(num(op.skin,1),1,4)}skin.jpeg`; img.alt=`Станочник ${op.name}`; img.loading='lazy'; img.decoding='async'; attachImgFallback(img,FALLBACK_WORKER_SVG);
-        const info=document.createElement('div'); const name=document.createElement('strong'); name.textContent=op.name; const detail=document.createElement('p'); detail.textContent=`Станок ${op.machineIndex+1} · цикл ${MACHINE[( [state.sawmill.machine,...state.sawmill.extraMachines][op.machineIndex] || MACHINE_BASE()).level].minutes+10} мин · без уровня`;
-        info.append(name,detail); li.append(img,info); operatorList.append(li);
+        let li = existing.get(op.id);
+        if (li) existing.delete(op.id);
+        else {
+          li = document.createElement('li'); li.className = 'operator-card';
+          const img = document.createElement('img'); img.className = 'worker-portrait small';
+          img.loading = 'lazy'; img.decoding = 'async'; attachImgFallback(img, FALLBACK_WORKER_SVG);
+          const info = document.createElement('div');
+          const name = document.createElement('strong');
+          const detail = document.createElement('p');
+          info.append(name, detail); li.append(img, info);
+        }
+        li.dataset.operatorId = op.id;
+        const img = li.querySelector('.worker-portrait');
+        const src = `${clamp(num(op.skin, 1), 1, 4)}skin.jpeg`;
+        if (img) {
+          img.alt = `Станочник ${op.name}`;
+          if (img.getAttribute('src') !== src && !img.classList.contains('img-fallback')) img.setAttribute('src', src);
+        }
+        const machine = [state.sawmill.machine, ...(state.sawmill.extraMachines || [])][op.machineIndex];
+        const name = li.querySelector('strong');
+        const detail = li.querySelector('p');
+        if (name) name.textContent = op.name;
+        if (detail) detail.textContent = machine
+          ? `Станок ${op.machineIndex + 1} · ${MACHINE[machine.level].minutes + 10} мин на бревно · без уровня`
+          : 'Нет назначенного станка';
+        fragment.append(li);
       });
+      operatorList.replaceChildren(fragment);
     }
 
     setText('planks', state.sawmill.planks);
@@ -1690,14 +1846,10 @@
       if (exposure) {
         setText('safe-exposed', `${exposure.amount} $`);
 
-        const totalSeconds = Math.max(0, exposure.remaining) * 450;
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-        setText(
-          'safe-timer',
-          `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-        );
+        const totalSeconds = Math.max(0, Math.ceil((Math.max(0, exposure.remaining) * GAME_MINUTE_MS - timeRemainderMs) / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        setText('safe-timer', `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
       }
     }
 
@@ -1719,14 +1871,10 @@
       machineLeft.hidden = machineQueueTotal() <= 0;
       setText('machine-logs-left', machineQueueTotal());
 
-      const totalSeconds = Math.max(0, machine.remaining) * 450;
-      const hours = Math.floor(totalSeconds / 3600);
-      const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-      setText(
-        'machine-eta',
-        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-      );
+      const totalSeconds = Math.max(0, Math.ceil((Math.max(0, machine.remaining) * GAME_MINUTE_MS - timeRemainderMs) / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      setText('machine-eta', `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
     }
 
     const qualityHost = $('machine-quality');
@@ -1830,7 +1978,7 @@
       const zone = Number(button.dataset.zone);
       const owned = zone <= state.sawmill.zones;
 
-      button.disabled = owned || zone !== state.sawmill.zones + 1;
+      button.disabled = !owned && zone !== state.sawmill.zones + 1;
       button.dataset.owned = String(owned);
       const eventType = Object.keys(state.sawmill.eventZones || {}).find(k => state.sawmill.eventZones[k] === zone) || '';
       button.dataset.event = eventType;
@@ -2018,6 +2166,14 @@
 
   bind('open-inventory', () => $('inventory')?.showModal?.());
   bind('close-inventory', () => $('inventory')?.close?.());
+  bind('toggle-log-details', () => {
+    const details = $('log-details');
+    const button = $('toggle-log-details');
+    if (!details || !button) return;
+    details.hidden = !details.hidden;
+    button.setAttribute('aria-expanded', String(!details.hidden));
+    button.textContent = details.hidden ? 'Состав брёвен' : 'Скрыть состав';
+  });
 
   bind('toasts', event => {
     const close = event.target.closest('.toast-close');
@@ -2099,7 +2255,7 @@
     if (freeIndex < 0) { notify('Нет свободного станка для станочника.', 'error'); return false; }
     const cost = 1500 + state.sawmill.operators.length * 1000;
     if (!spend(cost)) return false;
-    const names = ['Богдан','Валентин','Виталий','Вячеслав','Геннадий','Данил','Евгений','Игорь','Лев','Марат','Назар','Павел','Семён','Тарас','Филипп','Ян'];
+    const names = ['Богдан','Валентин','Виталий','Вячеслав','Геннадий','Данил','Евгений','Игорь','Лев','Марат','Назар','Павел','Семён','Тарас','Филипп','Ян','Артём','Борис','Вадим','Глеб','Денис','Егор','Кирилл','Максим','Роман','Станислав','Тимур','Юрий'];
     state.sawmill.operators.push({ id: uid(), name: names[Math.floor(Math.random()*names.length)], skin: 1 + Math.floor(Math.random()*4), machineIndex: freeIndex, hireCost: cost });
     notify(`Станочник нанят за ${cost}$. Он будет перерабатывать брёвна автоматически.`);
   }));
@@ -2287,8 +2443,9 @@
     notify('Станок запущен.');
   }));
 
-  bind('sell-planks', () => transaction('Создание докладной', () => {
-    const amount = num($('plank-qty')?.value, 0);
+  function createPlankReport(requestedAmount) {
+    return transaction('Создание докладной', () => {
+    const amount = num(requestedAmount ?? $('plank-qty')?.value, 0);
 
     if (state.report) {
       notify('Сначала завершите текущую докладную.', 'error');
@@ -2303,8 +2460,12 @@
     state.report = { planks: amount, sealed: false, price: dailyPrice() };
     state.sawmill.planks -= amount;
 
+    const qty = $('plank-qty'); if (qty) qty.value = String(amount);
     notify(`Докладная на ${amount} досок создана.`);
-  }));
+    });
+  }
+  bind('sell-planks', () => createPlankReport($('plank-qty')?.value));
+  bind('sell-all-planks', () => createPlankReport(state.sawmill.planks));
 
   bind('stamp', () => transaction('Печать докладной', () => {
     if (
@@ -2340,7 +2501,7 @@
     notify('Доставка оплачена. Ожидайте 30 игровых минут.');
   }));
 
-  bind('repair-machine', repairMachine);
+  // All machine repairs are rendered only in the workshop and handled by the data-machine-action delegate.
 
   bind('broken-axes', event => {
     const button = event.target.closest('.repair-axe');
@@ -2383,7 +2544,23 @@
     button.addEventListener('click', () => {
       const zone = Number(button.dataset.zone);
 
-      if (zone <= state.sawmill.zones) return;
+      if (zone <= state.sawmill.zones) {
+        const stats = state.sawmill.zoneStats?.[zone] || { stock: 0, cutToday: 0, cutAll: 0 };
+        const assignedWorkers = state.sawmill.workers.filter(worker => Number(worker.zoneId || 1) === zone).length;
+        const wood = ({ birch: 'Берёза', pine: 'Сосна', oak: 'Дуб' })[state.sawmill.zoneKinds?.[zone] || 'birch'];
+        const eventType = Object.keys(state.sawmill.eventZones || {}).find(kind => state.sawmill.eventZones[kind] === zone);
+        const eventText = ({ rotten: 'Только гнилые брёвна', empty: 'Пустая делянка', ideal: 'Шанс идеального бревна +60 п.п.' })[eventType] || 'Обычная делянка';
+        const fill = (id, value) => { const element = $(id); if (element) element.textContent = String(value); };
+        fill('zone-detail-title', `Делянка ${zone}`);
+        fill('zone-detail-wood', wood);
+        fill('zone-detail-stock', num(stats.stock).toLocaleString('ru-RU'));
+        fill('zone-detail-cut-today', num(stats.cutToday).toLocaleString('ru-RU'));
+        fill('zone-detail-cut-all', num(stats.cutAll).toLocaleString('ru-RU'));
+        fill('zone-detail-workers', assignedWorkers);
+        fill('zone-detail-event', eventText);
+        $('zone-detail')?.showModal?.();
+        return;
+      }
 
       if (zone !== state.sawmill.zones + 1) {
         notify('Сначала купите предыдущую территорию.', 'error');
@@ -2422,6 +2599,8 @@
 
     state.sawmill.zones++;
     state.sawmill.zoneKinds[state.sawmill.zones] = ['birch','pine','oak'][Math.floor(Math.random()*3)];
+    state.sawmill.zoneStats[state.sawmill.zones] = { stock: 200000, cutToday: 0, cutAll: 0 };
+    state.sawmill.zoneStock += 200000;
     selectedZone = null;
     $('zone-buy')?.close?.();
 
@@ -2592,7 +2771,7 @@
       localStorage.removeItem(storageKey());
       state = createState();
       openAxeChoosers.clear();
-      saveState();
+      saveState({ cloudImmediate: true });
       render();
 
       notify('Прогресс сброшен.');
@@ -2603,19 +2782,43 @@
   });
 
   async function initialize() {
+    const startedAt = Date.now();
+    let telegramApp = null;
     try {
-      const tg = window.Telegram?.WebApp;
-      tg?.ready?.(); tg?.expand?.();
+      telegramApp = window.Telegram?.WebApp || null;
+      telegramApp?.ready?.(); telegramApp?.expand?.();
     } catch {}
+    // Wait briefly only inside an actual Telegram WebApp. Ordinary browser visits
+    // should not pause for five seconds just because Telegram is unavailable.
+    const identityWaitMs = telegramApp ? 1500 : 0;
+    while (getTelegramId() === 'browser' && Date.now() - startedAt < identityWaitMs) {
+      await new Promise(resolve => window.setTimeout(resolve, 100));
+    }
+    if (getTelegramId() !== loadedIdentity) {
+      loadedIdentity = getTelegramId();
+      state = loadState();
+      lastCloudSerialized = '';
+    }
     renderProfileTab();
     document.querySelectorAll('img.axe-icon').forEach(img => attachImgFallback(img, FALLBACK_AXE_SVG));
     document.querySelectorAll('img.worker-portrait').forEach(img => attachImgFallback(img, FALLBACK_WORKER_SVG));
 
-    // Telegram CloudStorage is per-user. Prefer the newest valid snapshot and keep local fallback.
+    // CloudStorage is per bot/user. A fresh default state is not a local save;
+    // do not let its newly-created timestamp hide an older legitimate cloud save.
+    let localSaveExists = false;
+    try {
+      const localRaw = localStorage.getItem(storageKey());
+      if (localRaw) {
+        const localParsed = JSON.parse(localRaw);
+        localSaveExists = Boolean(localParsed && typeof localParsed === 'object' && !Array.isArray(localParsed));
+      }
+    } catch { localSaveExists = false; }
     const cloudState = await cloudLoadState();
-    if (cloudState && num(cloudState.lastLogin) > num(state.lastLogin)) state = cloudState;
-    const elapsed = Math.max(0, Date.now() - num(state.lastLogin, Date.now()));
-    if (elapsed > 0) advanceTime(elapsed); else saveState();
+    if (cloudState && (!localSaveExists || Number(cloudState.lastLogin) > Number(state.lastLogin || 0))) state = cloudState;
+    const now = Date.now();
+    const elapsed = Math.max(0, now - Math.max(0, Number(state.lastLogin) || now));
+    lastTick = now;
+    if (elapsed > 0) advanceTime(elapsed); else saveState({ cloudImmediate: true });
     render();
   }
 
@@ -2623,6 +2826,7 @@
     lastTick = Date.now();
     window.setInterval(() => {
       const now = Date.now();
+      if (document.visibilityState === 'hidden') return;
       const elapsed = Math.max(0, now - lastTick);
       lastTick = now;
       advanceTime(elapsed);
@@ -2630,12 +2834,28 @@
   });
 
   document.addEventListener('visibilitychange', () => {
+    const now = Date.now();
     if (document.visibilityState === 'hidden') {
-      saveState();
+      // Account for time up to the moment the WebView becomes inactive.
+      const elapsed = Math.max(0, now - lastTick);
+      lastTick = now;
+      if (elapsed > 0) advanceTime(elapsed);
+      saveState({ cloudImmediate: true });
+    } else {
+      // Simulate all offline game time since the most recent persisted timestamp.
+      const elapsed = Math.max(0, now - lastTick);
+      lastTick = now;
+      if (elapsed > 0) advanceTime(elapsed);
     }
   });
 
-  window.addEventListener('pagehide', () => { saveState(); if (getTelegramId() !== 'browser') cloudSaveState(JSON.stringify(state)); });
+  window.addEventListener('pagehide', () => {
+    const now = Date.now();
+    const elapsed = Math.max(0, now - lastTick);
+    lastTick = now;
+    if (elapsed > 0) advanceTime(elapsed);
+    saveState({ cloudImmediate: true });
+  });
 
   window.TimberTown = Object.freeze({
     getState: () => JSON.parse(JSON.stringify(state)),
