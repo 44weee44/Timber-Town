@@ -1060,6 +1060,10 @@
 
   function settleSafeExposure() {
     const exposure = state.sawmill.safeExposure;
+    if (state.overdueDays <= 5) {
+      state.sawmill.safeExposure = null;
+      return;
+    }
     if (!exposure) return;
 
     exposure.remaining--;
@@ -1121,8 +1125,12 @@
       suppressNotifications = false;
     }
 
-    saveState();
-    render();
+    // Render and persist only when a full game minute has elapsed.
+    // Frequent full-page renders on each real second caused visible layout flicker/jumps.
+    if (fullMinutes > 0) {
+      saveState();
+      render();
+    }
   }
 
   function addAxeToInventory(rarity, durability) {
@@ -2392,14 +2400,18 @@
     state.sawmill.safeMoney -= amount;
     state.money += amount;
 
-    if (state.sawmill.safeExposure) {
-      state.sawmill.safeExposure.amount += amount;
-      state.sawmill.safeExposure.remaining = 60;
+    if (state.overdueDays > 5) {
+      if (state.sawmill.safeExposure) {
+        state.sawmill.safeExposure.amount += amount;
+        state.sawmill.safeExposure.remaining = 60;
+      } else {
+        state.sawmill.safeExposure = { amount, remaining: 60 };
+      }
+      notify('При долге свыше 5 дней потратьте деньги за игровой час.');
     } else {
-      state.sawmill.safeExposure = { amount, remaining: 60 };
+      state.sawmill.safeExposure = null;
+      notify('Деньги сняты из сейфа.');
     }
-
-    notify('Деньги сняты. Потратьте их за игровой час.');
   }));
 
   bind('pay-tax', () => transaction('Оплата налога', () => {
@@ -2898,7 +2910,7 @@
     const now = Date.now();
     const elapsed = Math.max(0, now - Math.max(0, Number(state.lastLogin) || now));
     lastTick = now;
-    if (elapsed > 0) advanceTime(elapsed); else saveState({ cloudImmediate: true });
+    if (elapsed > 0) advanceTime(elapsed * 0.5); else saveState({ cloudImmediate: true });
     render();
   }
 
@@ -2925,7 +2937,7 @@
       // Simulate all offline game time since the most recent persisted timestamp.
       const elapsed = Math.max(0, now - lastTick);
       lastTick = now;
-      if (elapsed > 0) advanceTime(elapsed);
+      if (elapsed > 0) advanceTime(elapsed * 0.5);
     }
   });
 

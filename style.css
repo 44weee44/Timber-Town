@@ -1359,3 +1359,27 @@ body[data-screen="foundry"] #foundry > #stamp-status, body[data-screen="foundry"
 .building-guide img { width:58px; height:58px; flex:0 0 58px; object-fit:cover; image-rendering:pixelated; }
 .building-guide p { margin:0; line-height:1.45; }
 body[data-screen="foundry"] .building-guide { background:rgba(15,13,10,.82); }
+
+/* Closed map locations are invisible hit areas, never dark/black buttons. */
+#world a[aria-disabled="true"],
+#world a[data-spot="pine"],
+#world a[data-spot="oak"] {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#world a[aria-disabled="true"]:hover,
+#world a[aria-disabled="true"]:active,
+#world a[data-spot="pine"]:hover,
+#world a[data-spot="pine"]:active,
+#world a[data-spot="oak"]:hover,
+#world a[data-spot="oak"]:active {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
