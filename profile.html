@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b140e">
   <link rel="stylesheet" href="style.css">
   <title>Личное дело — Timber Town</title>
@@ -86,7 +86,18 @@
       <a href="#tab-stats" aria-controls="tab-stats">Статистика</a>
       <a href="#tab-chances" aria-controls="tab-chances">Шансы</a>
       <a href="#tab-crew" aria-controls="tab-crew">Работники</a>
+      <a href="#tab-guide" aria-controls="tab-guide">Справочник</a>
     </nav>
+
+    <section id="tab-guide" hidden aria-labelledby="tab-guide-title">
+      <h2 id="tab-guide-title">Справочник игрока</h2>
+      <nav aria-label="Разделы справочника"><a href="#guide-wood">Добыча</a> · <a href="#guide-machine">Станок</a> · <a href="#guide-planks">Продажа досок</a> · <a href="#guide-logs">Продажа брёвен</a> · <a href="#guide-safe">Сейф</a></nav>
+      <article id="guide-wood"><h3>Добыча</h3><p>Назначьте лесорубу делянку и исправный топор. Звёзды работника влияют на эффективность добычи.</p></article>
+      <article id="guide-machine"><h3>Станок</h3><p>Загрузите брёвна и запустите обработку. Каждое бревно занимает игровое время; улучшения станка ускоряют работу. Станочник может обслуживать станок автоматически.</p></article>
+      <article id="guide-planks"><h3>Продажа досок</h3><p>Создайте докладную на складе, поставьте печать при действующей лицензии в управе и оплатите доставку. После завершения деньги поступят в сейф.</p></article>
+      <article id="guide-logs"><h3>Продажа брёвен</h3><p>На лесопилке выберите сосну или дуб и найдите покупателя. Условия случайны. Проверьте цену и количество, подготовьте договор и подпишите его. Поставка длится 90 игровых минут; оплата поступает в сейф.</p></article>
+      <article id="guide-safe"><h3>Сейф и доставка</h3><p>Деньги за поставки приходят в сейф. Чтобы использовать их для покупок, переведите нужную сумму в кошелёк. Статус доставки отображается на лесопилке.</p></article>
+    </section>
 
     <section id="tab-stats" aria-labelledby="tab-stats-title">
       <h2 id="tab-stats-title">Статистика</h2>

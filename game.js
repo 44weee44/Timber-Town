@@ -33,16 +33,16 @@
 
   const MACHINE = [
     null,
-    { price: 0, capacity: 10, minutes: 10, bonus: 0.02 },
-    { price: 350, capacity: 20, minutes: 9, bonus: 0.04 },
-    { price: 650, capacity: 30, minutes: 8, bonus: 0.06 },
-    { price: 1000, capacity: 40, minutes: 7, bonus: 0.08 },
-    { price: 1500, capacity: 50, minutes: 6, bonus: 0.10 },
-    { price: 2200, capacity: 60, minutes: 5, bonus: 0.12 },
-    { price: 3200, capacity: 70, minutes: 4, bonus: 0.14 },
-    { price: 4500, capacity: 80, minutes: 3, bonus: 0.16 },
-    { price: 6200, capacity: 90, minutes: 2, bonus: 0.18 },
-    { price: 8500, capacity: 100, minutes: 1, bonus: 0.20 }
+    { price: 0, capacity: 999999, minutes: 30, bonus: 0.02 },
+    { price: 350, capacity: 999999, minutes: 27, bonus: 0.04 },
+    { price: 650, capacity: 999999, minutes: 24, bonus: 0.06 },
+    { price: 1000, capacity: 999999, minutes: 21, bonus: 0.08 },
+    { price: 1500, capacity: 999999, minutes: 18, bonus: 0.10 },
+    { price: 2200, capacity: 999999, minutes: 15, bonus: 0.12 },
+    { price: 3200, capacity: 999999, minutes: 12, bonus: 0.14 },
+    { price: 4500, capacity: 999999, minutes: 9, bonus: 0.16 },
+    { price: 6200, capacity: 999999, minutes: 6, bonus: 0.18 },
+    { price: 8500, capacity: 999999, minutes: 3, bonus: 0.20 }
   ];
   const MAX_MACHINE_LEVEL = 10;
   const MACHINE_BASE = () => ({ level: 1, durability: 100, isRunning: false, queue: Object.fromEntries(QUALITY.map(q => [q, 0])), remaining: 0, processed: 0, queueSchemaVersion: 2, operatorId: null });
@@ -331,6 +331,7 @@
 
       report: null,
       delivery: null,
+      rawLogDeal: null,
 
       stats: { delivered: 0, revenue: 0, lastDay: 1 }
     };
@@ -533,6 +534,13 @@
     } else {
       s.delivery = null;
     }
+
+    s.rawLogDeal = input.rawLogDeal && typeof input.rawLogDeal === 'object' ? {
+      ...input.rawLogDeal, amount: num(input.rawLogDeal.amount), price: num(input.rawLogDeal.price),
+      remaining: num(input.rawLogDeal.remaining), stage: ['offer','contract','shipping'].includes(input.rawLogDeal.stage) ? input.rawLogDeal.stage : 'offer',
+      wood: ['pine','oak'].includes(input.rawLogDeal.wood) ? input.rawLogDeal.wood : 'pine',
+      signed: Boolean(input.rawLogDeal.signed)
+    } : null;
 
     s.stats = {
       ...defaults.stats,
@@ -949,7 +957,7 @@
         } else if (!machine.isRunning && queueTotal() === 0 && sum(QUALITY.map(q => state.sawmill.logs[q])) > 0) {
           const quality = QUALITY.slice().reverse().find(q => state.sawmill.logs[q] > 0);
           if (quality) {
-            const amount = Math.min(MACHINE[machine.level].capacity, state.sawmill.logs[quality]);
+            const amount = state.sawmill.logs[quality];
             machine.queue = Object.fromEntries(QUALITY.map(q => [q, q === quality ? amount : 0]));
             state.sawmill.logs[quality] -= amount;
             consumeWoodForQuality(quality, amount);
@@ -986,6 +994,16 @@
   }
 
   function deliveryTick(gameMinutes = 1) {
+    if (state.rawLogDeal?.stage === 'shipping') {
+      state.rawLogDeal.remaining -= gameMinutes;
+      if (state.rawLogDeal.remaining <= 0) {
+        const deal = state.rawLogDeal;
+        state.sawmill.safeMoney += deal.amount * deal.price;
+        state.stats.revenue += deal.amount * deal.price;
+        notify(`Поставка ${deal.amount} брёвен доставлена. ${deal.amount * deal.price}$ поступили в сейф.`);
+        state.rawLogDeal = null;
+      }
+    }
     if (!state.delivery) return;
 
     state.delivery.remaining -= gameMinutes;
@@ -1837,13 +1855,27 @@
     if (sellAllButton) sellAllButton.disabled = state.sawmill.planks <= 0 || Boolean(state.report);
     const eventLabel = $('event-zones-summary');
     if (eventLabel) eventLabel.textContent = Object.entries(state.sawmill.eventZones || {}).filter(([,z])=>z).map(([kind,z])=>`Зона ${z}: ${{rotten:'только гнилые брёвна',empty:'пустые брёвна',ideal:'идеальные брёвна'}[kind]}`).join(' · ') || 'Сегодня особых зон нет';
+    const rawStatus = $('raw-log-status');
+    if (rawStatus) {
+      const d = state.rawLogDeal;
+      rawStatus.textContent = !d ? 'Покупатели появляются случайно. Условия зависят от породы и объёма.' : d.stage === 'shipping' ? `Поставка в пути: ${d.amount} брёвен · осталось ${d.remaining} игровых минут.` : d.stage === 'contract' ? `Договор готов: ${d.amount} брёвен по ${d.price}$ за штуку. Подпишите договор ниже.` : `Предложение: ${d.amount} ${d.wood === 'pine' ? 'сосновых' : 'дубовых'} брёвен по ${d.price}$ за штуку.`;
+    }
+    const rawControls = $('raw-log-controls');
+    if (rawControls) rawControls.hidden = Boolean(state.rawLogDeal);
+    const rawContract = $('raw-log-contract');
+    if (rawContract) rawContract.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'contract';
+    const rawActions = $('raw-log-actions'); if (rawActions) rawActions.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'offer';
+    const rawNegotiate = $('raw-log-negotiate'); if (rawNegotiate) rawNegotiate.disabled = !state.rawLogDeal || state.rawLogDeal.stage !== 'offer' || Boolean(state.rawLogDeal.negotiated);
+    const rawContractCreate = $('raw-log-contract-create'); if (rawContractCreate) rawContractCreate.disabled = !state.rawLogDeal || state.rawLogDeal.stage !== 'offer';
+    const rawSign = $('raw-log-sign'); const rawSignature = $('raw-log-signature'); if (rawSign) rawSign.disabled = !state.rawLogDeal || state.rawLogDeal.stage !== 'contract' || !rawSignature?.value.trim();
+
     const machineList = $('machine-list');
     if (machineList) {
       machineList.replaceChildren();
       [state.sawmill.machine, ...(state.sawmill.extraMachines || [])].forEach((machine, index) => {
         const card=document.createElement('li'); card.className='machine-card';
         const title=document.createElement('strong'); title.textContent=`Станок ${index+1} · уровень ${machine.level}/${MAX_MACHINE_LEVEL}`;
-        const details=document.createElement('p'); details.textContent=`Партия до ${MACHINE[machine.level].capacity} брёвен · ${MACHINE[machine.level].minutes} мин/бревно · прочность ${machine.durability}/100`;
+        const details=document.createElement('p'); details.textContent=`Без лимита партии · ${MACHINE[machine.level].minutes} игровых мин/бревно · прочность ${machine.durability}/100`;
         const actions=document.createElement('div'); actions.className='machine-actions';
         if (machine.level < MAX_MACHINE_LEVEL && document.body.dataset.screen === 'sawmill') { const up=document.createElement('button'); up.type='button'; up.dataset.machineAction='upgrade'; up.dataset.machineIndex=String(index); up.textContent=`Улучшить · ${MACHINE[machine.level+1].price}$`; actions.append(up); }
         if (!actions.children.length) actions.hidden = true;
@@ -2616,6 +2648,40 @@
 
   // All machine repairs are rendered only in the workshop and handled by the data-machine-action delegate.
 
+  bind('raw-log-find', () => transaction('Поиск покупателя брёвен', () => {
+    if (state.rawLogDeal) { notify('Сначала завершите текущую сделку.', 'error'); return false; }
+    const wood = $('raw-log-wood')?.value === 'oak' ? 'oak' : 'pine';
+    const stock = sum(QUALITY.map(q => num(state.sawmill.logsByWoodQuality?.[wood]?.[q])));
+    const buyer = wood === 'pine' ? 'Хвойный кряж' : 'Дубовый стан';
+    if (Math.random() > 0.68) { notify(`${buyer} сегодня не закупает брёвна.`); return false; }
+    const amount = Math.min(stock, 40 + Math.floor(Math.random() * 61));
+    if (amount < 20) { notify('У вас недостаточно брёвен для оптовой сделки (нужно минимум 20).', 'error'); return false; }
+    const base = wood === 'pine' ? 5 : 8;
+    state.rawLogDeal = { buyer, wood, amount, basePrice: base, price: base, maxPrice: base * 1.35, stage: 'offer', remaining: 0, signed: false, negotiated: false };
+    notify(`${buyer} предлагает купить ${amount} брёвен по ${base}$ за штуку.`);
+  }));
+  bind('raw-log-negotiate', () => transaction('Торг за брёвна', () => {
+    const d = state.rawLogDeal; if (!d || d.stage !== 'offer' || d.negotiated) return false;
+    d.negotiated = true;
+    const ask = Math.round(d.basePrice * 1.3);
+    if (Math.random() < 0.35 || ask > d.maxPrice) { d.price = d.basePrice; d.negotiationFailed = true; notify('Покупатель отказался от торга и оставил первоначальную цену. Повторный торг невозможен.', 'error'); }
+    else { d.price = ask; notify(`Покупатель согласился: ${ask}$ за бревно.`); }
+  }));
+  bind('raw-log-contract-create', () => transaction('Подготовка договора на брёвна', () => {
+    const d = state.rawLogDeal; if (!d || d.stage !== 'offer') return false;
+    if (d.amount > sum(QUALITY.map(q => num(state.sawmill.logsByWoodQuality?.[d.wood]?.[q])))) { notify('Недостаточно брёвен нужной породы для договора.', 'error'); return false; }
+    d.stage = 'contract';
+  }));
+  bind('raw-log-sign', () => transaction('Подписание договора на брёвна', () => {
+    const d = state.rawLogDeal; const signature = $('raw-log-signature')?.value?.trim();
+    if (!d || d.stage !== 'contract' || !signature || !/^[\p{L}\p{N} .'-]{2,32}$/u.test(signature)) { notify('Введите подпись: 2–32 буквы или цифры, без спецсимволов.', 'error'); return false; }
+    let remaining = d.amount;
+    for (const q of [...QUALITY].reverse()) { const take = Math.min(remaining, state.sawmill.logsByWoodQuality[d.wood][q]); state.sawmill.logsByWoodQuality[d.wood][q] -= take; state.sawmill.logs[q] = Math.max(0, state.sawmill.logs[q] - take); remaining -= take; if (!remaining) break; }
+    d.signature = signature; d.signed = true; d.stage = 'shipping'; d.remaining = 90;
+    notify('Договор подписан. Брёвна отправлены; доставка займёт 90 игровых минут.');
+  }));
+  bind('raw-log-cancel', () => transaction('Отмена сделки с брёвнами', () => { state.rawLogDeal = null; }));
+
   bind('broken-axes', event => {
     const button = event.target.closest('.repair-axe');
     if (!button) return;
@@ -2874,6 +2940,33 @@
   }
 
   window.addEventListener('hashchange', renderProfileTab);
+
+  // Keep text entry visible and predictable on mobile; reject unsupported symbols.
+  document.addEventListener('input', event => {
+    const el = event.target;
+    if (!(el instanceof HTMLInputElement)) return;
+    if (el.type === 'number') {
+      const cleaned = el.value.replace(/[^0-9]/g, '');
+      if (cleaned !== el.value) el.value = cleaned;
+      return;
+    }
+    if (el.type === 'text' && el.id !== 'crew-search') {
+      const cleaned = el.value.replace(/[^\p{L}\p{N} .'-]/gu, '').slice(0, el.maxLength > 0 ? el.maxLength : 64);
+      if (cleaned !== el.value) {
+        const start = el.selectionStart;
+        el.value = cleaned;
+        try { el.setSelectionRange(Math.min(start, cleaned.length), Math.min(start, cleaned.length)); } catch (_) {}
+      }
+    }
+  });
+  // Prevent browser pinch/double-tap zoom while retaining ordinary scrolling.
+  document.addEventListener('gesturestart', event => event.preventDefault(), { passive: false });
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', event => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 300) event.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
 
   bind('reset-progress', () => $('reset-step-1')?.showModal?.());
   bind('reset-cancel-1', () => $('reset-step-1')?.close?.());

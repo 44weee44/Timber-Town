@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0b140e">
   <link rel="stylesheet" href="style.css">
   <title>Лесопилка — Timber Town</title>
@@ -242,6 +242,32 @@
       <a href="#stats">Статистика</a>
       <a href="#zones">Карта зон</a>
     </nav>
+
+    <section id="raw-log-market" aria-labelledby="raw-log-title">
+      <h2 id="raw-log-title">Продажа сырых брёвен</h2>
+      <p>Покупатель появляется не каждый день. Сосну закупает «Хвойный кряж», дуб — «Дубовый стан». Минимальная партия — 20 брёвен.</p>
+      <div id="raw-log-controls">
+        <label for="raw-log-wood">Порода</label>
+        <select id="raw-log-wood"><option value="pine">Сосна</option><option value="oak">Дуб</option></select>
+        <button type="button" id="raw-log-find">Найти покупателя</button>
+      </div>
+      <p id="raw-log-status" aria-live="polite">Покупатели появляются случайно. Условия зависят от породы и объёма.</p>
+      <div id="raw-log-actions">
+        <button type="button" id="raw-log-negotiate">Предложить цену выше</button>
+        <button type="button" id="raw-log-contract-create">Подготовить договор</button>
+        <button type="button" id="raw-log-cancel">Отказаться от сделки</button>
+      </div>
+      <div id="raw-log-contract" hidden class="paper-contract">
+        <p class="paper-kicker">ДОГОВОР ПОСТАВКИ № <span id="raw-contract-number">TT-01</span></p>
+        <h3>Договор купли-продажи лесоматериалов</h3>
+        <p>Покупатель принимает согласованную партию древесины. Поставщик подтверждает наличие товара и согласен передать его перевозчику.</p>
+        <p>Количество и цена указаны в предложении выше. Доставка длится 90 игровых минут. После прибытия сумма перечисляется в сейф.</p>
+        <label for="raw-log-signature">Подпись поставщика</label>
+        <input id="raw-log-signature" type="text" maxlength="32" autocomplete="off" placeholder="Введите имя для подписи">
+        <button type="button" id="raw-log-sign">Подписать и отправить</button>
+        <p class="form-hint">Подпись: 2–32 буквы, цифры, пробел или дефис.</p>
+      </div>
+    </section>
 
     <section id="safe" aria-labelledby="safe-title">
       <h2 id="safe-title">Сейф</h2>

@@ -1400,3 +1400,23 @@ body[data-screen="foundry"] .building-guide { background:rgba(15,13,10,.82); }
 #world a[aria-disabled="true"]:focus, #world a[aria-disabled="true"]:active {
   background: none !important; box-shadow: none !important; outline: none !important;
 }
+
+/* Документ сделки: бумажная форма без вложенных тяжёлых панелей */
+.paper-contract {
+  max-width: 680px;
+  margin: 18px auto;
+  padding: clamp(18px, 5vw, 34px);
+  color: #332719;
+  background: linear-gradient(135deg, #f4e8c9, #e7d5ae);
+  border: 1px solid #b6a078;
+  box-shadow: 0 8px 22px rgba(0,0,0,.22);
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.55;
+}
+.paper-contract .paper-kicker { text-align: center; letter-spacing: .12em; font-size: .78rem; }
+.paper-contract h3 { text-align: center; text-transform: uppercase; font-size: 1.05rem; }
+.paper-contract label { display: block; margin-top: 18px; font-weight: 700; }
+.paper-contract input { width: 100%; min-height: 46px; background: rgba(255,255,255,.35); border: 0; border-bottom: 2px solid #7d6845; border-radius: 0; color: #2d2418; font-family: "Segoe Script", cursive; font-size: 18px; }
+.paper-contract button { margin-top: 14px; }
+#raw-log-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#raw-log-market [hidden] { display: none !important; }
