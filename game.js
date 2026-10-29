@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.3.2';
+  const VERSION = '1.3.3';
   const WORKER_DAILY_SALARY = 10;
   const FREE_WORKER_LIMIT = 2;
   const GAME_MINUTE_MS = 7500;
@@ -129,7 +129,7 @@
     if (!cloud || typeof cloud[method] !== 'function') return Promise.resolve(null);
     return new Promise(resolve => {
       let settled = false;
-      const timeoutId = window.setTimeout(() => finish(true, null), 3500);
+      const timeoutId = window.setTimeout(() => finish(true, null), 1800);
       const finish = (error, result) => {
         if (settled) return;
         settled = true;
@@ -164,13 +164,13 @@
     const meta = await cloudCall('getItem', `${prefix}_meta`);
     const count = Number(String(meta || '').split(':')[0]);
     if (!Number.isInteger(count) || count < 1 || count > 100) return null;
-    let raw = '';
-    for (let i = 0; i < count; i++) {
-      const chunk = await cloudCall('getItem', `${prefix}_${i}`);
-      if (typeof chunk !== 'string') return null;
-      raw += chunk;
-    }
-    try { return sanitize(JSON.parse(raw)); } catch { return null; }
+    // Read chunks concurrently: sequential requests multiply latency by the
+    // number of JSON fragments and were blocking every HTML page transition.
+    const chunks = await Promise.all(
+      Array.from({ length: count }, (_, i) => cloudCall('getItem', `${prefix}_${i}`))
+    );
+    if (chunks.some(chunk => typeof chunk !== 'string')) return null;
+    try { return sanitize(JSON.parse(chunks.join(''))); } catch { return null; }
   }
 
   function axeIconSrc(rarity) {
@@ -604,6 +604,10 @@
   let cloudSaveInFlight = Promise.resolve();
   let lastCloudSerialized = '';
   let lastCloudSaveAt = 0;
+  // Changes whenever live gameplay advances or the player performs an action.
+  // A delayed cloud response must never replace state that changed meanwhile.
+  let gameplayRevision = 0;
+  let cloudBootstrapPending = false;
   let busy = false;
   let selectedZone = null;
   let selectedWorkerId = null;
@@ -657,7 +661,7 @@
       const badge = $('save-status');
       if (getTelegramId() === 'browser') {
         if (badge) badge.textContent = 'Локальное сохранение активно';
-      } else if (serialized !== lastCloudSerialized) {
+      } else if (!options.localOnly && !cloudBootstrapPending && serialized !== lastCloudSerialized) {
         scheduleCloudSave(serialized, Boolean(options.cloudImmediate));
       }
       return true;
@@ -714,6 +718,7 @@
     try {
       const result = action();
       if (result !== false) {
+        gameplayRevision++;
         // Persist every successful economy action locally immediately and queue
         // its cloud snapshot. The local write is synchronous; cloud writes are serialized.
         const saved = saveState();
@@ -1148,6 +1153,7 @@
     // every heartbeat. A full render is reserved for an in-game hour/day boundary;
     // transactions still call render() immediately after user actions.
     if (fullMinutes > 0) {
+      gameplayRevision++;
       saveState();
       renderLiveStatus();
       const oldHour = Math.floor(((state.gameMinutes - fullMinutes + DAY_MINUTES) % DAY_MINUTES) / 60);
@@ -2903,38 +2909,85 @@
       telegramApp = window.Telegram?.WebApp || null;
       telegramApp?.ready?.(); telegramApp?.expand?.();
     } catch {}
-    // Wait briefly only inside an actual Telegram WebApp. Ordinary browser visits
-    // should not pause for five seconds just because Telegram is unavailable.
-    const identityWaitMs = telegramApp ? 1500 : 0;
+
+    // Wait briefly for Telegram identity so the local save namespace is correct.
+    const identityWaitMs = telegramApp ? 700 : 0;
     while (getTelegramId() === 'browser' && Date.now() - startedAt < identityWaitMs) {
-      await new Promise(resolve => window.setTimeout(resolve, 100));
+      await new Promise(resolve => window.setTimeout(resolve, 50));
     }
     if (getTelegramId() !== loadedIdentity) {
       loadedIdentity = getTelegramId();
       state = loadState();
       lastCloudSerialized = '';
     }
+
     renderProfileTab();
     document.querySelectorAll('img.axe-icon').forEach(img => attachImgFallback(img, FALLBACK_AXE_SVG));
     document.querySelectorAll('img.worker-portrait').forEach(img => attachImgFallback(img, FALLBACK_WORKER_SVG));
 
-    // CloudStorage is per bot/user. A fresh default state is not a local save;
-    // do not let its newly-created timestamp hide an older legitimate cloud save.
     let localSaveExists = false;
     try {
       const localRaw = localStorage.getItem(storageKey());
       if (localRaw) {
-        const localParsed = JSON.parse(localRaw);
-        localSaveExists = Boolean(localParsed && typeof localParsed === 'object' && !Array.isArray(localParsed));
+        const parsed = JSON.parse(localRaw);
+        localSaveExists = Boolean(parsed && typeof parsed === 'object' && !Array.isArray(parsed));
       }
     } catch { localSaveExists = false; }
-    const cloudState = await cloudLoadState();
-    if (cloudState && (!localSaveExists || Number(cloudState.lastLogin) > Number(state.lastLogin || 0))) state = cloudState;
+
+    const localLastLogin = Math.max(0, Number(state.lastLogin) || Date.now());
     const now = Date.now();
-    const elapsed = Math.max(0, now - Math.max(0, Number(state.lastLogin) || now));
-    lastTick = now;
-    if (elapsed > 0) advanceTime(elapsed * 0.5); else saveState({ cloudImmediate: true });
+
+    // Returning players with a local snapshot see it immediately; don't block
+    // first paint on Telegram CloudStorage. Keep the cloud read separate so it
+    // cannot overwrite actions performed while the request is in flight.
+    if (localSaveExists) {
+      cloudBootstrapPending = true;
+      const elapsed = Math.max(0, now - localLastLogin);
+      lastTick = now;
+      if (elapsed > 0) advanceTime(elapsed * 0.5);
+      else saveState({ localOnly: true });
+      render();
+      const cloudReadRevision = gameplayRevision;
+
+      cloudLoadState().then(cloudState => {
+        cloudBootstrapPending = false;
+        if (!cloudState || gameplayRevision !== cloudReadRevision) {
+          // Player activity occurred during the request; preserve it and sync the current state.
+          saveState();
+          return;
+        }
+        if (Number(cloudState.lastLogin) <= localLastLogin) {
+          // Local copy is newer. Start syncing it after the cloud read has ended.
+          saveState();
+          return;
+        }
+        const cloudElapsed = Math.max(0, Date.now() - Math.max(0, Number(cloudState.lastLogin) || Date.now()));
+        state = cloudState;
+        lastCloudSerialized = JSON.stringify(cloudState);
+        lastTick = Date.now();
+        if (cloudElapsed > 0) advanceTime(cloudElapsed * 0.5);
+        saveState();
+        render();
+      }).catch(error => {
+        cloudBootstrapPending = false;
+        saveState();
+        console.warn('Не удалось сверить облачное сохранение:', error);
+      });
+      return;
+    }
+
+    // First launch on this device: cloud data may be the only copy, so wait for
+    // it before creating/saving a fresh default state that could overwrite it.
+    cloudBootstrapPending = true;
+    const cloudState = await cloudLoadState();
+    cloudBootstrapPending = false;
+    if (cloudState) state = cloudState;
+    const elapsed = Math.max(0, Date.now() - Math.max(0, Number(state.lastLogin) || Date.now()));
+    lastTick = Date.now();
+    if (elapsed > 0) advanceTime(elapsed * 0.5);
+    else saveState({ localOnly: true });
     render();
+    saveState();
   }
 
   initialize().then(() => {
