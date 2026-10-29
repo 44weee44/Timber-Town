@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '1.3.0';
+  const VERSION = '1.3.2';
   const WORKER_DAILY_SALARY = 10;
   const FREE_WORKER_LIMIT = 2;
   const GAME_MINUTE_MS = 7500;
@@ -776,6 +776,25 @@
     return 'night';
   }
 
+  function renderLiveStatus() {
+    // Update only volatile labels on the real-time heartbeat. Full render() rebuilds
+    // roster/cards and caused visible layout jumps in Telegram WebView.
+    const time = getTimeText();
+    setText('game-time', time);
+    setText('profile-time', time);
+    setText('profile-period', getPeriodLabel());
+    const exposure = state.sawmill.safeExposure;
+    const safeWatch = $('safe-watch');
+    if (safeWatch) {
+      safeWatch.hidden = !(exposure && state.overdueDays > 5);
+      if (exposure && state.overdueDays > 5) {
+        setText('safe-exposed', `${exposure.amount} $`);
+        const totalSeconds = Math.max(0, Math.ceil((Math.max(0, exposure.remaining) * GAME_MINUTE_MS - timeRemainderMs) / 1000));
+        setText('safe-timer', `${String(Math.floor(totalSeconds / 60)).padStart(2, '0')}:${String(totalSeconds % 60).padStart(2, '0')}`);
+      }
+    }
+  }
+
   function getPeriodLabel() {
     return {
       dawn: 'Рассвет',
@@ -1015,7 +1034,7 @@
   function dayTick() {
     if (state.taxDebt + state.taxPenalty > 0) {
       state.overdueDays++;
-      if (state.overdueDays > 4) state.taxPenalty += 10;
+      if (state.overdueDays > 5) state.taxPenalty += 10;
     } else {
       state.overdueDays = 0;
     }
@@ -1031,9 +1050,9 @@
     state.taxDebt += 50 + dailyWages;
 
 
-    if (state.overdueDays === 5) {
+    if (state.overdueDays === 6) {
       state.sawmill.workers.forEach(worker => { worker.isWorking = false; });
-      notify('Налоговая остановила лесопилку.', 'error');
+      notify('Налоговая остановила лесопилку: долг просрочен более чем на 5 дней.', 'error');
     }
 
     if (state.overdueDays >= 30) {
@@ -1109,7 +1128,7 @@
         if (state.gameMinutes % 60 === 0) moveHourlyEventZones();
         if (state.gameMinutes === 420) dayTick();
 
-        if (state.overdueDays < 5) {
+        if (state.overdueDays <= 5) {
           state.sawmill.workers.forEach(chop);
         }
 
@@ -1125,11 +1144,15 @@
       suppressNotifications = false;
     }
 
-    // Render and persist only when a full game minute has elapsed.
-    // Frequent full-page renders on each real second caused visible layout flicker/jumps.
+    // Save progress each simulated minute, but never rebuild the whole screen on
+    // every heartbeat. A full render is reserved for an in-game hour/day boundary;
+    // transactions still call render() immediately after user actions.
     if (fullMinutes > 0) {
       saveState();
-      render();
+      renderLiveStatus();
+      const oldHour = Math.floor(((state.gameMinutes - fullMinutes + DAY_MINUTES) % DAY_MINUTES) / 60);
+      const crossedHour = fullMinutes >= 60 || Math.floor(state.gameMinutes / 60) !== oldHour;
+      if (crossedHour || state.gameMinutes === 420) render();
     }
   }
 
@@ -2945,7 +2968,7 @@
     const now = Date.now();
     const elapsed = Math.max(0, now - lastTick);
     lastTick = now;
-    if (elapsed > 0) advanceTime(elapsed);
+    if (elapsed > 0) advanceTime(elapsed * 0.5);
     saveState({ cloudImmediate: true });
   });
 

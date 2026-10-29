@@ -1383,3 +1383,20 @@ body[data-screen="foundry"] .building-guide { background:rgba(15,13,10,.82); }
   background-color: transparent !important;
   box-shadow: none !important;
 }
+
+/* v1.3.2: locked sawmill hit areas must remain fully transparent in Telegram/iOS. */
+#world a[data-spot="pine"], #world a[data-spot="oak"], #world a[aria-disabled="true"] {
+  background: none !important; background-color: transparent !important;
+  border: none !important; box-shadow: none !important; outline: none !important;
+  -webkit-appearance: none !important; appearance: none !important;
+}
+#world a[data-spot="pine"]::before, #world a[data-spot="pine"]::after,
+#world a[data-spot="oak"]::before, #world a[data-spot="oak"]::after,
+#world a[aria-disabled="true"]::before, #world a[aria-disabled="true"]::after {
+  content: none !important; display: none !important; background: transparent !important;
+}
+#world a[data-spot="pine"]:focus, #world a[data-spot="pine"]:active,
+#world a[data-spot="oak"]:focus, #world a[data-spot="oak"]:active,
+#world a[aria-disabled="true"]:focus, #world a[aria-disabled="true"]:active {
+  background: none !important; box-shadow: none !important; outline: none !important;
+}
