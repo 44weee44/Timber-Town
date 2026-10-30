@@ -139,6 +139,7 @@
           <data class="stat-value" id="machine-durability" value="100">100</data>
         </div>
       </div>
+      <p class="storage-footnote">Вместимость лесопилки: <strong><data id="sawmill-log-capacity-warehouse" value="500">500</data></strong> брёвен.</p>
       <div id="log-details" class="log-details" hidden>
         <h3>По качеству</h3>
         <ul class="log-quality-details">
@@ -177,7 +178,7 @@
       <p id="machine-state">Стоит</p>
       <div class="stat-row">
         <div class="stat">
-          <span class="stat-label">За запуск</span>
+          <span class="stat-label">Вместимость склада</span>
           <data class="stat-value"><data id="machine-capacity" value="10">10</data> брёвен</data>
         </div>
         <div class="stat">
@@ -240,24 +241,7 @@
       <button type="button" id="start-machine" disabled>Запустить</button>
     </section>
 
-    <table id="machine-tiers">
-      <caption>Справочник уровней станка · улучшение доступно в лесопилке</caption>
-      <thead>
-        <tr><th>Уровень</th><th>Цена</th><th>Брёвен</th><th>Минут на бревно</th><th>Лишняя доска</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>1</td><td>Старт</td><td>10</td><td>10</td><td>2%</td></tr>
-        <tr><td>2</td><td>350$</td><td>20</td><td>9</td><td>4%</td></tr>
-        <tr><td>3</td><td>650$</td><td>30</td><td>8</td><td>6%</td></tr>
-        <tr><td>4</td><td>1 000$</td><td>40</td><td>7</td><td>8%</td></tr>
-        <tr><td>5</td><td>1 500$</td><td>50</td><td>6</td><td>10%</td></tr>
-        <tr><td>6</td><td>2 200$</td><td>60</td><td>5</td><td>12%</td></tr>
-        <tr><td>7</td><td>3 200$</td><td>70</td><td>4</td><td>14%</td></tr>
-        <tr><td>8</td><td>4 500$</td><td>80</td><td>3</td><td>16%</td></tr>
-        <tr><td>9</td><td>6 200$</td><td>90</td><td>2</td><td>18%</td></tr>
-        <tr><td>10</td><td>8 500$</td><td>100</td><td>1</td><td>20%</td></tr>
-      </tbody>
-    </table>
+
   </main>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="game.js" defer></script>

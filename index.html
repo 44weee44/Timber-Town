@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b140e">
+  <meta name="theme-color" content="#28231d">
   <meta name="robots" content="noindex, nofollow">
   <meta name="author" content="Timber Town">
   <link rel="stylesheet" href="style.css">
@@ -11,292 +11,96 @@
   <link rel="prefetch" href="game.js">
   <title>Timber Town</title>
   <style>
-    /* Плавное появление элементов стартового экрана. */
-    @keyframes boot-fade-up {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    body[data-screen="boot"] { min-height:100dvh; height:100dvh; overflow:hidden; background:#24201a; }
+    body[data-screen="boot"]::before, body[data-screen="boot"]::after { content:none; }
+    #boot-art { position:fixed; inset:0; z-index:0; width:100vw; height:100dvh; min-height:100dvh; object-fit:cover; object-position:center 42%; image-rendering:auto; pointer-events:none; }
+    #boot { position:relative; z-index:1; min-height:100dvh; height:100dvh; }
+    body[data-screen="boot"] #boot h1 { position:fixed; z-index:2; top:calc(env(safe-area-inset-top) + clamp(22px,6vh,56px)); left:16px; right:16px; width:auto; height:auto; margin:0; overflow:visible; clip:auto; color:#f0e3ca; font:clamp(25px,7vw,42px)/1.15 Georgia,serif; letter-spacing:.1em; text-align:center; text-shadow:0 2px 4px #18130f, 0 0 20px rgba(0,0,0,.5); }
+    #boot-hud { position:fixed; z-index:3; left:50%; bottom:0; translate:-50% 0; width:min(540px, calc(100% - 28px)); display:grid; gap:9px; padding:18px 20px calc(17px + env(safe-area-inset-bottom)); color:#372c21; background:linear-gradient(145deg,rgba(239,228,205,.96),rgba(213,198,169,.96)); border:1px solid rgba(91,68,44,.72); box-shadow:0 12px 36px rgba(0,0,0,.34), inset 0 0 0 4px rgba(255,250,236,.28); }
+    #boot-hud::before { content:"TIMBER TOWN  ·  ЛЕСНОЕ ХОЗЯЙСТВО"; display:block; padding-bottom:8px; border-bottom:1px solid rgba(91,68,44,.25); color:#78634a; font:10px/1.2 Georgia,serif; letter-spacing:.16em; text-align:center; }
+    #loading-status { margin:0; color:#4c3b2b; font:16px/1.35 Georgia,serif; text-align:center; }
+    #tip { margin:0; color:#78664f; font:13px/1.45 Georgia,serif; text-align:center; }
+    #load-slot { height:7px; width:100%; overflow:hidden; background:rgba(75,57,39,.17); border:1px solid rgba(91,68,44,.26); box-shadow:inset 0 1px 2px rgba(42,30,19,.14); }
+    #load-fill { display:block; width:0%; height:100%; background:linear-gradient(90deg,#9d7948,#c8a66b); transition:width .2s ease; }
+    #load-bar, #load-pct, #load-readout, #boot-credit, #boot-divider, #tip-list { display:none !important; }
+    body[data-screen="boot"] #play { position:relative; left:auto; bottom:auto; translate:none; width:100%; min-height:44px; margin:2px 0 0; border:1px solid #695036; border-radius:2px; background:#5b4935; color:#f5ead4; box-shadow:0 3px 0 #382b20; font:16px Georgia,serif; letter-spacing:.04em; text-transform:none; text-decoration:none; }
+    body[data-screen="boot"] #play:active { transform:translateY(2px); box-shadow:0 1px 0 #382b20; }
+    body[data-screen="boot"] #play[aria-disabled="true"] { opacity:.45; pointer-events:none; }
+    #boot-storage-warning { margin:0; padding:8px 10px; border:1px solid #97645a; background:#f1ddd3; color:#713d32; font:12px/1.4 Georgia,serif; text-align:center; }
+    @media (max-width:420px) {
+      #boot-hud { width:calc(100% - 20px); gap:8px; padding:14px 14px calc(13px + env(safe-area-inset-bottom)); }
+      #loading-status { font-size:15px; }
+      #tip { font-size:12px; }
     }
-    @keyframes boot-fade-in {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    /* Пульсация кнопки «Играть»: золотое кольцо расходится от кнопки. */
-    @keyframes play-pulse {
-      0%, 100% {
-        box-shadow:
-          4px 4px 0 var(--ink),
-          0 0 0 0 rgba(226, 182, 87, 0.55);
-      }
-      50% {
-        box-shadow:
-          4px 4px 0 var(--ink),
-          0 0 0 10px rgba(226, 182, 87, 0);
-      }
-    }
-
-    /* Видимый заголовок «Timber Town» — переопределяет sr-only из style.css
-       за счёт более высокой специфичности. */
-    body[data-screen="boot"] #boot h1 {
-      position: absolute;
-      z-index: 3;
-      top: calc(env(safe-area-inset-top, 0px) + 5vh);
-      left: 50%;
-      translate: -50% 0;
-      width: auto;
-      height: auto;
-      overflow: visible;
-      clip: auto;
-      font-family: var(--pixel);
-      font-size: clamp(22px, 7.2vw, 44px);
-      line-height: 1.1;
-      letter-spacing: 0.08em;
-      text-align: center;
-      text-transform: uppercase;
-      white-space: nowrap;
-      color: var(--gold);
-      text-shadow:
-        3px 3px 0 var(--ink),
-        -1px -1px 0 var(--ink),
-        1px -1px 0 var(--ink),
-        -1px 1px 0 var(--ink),
-        0 0 24px rgba(226, 182, 87, 0.45);
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-      animation: boot-fade-up 700ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-
-    /* Верхний градиент-затемнение для читаемости заголовка. */
-    body[data-screen="boot"]::before {
-      content: "";
-      position: fixed;
-      z-index: 1;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: calc(22vh + env(safe-area-inset-top, 0px));
-      background: linear-gradient(
-        180deg,
-        rgba(20, 14, 9, 0.72) 0%,
-        rgba(20, 14, 9, 0.35) 55%,
-        rgba(20, 14, 9, 0) 100%
-      );
-      pointer-events: none;
-    }
-
-    #boot-art {
-      animation: boot-fade-in 900ms 0ms ease both;
-    }
-
-    #tip,
-    #tip-list {
-      animation: boot-fade-up 700ms 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-      transition: opacity 200ms ease;
-    }
-
-    #tip.is-fading {
-      opacity: 0;
-    }
-
-    #play {
-      animation:
-        boot-fade-up 700ms 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both,
-        play-pulse 2.4s 1400ms ease-out infinite;
-    }
-
-    @media (hover: hover) {
-      #play:hover {
-        background: var(--gold-light, #f4d382);
-        filter: brightness(1.06);
-      }
-    }
-
-    #boot-storage-warning {
-      animation: boot-fade-up 500ms 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-
-    #boot-divider {
-      position: fixed;
-      z-index: 2;
-      top: calc(env(safe-area-inset-top, 0px) + 10vh + clamp(48px, 12vw, 74px));
-      left: 50%;
-      translate: -50% 0;
-      width: min(220px, 55vw);
-      height: 2px;
-      border: 0;
-      border-radius: var(--r-pill, 999px);
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        var(--gold-wash, rgba(226, 182, 87, 0.18)) 20%,
-        var(--gold) 50%,
-        var(--gold-wash, rgba(226, 182, 87, 0.18)) 80%,
-        transparent 100%
-      );
-      opacity: 0.85;
-      pointer-events: none;
-      animation: boot-fade-in 700ms 220ms ease both;
-    }
-
-    #boot-storage-warning {
-      position: fixed;
-      z-index: 2;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 6.9rem);
-      left: 50%;
-      translate: -50% 0;
-      width: min(28rem, calc(100% - 32px));
-      margin: 0;
-      padding: 10px 14px;
-      text-align: center;
-      font-size: var(--fs-tiny, 10px);
-      color: var(--danger-ink);
-      line-height: 1.5;
-      background: var(--danger-wash, rgba(157, 51, 44, 0.18));
-      border: 1px solid rgba(240, 192, 187, 0.3);
-      border-radius: var(--r-md, 10px);
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-    }
-
-    /* Авторское обозначение в углу. */
-    #boot-credit {
-      position: fixed;
-      right: max(12px, env(safe-area-inset-right, 0px));
-      top: calc(env(safe-area-inset-top, 0px) + 12px);
-      margin: 0;
-      font-family: var(--ui, "Russo One", sans-serif);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--cream-muted);
-      opacity: 0.55;
-      z-index: 2;
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-      animation: boot-fade-in 900ms 500ms ease both;
-    }
-
-    /* Если JavaScript отключён — понятное сообщение. */
-    .boot-noscript {
-      position: fixed;
-      z-index: 3;
-      left: 50%;
-      bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem);
-      translate: -50% 0;
-      width: min(28rem, calc(100% - 32px));
-      margin: 0;
-      padding: 12px 16px;
-      text-align: center;
-      font-family: var(--ui, "Russo One", sans-serif);
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--danger-ink);
-      background: var(--danger-wash, rgba(157, 51, 44, 0.18));
-      border: 1px solid rgba(240, 192, 187, 0.35);
-      border-radius: var(--r-md, 10px);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      body[data-screen="boot"] #boot h1,
-      #boot-art,
-      #tip,
-      #tip-list,
-      #play,
-      #boot-storage-warning,
-      #boot-divider,
-      #boot-credit {
-        animation-duration: 0.001ms !important;
-        animation-delay: 0ms !important;
-      }
-
-      #tip {
-        transition: none !important;
-      }
-
-      #play {
-        animation: none !important;
-      }
-    }
+    @media (prefers-reduced-motion:reduce) { #load-fill { transition:none; } }
   </style>
 </head>
 <body data-screen="boot">
+  <img id="boot-art" src="loading.jpeg" width="1500" height="1007" alt="Лесной городок Timber Town">
   <main id="boot">
-    <h1>Timber Town</h1>
-    <img id="boot-art" src="idex_fon.jpeg" width="768" height="1152" alt="Лесопилка у реки на рассвете">
-    <hr id="boot-divider" aria-hidden="true">
-    <p id="tip">Первые два лесоруба в управе бесплатны.</p>
-    <ul id="tip-list" hidden>
-      <li>Первые два лесоруба в управе бесплатны.</li>
-      <li>Без топора работник уходит домой.</li>
-      <li>Деньги в сейфе налог не трогает.</li>
-      <li>Один игровой час длится 7,5 минут.</li>
-      <li>На пятый день долга лесопилка встаёт.</li>
-      <li>Обычный топор теряет 1% за каждое бревно.</li>
-      <li>Снятое из сейфа нужно потратить за игровой час.</li>
-      <li>Одинаковые топоры складываются в рюкзаке.</li>
-    </ul>
-    <p id="boot-storage-warning" hidden>
-      Прогресс не будет сохраняться: браузер запретил localStorage.
-      Играть можно, но после закрытия вкладки всё начнётся заново.
-    </p>
-    <p id="boot-credit" aria-hidden="true">© Timber Town</p>
-    <a href="game.html" id="play" role="button">Играть</a>
+    <h1>TIMBER TOWN</h1>
+    <div id="boot-hud">
+      <p id="loading-status" role="status" aria-live="polite">Готовим ваш лесной городок…</p>
+      <div id="load-slot" role="progressbar" aria-label="Загрузка игры" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="load-fill"></i></div>
+      <p id="tip">Следите за запасом брёвен: дополнительный склад расширяется в магазине.</p>
+      <p id="boot-storage-warning" hidden>Браузер не разрешил локальное сохранение. Прогресс может не сохраниться после закрытия игры.</p>
+      <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Подождите…</a>
+    </div>
   </main>
-  <noscript>
-    <p class="boot-noscript">
-      Timber Town требует JavaScript. Включите его в настройках браузера, чтобы начать игру.
-    </p>
-  </noscript>
+  <noscript><p class="boot-noscript">Для запуска Timber Town необходимо включить JavaScript.</p></noscript>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     (() => {
       'use strict';
-
-      const tips = Array.from(
-        document.querySelectorAll('#tip-list li')
-      ).map(li => li.textContent.trim()).filter(Boolean);
-
-      const tip = document.getElementById('tip');
-
-      if (tip && tips.length > 1) {
-        let index = 0;
-        tip.textContent = tips[0];
-
-        window.setInterval(() => {
-          index = (index + 1) % tips.length;
-
-          // Плавная смена подсказки: снять класс → дождаться фейда →
-          // обновить текст → вернуть класс.
-          tip.classList.add('is-fading');
-          window.setTimeout(() => {
-            tip.textContent = tips[index];
-            tip.classList.remove('is-fading');
-          }, 200);
-        }, 6000);
-      }
-
-      const art = document.getElementById('boot-art');
-      if (art) {
-        art.addEventListener('error', () => {
-          art.style.visibility = 'hidden';
-        }, { once: true });
-      }
-
-      let storageOk = false;
-      try {
-        const testKey = '__tt_probe__';
-        window.localStorage.setItem(testKey, '1');
-        window.localStorage.removeItem(testKey);
-        storageOk = true;
-      } catch (_) {
-        storageOk = false;
-      }
-
-      if (!storageOk) {
-        const warn = document.getElementById('boot-storage-warning');
-        if (warn) warn.hidden = false;
-      }
+      const play = document.getElementById('play');
+      const status = document.getElementById('loading-status');
+      const fill = document.getElementById('load-fill');
+      const slot = document.getElementById('load-slot');
+      const warning = document.getElementById('boot-storage-warning');
+      const resources = [
+        'style.css','game.js','game.html','profile.html','sawmill.html','shop.html',
+        'sklad.html','sklad-lesa.html','uprava.html','master.html','liteynaya.html',
+        'World_map_Sunrise.jpeg','World_map_day.jpeg','World_map_Sunset.jpeg','World_map_Night.jpeg',
+        '1skin.jpeg','1axeskin.jpeg','2axeskin.jpeg','3axeskin.jpeg','4aceskin.jpeg','5axeskin.jpeg',
+        'Backpack.jpeg','The_Board.jpeg','Trad_Center.jpeg','Warehouse.jpeg','loading.jpeg'
+      ];
+      const tg = window.Telegram?.WebApp;
+      try { tg?.ready?.(); tg?.expand?.(); } catch (_) {}
+      let done = 0;
+      const paint = (label) => {
+        const pct = Math.round(done / resources.length * 100);
+        if (fill) fill.style.width = `${pct}%`;
+        if (slot) slot.setAttribute('aria-valuenow', String(pct));
+        if (status) status.textContent = label;
+      };
+      const check = path => new Promise(resolve => {
+        if (/\.(?:jpe?g|png|webp|svg)$/i.test(path)) {
+          const image = new Image();
+          image.onload = image.onerror = () => { done++; resolve(); };
+          image.src = path;
+        } else {
+          fetch(path, { cache:'no-store' }).catch(() => null).finally(() => { done++; resolve(); });
+        }
+      });
+      const storageAvailable = (() => { try { localStorage.setItem('__tt_probe__','1'); localStorage.removeItem('__tt_probe__'); return true; } catch (_) { return false; } })();
+      if (!storageAvailable && warning) warning.hidden = false;
+      (async () => {
+        const checks = resources.map((path, index) => check(path).then(() => {
+          if (index === resources.length - 1 || done === resources.length) paint('Последние приготовления…');
+          else if (done < 8) paint('Собираем игровой мир…');
+          else paint('Проверяем лесопилку и сохранение…');
+        }));
+        await Promise.all(checks);
+        await Promise.race([document.fonts?.ready || Promise.resolve(), new Promise(resolve => setTimeout(resolve, 900))]);
+        if (fill) fill.style.width = '100%';
+        if (slot) slot.setAttribute('aria-valuenow','100');
+        if (status) status.textContent = storageAvailable ? 'Всё готово. Добро пожаловать в Timber Town.' : 'Мир готов. Проверьте предупреждение о сохранении.';
+        if (play) { play.textContent='Войти в город'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
+      })().catch(error => {
+        console.warn('Loader fallback:', error);
+        if (status) status.textContent = 'Почти готово. Можно войти в город.';
+        if (play) { play.textContent='Войти в город'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
+      });
     })();
   </script>
 </body>
