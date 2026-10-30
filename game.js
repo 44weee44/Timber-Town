@@ -2929,11 +2929,11 @@
 
   function renderProfileTab() {
     const hash = window.location.hash;
-    const selected = ['#tab-chances', '#tab-crew'].includes(hash)
+    const selected = ['#tab-chances', '#tab-crew', '#tab-guide'].includes(hash)
       ? hash
       : '#tab-stats';
 
-    ['tab-stats', 'tab-chances', 'tab-crew'].forEach(id => {
+    ['tab-stats', 'tab-chances', 'tab-crew', 'tab-guide'].forEach(id => {
       const section = $(id);
       if (section) section.hidden = `#${id}` !== selected;
     });
@@ -2956,6 +2956,10 @@
         const start = el.selectionStart;
         el.value = cleaned;
         try { el.setSelectionRange(Math.min(start, cleaned.length), Math.min(start, cleaned.length)); } catch (_) {}
+      }
+      if (el.id === 'raw-log-signature') {
+        const signButton = $('raw-log-sign');
+        if (signButton) signButton.disabled = !state.rawLogDeal || state.rawLogDeal.stage !== 'contract' || cleaned.trim().length < 2;
       }
     }
   });
