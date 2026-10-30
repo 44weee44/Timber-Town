@@ -1727,3 +1727,125 @@ main:not(#boot):not(#map) img:not(.worker-portrait):not(.axe-icon) { border:1px 
 .guide-table-scroll th { color:#6c573a; background:rgba(123,96,60,.09); font-weight:700; }
 .guide-table-scroll tr:last-child td { border-bottom:0; }
 .guide-table-note { margin-top:9px !important; color:#806b50 !important; font:13px/1.4 var(--tt-serif) !important; }
+
+/* ==========================================================
+   TIMBER TOWN — COZY VILLAGE 03
+   Desktop: one top status bar, map center, town summary right.
+   No left sidebar, no nested cards, no heavy pixel UI.
+   ========================================================== */
+:root {
+  --tt-night: #292d22;
+  --tt-night-2: #20241c;
+  --tt-wood: #382719;
+  --tt-wood-2: #513a25;
+  --tt-wood-3: #684b30;
+  --tt-paper: #e9dfc8;
+  --tt-paper-bright: #f1e9d7;
+  --tt-paper-edge: #c8b795;
+  --tt-text: #33291e;
+  --tt-muted: #77664d;
+  --tt-green: #536b3e;
+  --tt-green-light: #78905a;
+  --tt-gold: #c49a5c;
+  --pixel: Georgia, "Palatino Linotype", serif;
+  --ui: "Trebuchet MS", Arial, sans-serif;
+  --font-ui: "Trebuchet MS", Arial, sans-serif;
+}
+html, body { background:var(--tt-night); color:#f0e6d2; font-family:Georgia,"Palatino Linotype",serif; font-size:15px; line-height:1.5; }
+body[data-screen="map"] { min-height:100dvh; height:auto; overflow-x:hidden; overflow-y:auto; background:radial-gradient(ellipse at 50% -30%,#596747 0%,transparent 52%),linear-gradient(145deg,#343a2a,#25291f 65%,#1e211a); }
+body[data-screen="map"] #hud { position:relative; z-index:10; width:calc(100% - 32px); max-width:1500px; min-height:82px; margin:16px auto 14px; padding:10px 20px; display:flex; align-items:center; gap:20px; background:linear-gradient(180deg,#493522,#342518); border:1px solid rgba(193,151,91,.62); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.25),inset 0 1px rgba(255,235,194,.08); }
+.town-brand { flex:0 0 220px; display:flex; align-items:center; gap:12px; color:#f2e7d0; text-decoration:none; }
+.brand-mark { font-size:31px; line-height:1; filter:drop-shadow(0 2px 1px #1b140e); }
+.brand-copy { display:flex; flex-direction:column; gap:1px; }
+.brand-copy strong { font:700 20px/1 Georgia,serif; letter-spacing:.09em; }
+.brand-copy small { color:#c2a77b; font:700 9px/1.4 "Trebuchet MS",sans-serif; letter-spacing:.15em; }
+.hud-resources { flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:space-around; gap:5px; }
+.hud-resource { min-width:0; flex:1 1 0; display:flex; align-items:center; gap:9px; padding:7px 12px; border-left:1px solid rgba(211,181,130,.22); }
+.hud-resource:first-child { border-left:0; }
+.resource-icon { flex:0 0 auto; color:#d6b477; font:22px/1 Georgia,serif; }
+.resource-copy { min-width:0; display:flex; flex-direction:column; gap:2px; }
+.resource-copy strong { overflow:hidden; color:#f2e8d5; font:700 15px/1.2 Georgia,serif; white-space:nowrap; text-overflow:ellipsis; }
+.resource-copy small { color:#b9a27d; font:700 9px/1.2 "Trebuchet MS",sans-serif; letter-spacing:.11em; }
+.hud-actions { display:flex; align-items:center; gap:8px; flex:0 0 auto; }
+body[data-screen="map"] #open-inventory, body[data-screen="map"] #open-profile { min-height:40px; padding:8px 13px; border:1px solid rgba(208,171,111,.42); border-radius:8px; background:#59432d; color:#f3e7d0; box-shadow:none; font:700 12px/1.2 "Trebuchet MS",sans-serif; text-decoration:none; }
+body[data-screen="map"] #open-inventory:hover, body[data-screen="map"] #open-profile:hover { background:#70563a; }
+#town-layout { width:calc(100% - 32px); max-width:1500px; margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; align-items:stretch; }
+body[data-screen="map"] #map { width:100%; min-width:0; min-height:0; margin:0; padding:0; display:flex; flex-direction:column; gap:0; overflow:hidden; background:#34432d; border:1px solid rgba(192,160,108,.45); border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.22); }
+body[data-screen="map"] #world { position:relative; display:block; width:100%; height:auto; max-width:none; max-height:none; flex:1 1 auto; aspect-ratio:3/2; overflow:hidden; border:0; border-radius:10px 10px 0 0; background:#435b37; box-shadow:none; }
+body[data-screen="map"] #world img { width:100%; height:100%; object-fit:cover; image-rendering:auto; }
+body[data-screen="map"] #world a { border:0; border-radius:8px; background:transparent; box-shadow:none; }
+body[data-screen="map"] #world a[data-spot="pine"]::after, body[data-screen="map"] #world a[data-spot="oak"]::after { border:1px solid rgba(225,196,143,.72); border-radius:8px; background:rgba(49,35,23,.82); color:#f4e9d5; font:700 12px/1.2 "Trebuchet MS",sans-serif; text-shadow:none; backdrop-filter:blur(3px); }
+.map-hint { min-height:62px; display:flex; align-items:center; gap:12px; padding:9px 16px; background:linear-gradient(90deg,#38291c,#4a3523); color:#eadfc8; }
+.hint-avatar { width:42px; height:42px; flex:0 0 42px; display:grid; place-items:center; border:1px solid #987449; border-radius:50%; background:#63492f; font-size:21px; }
+.map-hint strong,.map-hint small { display:block; }
+.map-hint strong { margin-bottom:2px; color:#e3c99a; font:700 11px/1.2 "Trebuchet MS",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+.map-hint small { color:#e8dcc3; font:14px/1.35 Georgia,serif; }
+#town-overview { min-width:0; display:flex; flex-direction:column; gap:0; padding:0 20px; overflow:hidden; color:var(--tt-text); background:linear-gradient(145deg,var(--tt-paper-bright),var(--tt-paper)); border:1px solid var(--tt-paper-edge); border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.2); }
+.overview-section { padding:19px 0; border-bottom:1px solid rgba(116,91,57,.24); }
+.overview-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.overview-section h2 { margin:0 0 13px; color:#403020; font:700 19px/1.2 Georgia,serif; }
+.overview-heading h2 { margin:0; }
+.overview-heading a { color:#80633c; font:700 11px/1.2 "Trebuchet MS",sans-serif; text-decoration:none; }
+.overview-stock { display:flex; align-items:center; gap:12px; margin:15px 0 13px; }
+.overview-stock>span { font-size:27px; }
+.overview-stock strong { color:#342719; font:700 21px/1.2 Georgia,serif; }
+.overview-stock small { color:#8b795e; font-size:14px; }
+.overview-meter { height:12px; overflow:hidden; border-radius:20px; background:#d0c4aa; box-shadow:inset 0 1px 2px rgba(55,40,23,.13); }
+.overview-meter i { display:block; width:0; height:100%; border-radius:20px; background:linear-gradient(90deg,#526c3c,#829454); transition:width .25s ease; }
+.overview-meta { display:flex; justify-content:space-between; gap:8px; margin-top:7px; color:#827258; font:11px/1.3 "Trebuchet MS",sans-serif; }
+.overview-stat { display:flex; align-items:center; justify-content:space-between; padding:6px 0; color:#78674e; font:13px/1.3 "Trebuchet MS",sans-serif; }
+.overview-stat strong { color:#403020; font:700 14px/1.3 Georgia,serif; }
+.overview-tasks { padding-bottom:10px; }
+.overview-tasks h2 { margin-bottom:7px; }
+.overview-tasks a { min-height:53px; display:flex; align-items:center; gap:11px; padding:7px 0; color:#463523; border-bottom:1px solid rgba(116,91,57,.17); text-decoration:none; }
+.overview-tasks a:last-child { border-bottom:0; }
+.overview-tasks a>span:first-child { width:30px; flex:0 0 30px; font-size:19px; text-align:center; }
+.overview-tasks a>span:nth-child(2) { flex:1; display:flex; flex-direction:column; gap:2px; }
+.overview-tasks strong { color:#423322; font:700 13px/1.2 "Trebuchet MS",sans-serif; }
+.overview-tasks small { color:#8a785d; font:11px/1.2 "Trebuchet MS",sans-serif; }
+.overview-tasks b { color:#967449; font-size:21px; font-weight:400; }
+.overview-tasks a:hover strong { color:#617545; }
+.overview-footer { margin-top:auto; padding:14px 0 16px; color:#9a896e; font:700 9px/1.2 "Trebuchet MS",sans-serif; letter-spacing:.13em; text-align:center; }
+body[data-screen="map"] #toasts { z-index:40; }
+body[data-screen="map"] dialog { color:#3c3022; background:var(--tt-paper); border:1px solid var(--tt-paper-edge); border-radius:12px; }
+/* Shared cozy theme for all in-game locations. */
+body[data-screen]:not([data-screen="boot"]) { color:#eadfc9; }
+main:not(#boot):not(#map) > h1 { font-family:Georgia,serif; font-weight:700; letter-spacing:.01em; }
+main:not(#boot):not(#map) > nav a, main:not(#boot):not(#map) > p:first-child a { border-radius:8px; }
+main:not(#boot):not(#map) section:not([hidden]) { border-radius:10px; }
+main:not(#boot):not(#map) button, main:not(#boot):not(#map) .btn { border-radius:8px; font-family:"Trebuchet MS",Arial,sans-serif; font-weight:700; }
+main:not(#boot):not(#map) input, main:not(#boot):not(#map) select { border-radius:7px; }
+@media (max-width:1050px) {
+  body[data-screen="map"] #hud { flex-wrap:wrap; gap:9px; padding:10px 13px; }
+  .town-brand { flex-basis:180px; }
+  .hud-resources { order:3; flex-basis:100%; justify-content:space-between; }
+  .hud-resource { padding:5px 8px; }
+  #town-layout { grid-template-columns:minmax(0,1fr) 285px; }
+}
+@media (max-width:760px) {
+  body[data-screen="map"] #hud { width:calc(100% - 20px); margin:10px auto; }
+  .town-brand { flex:1 1 auto; }
+  .brand-copy strong { font-size:17px; }
+  .hud-resources { gap:2px; }
+  .hud-resource { padding:5px 4px; gap:5px; }
+  .resource-icon { font-size:16px; }
+  .resource-copy strong { font-size:12px; }
+  .resource-copy small { font-size:8px; }
+  #town-layout { width:calc(100% - 20px); grid-template-columns:1fr; gap:10px; }
+  body[data-screen="map"] #world { aspect-ratio:3/2; }
+  #town-overview { padding:0 16px; }
+  .overview-section { padding:15px 0; }
+  .overview-tasks { display:grid; grid-template-columns:1fr 1fr; column-gap:16px; }
+  .overview-tasks h2 { grid-column:1/-1; }
+}
+@media (max-width:420px) {
+  body[data-screen="map"] #hud { padding:9px 10px; }
+  .town-brand { flex-basis:100%; }
+  .hud-actions { position:absolute; top:9px; right:10px; }
+  .hud-resources { order:2; }
+  .hud-resource { flex-direction:column; align-items:flex-start; gap:2px; }
+  .resource-icon { font-size:15px; }
+  .resource-copy strong { font-size:11px; }
+  .resource-copy small { font-size:7px; }
+  .map-hint small { font-size:12px; }
+}

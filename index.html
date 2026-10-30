@@ -33,6 +33,19 @@
       #tip { font-size:12px; }
     }
     @media (prefers-reduced-motion:reduce) { #load-fill { transition:none; } }
+    /* Cozy village loader — full artwork, quiet wooden welcome panel. */
+    body[data-screen="boot"] { background:#20251b; color:#f1e7d1; }
+    body[data-screen="boot"] #boot h1 { color:#f3e7cf; font-family:Georgia,serif; font-weight:700; letter-spacing:.14em; text-shadow:0 3px 12px rgba(0,0,0,.78); }
+    #boot-hud { gap:11px; padding:20px 22px calc(18px + env(safe-area-inset-bottom)); color:#f1e7d1; background:linear-gradient(145deg,rgba(62,45,29,.96),rgba(38,29,20,.97)); border:1px solid rgba(193,151,91,.65); border-radius:12px; box-shadow:0 14px 38px rgba(0,0,0,.42),inset 0 1px rgba(255,235,194,.09); }
+    #boot-hud::before { color:#c9ad7d; border-bottom:1px solid rgba(207,176,127,.25); font-family:"Trebuchet MS",Arial,sans-serif; letter-spacing:.18em; }
+    #loading-status { color:#f1e7d1; font:600 17px/1.35 Georgia,serif; }
+    #tip { color:#cbb998; font:13px/1.45 Georgia,serif; }
+    #load-slot { height:7px; background:rgba(12,20,12,.72); border:1px solid rgba(192,161,111,.3); border-radius:20px; box-shadow:none; }
+    #load-fill { background:linear-gradient(90deg,#627b48,#c9a15f); border-radius:20px; }
+    body[data-screen="boot"] #play { min-height:46px; border:1px solid #82935a; border-radius:8px; background:linear-gradient(180deg,#647d49,#4e6738); color:#fff3da; box-shadow:0 3px 0 #28391f; font:700 15px/1.2 "Trebuchet MS",Arial,sans-serif; letter-spacing:.03em; }
+    body[data-screen="boot"] #play:active { box-shadow:0 1px 0 #28391f; }
+    #boot-storage-warning { border:1px solid #9e6755; border-radius:7px; background:#ead6c4; color:#653d2d; }
+    @media (max-width:420px) { #boot-hud { padding:15px 15px calc(14px + env(safe-area-inset-bottom)); } }
   </style>
 </head>
 <body data-screen="boot">

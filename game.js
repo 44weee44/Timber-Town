@@ -1846,6 +1846,20 @@
     const taxDue = state.taxDebt + state.taxPenalty;
 
     setText('money', `${money} $`);
+    setText('hud-logs', `${getLogStorageUsed().toLocaleString('ru-RU')} / ${getLogStorageCapacity().toLocaleString('ru-RU')}`);
+    setText('hud-planks', state.sawmill.planks.toLocaleString('ru-RU'));
+    setText('hud-workers', state.sawmill.workers.length.toLocaleString('ru-RU'));
+    setText('overview-logs', getLogStorageUsed().toLocaleString('ru-RU'));
+    setText('overview-capacity', getLogStorageCapacity().toLocaleString('ru-RU'));
+    setText('overview-free', `${Math.max(0, getLogStorageCapacity() - getLogStorageUsed()).toLocaleString('ru-RU')} свободно`);
+    setText('overview-percent', `${Math.round(getLogStorageUsed() / Math.max(1, getLogStorageCapacity()) * 100)}% занято`);
+    setText('overview-day', state.day);
+    setText('overview-workers', state.sawmill.workers.length.toLocaleString('ru-RU'));
+    setText('overview-planks', state.sawmill.planks.toLocaleString('ru-RU'));
+    const overviewFill = $('overview-meter-fill');
+    if (overviewFill) overviewFill.style.width = `${Math.min(100, getLogStorageUsed() / Math.max(1, getLogStorageCapacity()) * 100)}%`;
+    const overviewMeter = $('overview-meter');
+    if (overviewMeter) { overviewMeter.setAttribute('aria-valuemax', String(getLogStorageCapacity())); overviewMeter.setAttribute('aria-valuenow', String(getLogStorageUsed())); }
     setText('safe-wallet', `${money} $`);
     setText('safe-money', `${safeMoney} $`);
     setText('game-time', getTimeText());
