@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b140e">
+  <meta name="theme-color" content="#28231d">
   <meta name="robots" content="noindex, nofollow">
   <meta name="author" content="Timber Town">
   <link rel="stylesheet" href="style.css">
@@ -11,444 +11,95 @@
   <link rel="prefetch" href="game.js">
   <title>Timber Town</title>
   <style>
-    body[data-screen="boot"] {
-      min-height: 100dvh;
-      height: 100dvh;
-      overflow: hidden;
-      background: #070b08;
+    body[data-screen="boot"] { min-height:100dvh; height:100dvh; overflow:hidden; background:#24201a; }
+    body[data-screen="boot"]::before, body[data-screen="boot"]::after { content:none; }
+    #boot-art { position:fixed; inset:0; z-index:0; width:100vw; height:100dvh; min-height:100dvh; object-fit:cover; object-position:center 42%; image-rendering:auto; pointer-events:none; }
+    #boot { position:relative; z-index:1; min-height:100dvh; height:100dvh; }
+    body[data-screen="boot"] #boot h1 { position:fixed; z-index:2; top:calc(env(safe-area-inset-top) + clamp(22px,6vh,56px)); left:16px; right:16px; width:auto; height:auto; margin:0; overflow:visible; clip:auto; color:#f0e3ca; font:clamp(25px,7vw,42px)/1.15 Georgia,serif; letter-spacing:.1em; text-align:center; text-shadow:0 2px 4px #18130f, 0 0 20px rgba(0,0,0,.5); }
+    #boot-hud { position:fixed; z-index:3; left:50%; bottom:0; translate:-50% 0; width:min(540px, calc(100% - 28px)); display:grid; gap:9px; padding:18px 20px calc(17px + env(safe-area-inset-bottom)); color:#372c21; background:linear-gradient(145deg,rgba(239,228,205,.96),rgba(213,198,169,.96)); border:1px solid rgba(91,68,44,.72); box-shadow:0 12px 36px rgba(0,0,0,.34), inset 0 0 0 4px rgba(255,250,236,.28); }
+    #boot-hud::before { content:"TIMBER TOWN  ·  ЛЕСНОЕ ХОЗЯЙСТВО"; display:block; padding-bottom:8px; border-bottom:1px solid rgba(91,68,44,.25); color:#78634a; font:10px/1.2 Georgia,serif; letter-spacing:.16em; text-align:center; }
+    #loading-status { margin:0; color:#4c3b2b; font:16px/1.35 Georgia,serif; text-align:center; }
+    #tip { margin:0; color:#78664f; font:13px/1.45 Georgia,serif; text-align:center; }
+    #load-slot { height:7px; width:100%; overflow:hidden; background:rgba(75,57,39,.17); border:1px solid rgba(91,68,44,.26); box-shadow:inset 0 1px 2px rgba(42,30,19,.14); }
+    #load-fill { display:block; width:0%; height:100%; background:linear-gradient(90deg,#9d7948,#c8a66b); transition:width .2s ease; }
+    #load-bar, #load-pct, #load-readout, #boot-credit, #boot-divider, #tip-list { display:none !important; }
+    body[data-screen="boot"] #play { position:relative; left:auto; bottom:auto; translate:none; width:100%; min-height:44px; margin:2px 0 0; border:1px solid #695036; border-radius:2px; background:#5b4935; color:#f5ead4; box-shadow:0 3px 0 #382b20; font:16px Georgia,serif; letter-spacing:.04em; text-transform:none; text-decoration:none; }
+    body[data-screen="boot"] #play:active { transform:translateY(2px); box-shadow:0 1px 0 #382b20; }
+    body[data-screen="boot"] #play[aria-disabled="true"] { opacity:.45; pointer-events:none; }
+    #boot-storage-warning { margin:0; padding:8px 10px; border:1px solid #97645a; background:#f1ddd3; color:#713d32; font:12px/1.4 Georgia,serif; text-align:center; }
+    @media (max-width:420px) {
+      #boot-hud { width:calc(100% - 20px); gap:8px; padding:14px 14px calc(13px + env(safe-area-inset-bottom)); }
+      #loading-status { font-size:15px; }
+      #tip { font-size:12px; }
     }
-    body[data-screen="boot"]::before,
-    body[data-screen="boot"]::after { content: none; }
-
-    #boot-art {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center center;
-      image-rendering: auto;
-      pointer-events: none;
-    }
-
-    body.boot-portrait #boot-art {
-      object-fit: fill;
-      object-position: center top;
-      width: auto;
-      height: 230%;
-      max-width: none;
-      top: 0;
-      left: 58%;
-      right: auto;
-      transform: translateX(-50%);
-    }
-
-    #boot { position: relative; z-index: 1; min-height: 100dvh; }
-
-    body[data-screen="boot"] #boot h1 {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: 0;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-    }
-    body.boot-portrait #boot h1 {
-      position: fixed;
-      z-index: 5;
-      top: calc(env(safe-area-inset-top) + 22px);
-      left: 16px;
-      right: 16px;
-      width: auto;
-      height: auto;
-      overflow: visible;
-      clip: auto;
-      font-family: var(--pixel);
-      font-size: clamp(20px, 7vw, 34px);
-      line-height: 1.35;
-      letter-spacing: 0.06em;
-      text-align: center;
-      color: #f4e7c8;
-      text-shadow:
-        3px 3px 0 #140e09,
-        -1px -1px 0 #140e09,
-        1px -1px 0 #140e09,
-        -1px 1px 0 #140e09;
-      pointer-events: none;
-    }
-
-    #load-bar {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      margin: 0;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      border: 0;
-      appearance: none;
-    }
-
-    #load-slot {
-      position: fixed;
-      z-index: 4;
-      overflow: hidden;
-      background: transparent;
-      pointer-events: none;
-      border-radius: 0;
-      box-shadow: none;
-    }
-    #load-fill {
-      display: block;
-      height: 100%;
-      width: 0%;
-      background-color: #e2a31a;
-      background-image: linear-gradient(
-        180deg,
-        #fff6d2 0%,
-        #fff6d2 26%,
-        #f0b423 26%,
-        #f0b423 68%,
-        #c47a12 68%,
-        #c47a12 100%
-      );
-    }
-    #load-slot.is-screen {
-      left: 50%;
-      top: auto;
-      bottom: calc(7.4rem + env(safe-area-inset-bottom));
-      width: min(22rem, calc(100vw - 40px));
-      height: 14px;
-      translate: -50% 0;
-      background: #120c08;
-      border: 2px solid #b7b7ae;
-      box-shadow: 0 0 0 2px #2a241c, 3px 3px 0 #0c0805;
-    }
-
-    #load-pct {
-      position: fixed;
-      z-index: 5;
-      margin: 0;
-      translate: -50% -50%;
-      font-family: var(--pixel);
-      line-height: 1;
-      color: #f4e7c8;
-      text-shadow: 2px 2px 0 #140e09, -1px 0 0 #140e09, 0 0 2px #140e09;
-      pointer-events: none;
-    }
-    #load-pct[hidden] { display: none; }
-
-    #boot-hud {
-      position: fixed;
-      z-index: 6;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
-      background: linear-gradient(180deg, rgba(7, 11, 8, 0) 0%, rgba(7, 11, 8, 0.28) 100%);
-      pointer-events: none;
-    }
-    #boot-hud a { pointer-events: auto; }
-
-    #load-readout { display: none; margin: 0; }
-    body.boot-portrait #load-readout {
-      display: block;
-      font-family: var(--pixel);
-      font-size: 14px;
-      letter-spacing: 0.08em;
-      color: #f4e7c8;
-      text-shadow: 2px 2px 0 #140e09;
-    }
-
-    #loading-status,
-    #tip,
-    #boot-storage-warning {
-      position: relative;
-      left: auto;
-      right: auto;
-      top: auto;
-      bottom: auto;
-      translate: none;
-      width: min(28rem, 100%);
-      margin: 0;
-    }
-    #loading-status {
-      padding: 0;
-      border: 0;
-      background: none;
-      text-align: center;
-      color: #f4e7c8;
-      font-family: var(--pixel);
-      font-size: clamp(8px, 2.2vw, 10px);
-      line-height: 1.6;
-      text-shadow: 2px 2px 0 #140e09;
-    }
-    #tip {
-      padding: 0;
-      border: 0;
-      background: none;
-      box-shadow: none;
-      text-align: center;
-      color: #d9c7a2;
-      font-family: var(--pixel);
-      font-size: clamp(7px, 2vw, 9px);
-      line-height: 1.6;
-      text-shadow: 2px 2px 0 #140e09;
-    }
-    #tip-list,
-    #boot-divider { display: none !important; }
-
-    #boot-storage-warning {
-      padding: 8px 10px;
-      text-align: center;
-      font-size: 10px;
-      line-height: 1.5;
-      color: var(--danger-ink);
-      background: rgba(28, 14, 12, 0.9);
-      border: 2px solid rgba(226, 182, 87, 0.35);
-    }
-
-    body[data-screen="boot"] #play {
-      position: relative;
-      left: auto;
-      right: auto;
-      top: auto;
-      bottom: auto;
-      translate: none;
-      transform: none;
-      width: auto;
-      min-width: 10.5rem;
-      min-height: 0;
-      margin: 2px 0 0;
-      padding: 13px 28px 12px;
-      font-family: var(--pixel);
-      font-size: 13px;
-      letter-spacing: 0.04em;
-      line-height: 1.4;
-      text-transform: none;
-      text-decoration: none;
-      color: #f4e7c8;
-      background: #5b3a22;
-      border: 0;
-      border-radius: 2px;
-      box-shadow:
-        0 0 0 3px #1a100a,
-        0 0 0 6px #8a6840,
-        4px 4px 0 #0c0805;
-      text-shadow: 2px 2px 0 #140e09;
-      animation: none;
-      filter: none;
-    }
-    body[data-screen="boot"] #play::before,
-    body[data-screen="boot"] #play::after {
-      content: "";
-      position: absolute;
-      top: 8px;
-      width: 6px;
-      height: 6px;
-      background: #d5d8dc;
-      box-shadow: 0 0 0 1px #1a120c, inset 0 0 0 1px #8b9096;
-    }
-    body[data-screen="boot"] #play::before { left: 8px; }
-    body[data-screen="boot"] #play::after { right: 8px; }
-    body[data-screen="boot"] #play:active {
-      translate: none;
-      transform: translate(2px, 2px);
-      box-shadow:
-        0 0 0 3px #1a100a,
-        0 0 0 6px #8a6840,
-        2px 2px 0 #0c0805;
-    }
-    body[data-screen="boot"] #play[aria-disabled="true"] {
-      opacity: 0.45;
-      filter: none;
-      pointer-events: none;
-      animation: none;
-    }
-
-    #boot-credit {
-      position: fixed;
-      z-index: 5;
-      right: max(10px, env(safe-area-inset-right));
-      top: calc(env(safe-area-inset-top) + 10px);
-      margin: 0;
-      font-family: var(--ui);
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #f4e7c8;
-      opacity: 0.7;
-      text-shadow: 1px 1px 0 #140e09;
-      pointer-events: none;
-    }
-    body.boot-portrait #boot-credit { display: none; }
-
-    .boot-noscript {
-      position: fixed;
-      z-index: 7;
-      left: 50%;
-      bottom: calc(env(safe-area-inset-bottom) + 1.2rem);
-      translate: -50% 0;
-      width: min(28rem, calc(100% - 32px));
-      margin: 0;
-      padding: 12px 16px;
-      text-align: center;
-      font-family: var(--ui);
-      font-size: 12px;
-      line-height: 1.5;
-      color: var(--danger-ink);
-      background: rgba(20, 14, 9, 0.92);
-      border: 2px solid rgba(226, 182, 87, 0.4);
-    }
+    @media (prefers-reduced-motion:reduce) { #load-fill { transition:none; } }
   </style>
 </head>
 <body data-screen="boot">
-  <img id="boot-art" src="loading.jpeg" width="1500" height="1007" alt="Timber Town — лесопилка у реки на закате">
+  <img id="boot-art" src="loading.jpeg" width="1500" height="1007" alt="Лесной городок Timber Town">
   <main id="boot">
-    <h1>Timber Town</h1>
-    <div id="load-slot" aria-hidden="true"><i id="load-fill"></i></div>
-    <p id="load-pct">0%</p>
-    <progress id="load-bar" max="100" value="0" aria-label="Загрузка ресурсов игры"></progress>
+    <h1>TIMBER TOWN</h1>
     <div id="boot-hud">
-      <p id="load-readout">0%</p>
-      <p id="loading-status" role="status" aria-live="polite">Загружаем ресурсы игры…</p>
-      <p id="tip">Первые два лесоруба в управе бесплатны.</p>
-      <ul id="tip-list" hidden>
-        <li>Первые два лесоруба в управе бесплатны.</li>
-        <li>Без топора работник уходит домой.</li>
-        <li>Деньги в сейфе налог не трогает.</li>
-        <li>Один игровой час длится 7,5 минут.</li>
-        <li>На пятый день долга лесопилка встаёт.</li>
-        <li>Обычный топор теряет 1% за каждое бревно.</li>
-        <li>Снятое из сейфа нужно потратить за игровой час.</li>
-        <li>Одинаковые топоры складываются в рюкзаке.</li>
-      </ul>
-      <p id="boot-storage-warning" hidden>
-        Прогресс не будет сохраняться: браузер запретил localStorage.
-        Играть можно, но после закрытия вкладки всё начнётся заново.
-      </p>
-      <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Играть</a>
+      <p id="loading-status" role="status" aria-live="polite">Готовим ваш лесной городок…</p>
+      <div id="load-slot" role="progressbar" aria-label="Загрузка игры" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="load-fill"></i></div>
+      <p id="tip">Следите за запасом брёвен: дополнительный склад расширяется в магазине.</p>
+      <p id="boot-storage-warning" hidden>Браузер не разрешил локальное сохранение. Прогресс может не сохраниться после закрытия игры.</p>
+      <a href="game.html" id="play" role="button" aria-disabled="true" tabindex="-1">Подождите…</a>
     </div>
-    <p id="boot-credit" aria-hidden="true">© Timber Town</p>
-    <hr id="boot-divider" hidden aria-hidden="true">
   </main>
-  <noscript>
-    <p class="boot-noscript">
-      Timber Town требует JavaScript. Включите его в настройках браузера, чтобы начать игру.
-    </p>
-  </noscript>
+  <noscript><p class="boot-noscript">Для запуска Timber Town необходимо включить JavaScript.</p></noscript>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script>
     (() => {
       'use strict';
       const play = document.getElementById('play');
-      const bar = document.getElementById('load-bar');
       const status = document.getElementById('loading-status');
-      const pct = document.getElementById('load-pct');
-      const readout = document.getElementById('load-readout');
       const fill = document.getElementById('load-fill');
       const slot = document.getElementById('load-slot');
-      const art = document.getElementById('boot-art');
-      const ART_W = 1500, ART_H = 1007;
-      const place = () => {
-        const vw = window.innerWidth;
-        const vh = window.innerHeight;
-        const portrait = vh > vw * 1.05;
-        document.body.classList.toggle('boot-portrait', portrait);
-        if (!slot) return;
-        if (portrait) {
-          slot.classList.add('is-screen');
-          slot.style.left = slot.style.top = slot.style.width = slot.style.height = '';
-          if (pct) pct.hidden = true;
-          return;
-        }
-        slot.classList.remove('is-screen');
-        if (pct) pct.hidden = false;
-        const scale = Math.max(vw / ART_W, vh / ART_H);
-        const ox = (vw - ART_W * scale) / 2;
-        const oy = (vh - ART_H * scale) / 2;
-        slot.style.left = (ox + 398 * scale) + 'px';
-        slot.style.top = (oy + 796 * scale) + 'px';
-        slot.style.width = (718 * scale) + 'px';
-        slot.style.height = (45 * scale) + 'px';
-        if (pct) {
-          pct.style.left = (ox + 754 * scale) + 'px';
-          pct.style.top = (oy + 896 * scale) + 'px';
-          pct.style.fontSize = Math.max(10, Math.round(14 * scale)) + 'px';
-        }
-      };
-      place();
-      window.addEventListener('resize', place);
+      const warning = document.getElementById('boot-storage-warning');
+      const resources = [
+        'style.css','game.js','game.html','profile.html','sawmill.html','shop.html',
+        'sklad.html','sklad-lesa.html','uprava.html','master.html','liteynaya.html',
+        'World_map_Sunrise.jpeg','World_map_day.jpeg','World_map_Sunset.jpeg','World_map_Night.jpeg',
+        '1skin.jpeg','1axeskin.jpeg','2axeskin.jpeg','3axeskin.jpeg','4aceskin.jpeg','5axeskin.jpeg',
+        'Backpack.jpeg','The_Board.jpeg','Trad_Center.jpeg','Warehouse.jpeg','loading.jpeg'
+      ];
       const tg = window.Telegram?.WebApp;
       try { tg?.ready?.(); tg?.expand?.(); } catch (_) {}
-      const readTelegramUser = () => {
-        const app = window.Telegram?.WebApp;
-        if (app?.initDataUnsafe?.user) return app.initDataUnsafe.user;
-        try {
-          const encoded = app?.initData ? new URLSearchParams(app.initData).get('user') : null;
-          const parsed = encoded ? JSON.parse(encoded) : null;
-          return parsed && parsed.id != null ? parsed : null;
-        } catch (_) { return null; }
+      let done = 0;
+      const paint = (label) => {
+        const pct = Math.round(done / resources.length * 100);
+        if (fill) fill.style.width = `${pct}%`;
+        if (slot) slot.setAttribute('aria-valuenow', String(pct));
+        if (status) status.textContent = label;
       };
-
-      const resources = [
-        'style.css','game.js','game.html','profile.html','sawmill.html','shop.html','sklad.html','sklad-lesa.html','uprava.html','master.html','liteynaya.html',
-        '1skin.jpeg','2skin.jpeg','3skin.jpeg','4skin.jpeg','1axeskin.jpeg','2axeskin.jpeg','3axeskin.jpeg','4aceskin.jpeg','5axeskin.jpeg','Backpack.jpeg',
-        'The_Board.jpeg','Trad_Center.jpeg','Warehouse.jpeg','Workshop.jpeg','World_map_day.jpeg','World_map_Night.jpeg','World_map_Sunrise.jpeg','World_map_Sunset.jpeg','loading.jpeg','idex_fon.jpeg'
-      ];
-      let loaded = 0;
-      const total = resources.length + 2;
-      const paint = (value, label) => {
-        const safe = Math.max(0, Math.min(100, value));
-        if (bar) bar.value = safe;
-        if (fill) fill.style.width = safe + '%';
-        const text = safe + '%';
-        if (pct) pct.textContent = text;
-        if (readout) readout.textContent = text;
-        if (status && label) status.textContent = label;
-      };
-      const update = (label) => {
-        loaded = Math.min(total, loaded + 1);
-        paint(Math.round(loaded / total * 100), label);
-      };
-      const timeout = ms => new Promise(resolve => setTimeout(resolve, ms));
-      const settleResource = path => new Promise(resolve => {
+      const check = path => new Promise(resolve => {
         if (/\.(?:jpe?g|png|webp|svg)$/i.test(path)) {
           const image = new Image();
-          image.onload = () => { update('Загружаем изображения и игровые ресурсы…'); resolve(); };
-          image.onerror = () => { update('Проверяем ресурсы игры…'); resolve(); };
+          image.onload = image.onerror = () => { done++; resolve(); };
           image.src = path;
         } else {
-          fetch(path, { cache: 'no-cache' }).then(() => update('Загружаем игровые системы…')).catch(() => update('Проверяем доступность ресурсов…')).finally(resolve);
+          fetch(path, { cache:'no-store' }).catch(() => null).finally(() => { done++; resolve(); });
         }
       });
-
+      const storageAvailable = (() => { try { localStorage.setItem('__tt_probe__','1'); localStorage.removeItem('__tt_probe__'); return true; } catch (_) { return false; } })();
+      if (!storageAvailable && warning) warning.hidden = false;
       (async () => {
-        const storageOk = (() => { try { const key='__tt_probe__'; localStorage.setItem(key,'1'); localStorage.removeItem(key); return true; } catch (_) { return false; } })();
-        const resourcePromise = Promise.all(resources.map(settleResource));
-        let user = readTelegramUser();
-        const identityPromise = (async () => {
-          const deadline = Date.now() + 5000;
-          while ((!user || user.id == null) && Date.now() < deadline) {
-            user = readTelegramUser();
-            if (user?.id != null) break;
-            await timeout(120);
-          }
-          update(user?.id != null ? 'Профиль Telegram загружен…' : 'Продолжаем в режиме браузера…');
-        })();
-        await Promise.all([resourcePromise, identityPromise]);
-        await Promise.race([document.fonts?.ready || Promise.resolve(), timeout(1200)]);
-        if (art && !art.complete) await Promise.race([new Promise(resolve => { art.addEventListener('load',resolve,{once:true}); art.addEventListener('error',resolve,{once:true}); }), timeout(1800)]);
-        if (bar) paint(100, !storageOk ? 'Предупреждение: браузер ограничил локальное сохранение.' : user?.id != null ? 'Мир готов. Профиль Telegram подключён.' : 'Мир готов. Запуск без Telegram-профиля.');
-        if (play) { play.textContent = 'Играть'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
+        const checks = resources.map((path, index) => check(path).then(() => {
+          if (index === resources.length - 1 || done === resources.length) paint('Последние приготовления…');
+          else if (done < 8) paint('Собираем игровой мир…');
+          else paint('Проверяем лесопилку и сохранение…');
+        }));
+        await Promise.all(checks);
+        await Promise.race([document.fonts?.ready || Promise.resolve(), new Promise(resolve => setTimeout(resolve, 900))]);
+        if (fill) fill.style.width = '100%';
+        if (slot) slot.setAttribute('aria-valuenow','100');
+        if (status) status.textContent = storageAvailable ? 'Всё готово. Добро пожаловать в Timber Town.' : 'Мир готов. Проверьте предупреждение о сохранении.';
+        if (play) { play.textContent='Войти в город'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
       })().catch(error => {
         console.warn('Loader fallback:', error);
-        if (bar) paint(100, 'Ресурсы проверены. Можно начинать игру.');
-        if (play) { play.textContent='Играть'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
+        if (status) status.textContent = 'Почти готово. Можно войти в город.';
+        if (play) { play.textContent='Войти в город'; play.setAttribute('aria-disabled','false'); play.removeAttribute('tabindex'); }
       });
     })();
   </script>

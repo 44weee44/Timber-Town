@@ -1420,3 +1420,310 @@ body[data-screen="foundry"] .building-guide { background:rgba(15,13,10,.82); }
 .paper-contract button { margin-top: 14px; }
 #raw-log-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #raw-log-market [hidden] { display: none !important; }
+
+/* ==========================================================
+   TIMBER TOWN — parchment & field-notes visual refresh
+   Inspired by the warm editorial mood of the supplied reference.
+   All illustrations and game content remain original to the game.
+   ========================================================== */
+:root {
+  --tt-bg: #38322b;
+  --tt-bg-deep: #24201b;
+  --tt-paper: #e8ddc4;
+  --tt-paper-light: #f0e7d3;
+  --tt-paper-shadow: #cdbb99;
+  --tt-paper-line: #b9a27f;
+  --tt-brown: #4b3929;
+  --tt-brown-soft: #77634a;
+  --tt-olive: #69705a;
+  --tt-brass: #aa8758;
+  --tt-serif: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+  --ink: #30271f;
+  --wood: #59432f;
+  --wood-deep: #36291e;
+  --gold: #b18d5d;
+  --gold-light: #dfc79e;
+  --gold-deep: #8d6c43;
+  --gold-wash: rgba(177, 141, 93, .15);
+  --cream: #eee3cc;
+  --cream-muted: #b8a88c;
+  --cream-soft: #d8c9ab;
+  --line: #6a5743;
+  --line-strong: #8e7656;
+  --pixel: var(--tt-serif);
+  --ui: var(--tt-serif);
+  --font-ui: var(--tt-serif);
+  --stroke: 1px;
+}
+
+html, body {
+  background: var(--tt-bg);
+  color: #f0e5d0;
+  font-family: var(--tt-serif);
+  font-size: 16px;
+  line-height: 1.55;
+  letter-spacing: .005em;
+}
+body[data-screen]:not([data-screen="boot"]):not([data-screen="map"]) {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(136, 119, 93, .19), transparent 44%),
+    radial-gradient(ellipse at 90% 24%, rgba(16, 13, 10, .18), transparent 42%),
+    linear-gradient(145deg, #403a32 0%, #302b25 48%, #26221d 100%);
+}
+
+/* Compact top navigation, like a small brass nameplate. */
+#hud {
+  min-height: 58px;
+  padding: 7px max(12px, env(safe-area-inset-left)) 7px max(12px, env(safe-area-inset-right));
+  gap: 8px;
+  background: rgba(34, 29, 24, .96);
+  border: 0;
+  border-bottom: 1px solid rgba(206, 177, 132, .34);
+  box-shadow: 0 3px 12px rgba(0,0,0,.2);
+  color: #eadfc9;
+}
+#wallet, #clock {
+  padding: 6px 9px;
+  border: 1px solid rgba(206, 177, 132, .28);
+  border-radius: 2px;
+  background: rgba(255,255,255,.035);
+  color: #eadfc9;
+  font: 13px/1.25 var(--tt-serif);
+  box-shadow: none;
+}
+#wallet span { color: #bca98b; font-size: 11px; }
+#wallet data { color: #f0d9ae; font-weight: 700; }
+#clock { text-align:center; }
+#open-inventory, #open-profile {
+  min-height: 38px;
+  padding: 6px 11px;
+  border: 1px solid rgba(206, 177, 132, .38);
+  border-radius: 2px;
+  background: #514638;
+  color: #f1e4ca;
+  box-shadow: none;
+  font: 13px/1.2 var(--tt-serif);
+}
+#open-inventory:hover, #open-profile:hover { background:#635440; }
+
+/* Main pages become readable paper sheets on a dark desk. */
+body[data-screen]:not([data-screen="boot"]):not([data-screen="map"]) main:not(#map) {
+  width: min(100%, 1040px);
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: clamp(14px, 3vw, 28px) clamp(12px, 3vw, 28px) max(28px, env(safe-area-inset-bottom));
+  color: var(--tt-brown);
+  font: 16px/1.55 var(--tt-serif);
+  align-items: stretch;
+}
+main:not(#boot):not(#map) > h1 {
+  margin: 6px 0 14px;
+  padding: 0 0 12px;
+  color: #f1e4cc;
+  border-bottom: 1px solid rgba(220, 194, 151, .3);
+  font: 500 clamp(25px, 5vw, 34px)/1.12 var(--tt-serif);
+  letter-spacing: .015em;
+  text-shadow: 0 2px 5px rgba(0,0,0,.3);
+}
+main:not(#boot):not(#map) > p:first-child a,
+main:not(#boot):not(#map) > nav a {
+  color: #e8d8bd;
+  font: 13px/1.3 var(--tt-serif);
+  text-decoration: none;
+}
+main:not(#boot):not(#map) > p:first-child a {
+  display:inline-block;
+  margin-bottom:8px;
+  padding:6px 10px;
+  border:1px solid rgba(220,194,151,.3);
+  background:rgba(28,24,20,.35);
+}
+main:not(#boot):not(#map) > nav {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin: 4px 0 14px;
+}
+main:not(#boot):not(#map) > nav a {
+  padding:7px 12px;
+  border:1px solid rgba(218,194,158,.35);
+  background:rgba(25,22,18,.4);
+}
+main:not(#boot):not(#map) > section,
+main:not(#boot):not(#map) > form,
+main:not(#boot):not(#map) > ul,
+main:not(#boot):not(#map) > table,
+main:not(#boot):not(#map) > button,
+body[data-screen]:not([data-screen="boot"]) .about-game-plaque {
+  margin: 0 0 14px;
+  padding: clamp(14px, 2.6vw, 22px);
+  color: var(--tt-brown);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.22), transparent 45%),
+    linear-gradient(145deg, var(--tt-paper-light), var(--tt-paper));
+  border: 1px solid var(--tt-paper-line);
+  border-radius: 2px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.17), inset 0 0 0 3px rgba(255,255,255,.14);
+}
+main:not(#boot):not(#map) > section > section,
+main:not(#boot):not(#map) > section > div:not(.building-guide),
+main:not(#boot):not(#map) .stat,
+main:not(#boot):not(#map) .safe-card,
+main:not(#boot):not(#map) .machine-card,
+main:not(#boot):not(#map) .operator-card,
+main:not(#boot):not(#map) .wood-stock-card,
+main:not(#boot):not(#map) .zone-detail-grid > div {
+  color: var(--tt-brown);
+  background: rgba(255,255,255,.22);
+  border-color: rgba(126,100,68,.29);
+  box-shadow: none;
+}
+main:not(#boot):not(#map) h2,
+main:not(#boot):not(#map) h3,
+main:not(#boot):not(#map) .stat-label,
+main:not(#boot):not(#map) .safe-stat-label {
+  color: #54402d;
+  font-family: var(--tt-serif);
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+main:not(#boot):not(#map) h2 {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(109,83,54,.24);
+  font-size: 21px;
+  line-height: 1.2;
+}
+main:not(#boot):not(#map) h3 { font-size: 17px; line-height:1.25; }
+main:not(#boot):not(#map) p,
+main:not(#boot):not(#map) li,
+main:not(#boot):not(#map) label,
+main:not(#boot):not(#map) small,
+main:not(#boot):not(#map) .form-hint { color:#5d4b38; font: 15px/1.52 var(--tt-serif); }
+main:not(#boot):not(#map) a { color:#695338; }
+main:not(#boot):not(#map) data,
+main:not(#boot):not(#map) time,
+main:not(#boot):not(#map) strong { color:#403020; }
+
+/* Paper-friendly controls. */
+main:not(#boot):not(#map) button,
+main:not(#boot):not(#map) .btn,
+#inventory button {
+  min-height: 40px;
+  padding: 8px 13px;
+  color:#f4ead7;
+  background:#66523c;
+  border:1px solid #4b3929;
+  border-radius:2px;
+  box-shadow:0 2px 0 rgba(52,39,26,.28);
+  font:14px/1.25 var(--tt-serif);
+  text-transform:none;
+}
+main:not(#boot):not(#map) button:hover:not(:disabled) { background:#7b6245; }
+main:not(#boot):not(#map) button:disabled { opacity:.43; }
+main:not(#boot):not(#map) button.gold-action,
+main:not(#boot):not(#map) #buy-log-warehouse,
+main:not(#boot):not(#map) #play {
+  color:#382b1e;
+  background:#c6a978;
+  border-color:#9d7f51;
+}
+main:not(#boot):not(#map) input,
+main:not(#boot):not(#map) select,
+#inventory input {
+  min-height:40px;
+  padding:8px 10px;
+  color:#403123;
+  background:#f6efdf;
+  border:1px solid #b7a17e;
+  border-radius:2px;
+  font:15px/1.3 var(--tt-serif);
+}
+main:not(#boot):not(#map) input::placeholder { color:#98866a; }
+main:not(#boot):not(#map) input:focus,
+main:not(#boot):not(#map) select:focus { outline:2px solid #ad8b5c; outline-offset:1px; }
+main:not(#boot):not(#map) ul { padding-left: 20px; }
+main:not(#boot):not(#map) img:not(.worker-portrait):not(.axe-icon) { border:1px solid rgba(126,100,68,.3); }
+
+/* Editorial section labels and the new raw-stock meter. */
+.eyebrow {
+  margin:0 0 5px !important;
+  color:#8b7250 !important;
+  font:10px/1.2 var(--tt-serif) !important;
+  font-weight:700 !important;
+  letter-spacing:.16em !important;
+  text-transform:uppercase;
+}
+#sawmill-storage { padding:16px 18px; }
+.storage-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+.storage-heading h2 { margin:0; padding:0; border:0; }
+.storage-count { margin:0; color:#8d7756 !important; font:14px/1.1 var(--tt-serif) !important; white-space:nowrap; }
+.storage-count strong { color:#403020; font:26px/1 var(--tt-serif); }
+.storage-count span { font-size:15px; }
+.storage-meter { height:9px; margin:13px 0 8px; overflow:hidden; background:rgba(93,72,48,.17); border:1px solid rgba(93,72,48,.25); }
+.storage-meter i { display:block; width:0; height:100%; background:linear-gradient(90deg,#8c9675,#b69a69); transition:width .22s ease; }
+.storage-footnote { margin-top:8px !important; color:#806b50 !important; font:13px/1.4 var(--tt-serif) !important; }
+.storage-footnote strong { color:#4b3929; }
+.warehouse-upgrade-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin:14px 0; }
+.warehouse-upgrade-summary span { padding:10px 11px; background:rgba(116,91,60,.08); border-left:2px solid #ad8b5c; color:#715b40; font:13px/1.35 var(--tt-serif); }
+.warehouse-upgrade-summary strong { display:block; margin-top:3px; color:#443221; font-size:16px; }
+
+/* About the game: a distinct expandable plaque, not another profile tab. */
+.about-game-plaque { overflow:hidden; margin:10px 0 16px; padding:0 !important; }
+.about-game-plaque > summary {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:66px;
+  padding:12px 16px;
+  color:#4d3b29;
+  background:linear-gradient(110deg,rgba(255,255,255,.3),rgba(195,175,141,.08));
+  list-style:none;
+  cursor:pointer;
+}
+.about-game-plaque > summary::-webkit-details-marker { display:none; }
+.about-game-icon { display:grid; place-items:center; width:38px; height:38px; flex:0 0 38px; border:1px solid #b49b73; border-radius:50%; background:#f4ead5; font:19px/1 var(--tt-serif); }
+.about-game-plaque > summary strong { display:block; color:#4a3827; font:600 20px/1.15 var(--tt-serif); }
+.about-game-plaque > summary small { display:block; margin-top:3px; color:#806d53; font:13px/1.25 var(--tt-serif); }
+.about-game-arrow { margin-left:auto; color:#8a6d48; font:22px/1 var(--tt-serif); transition:transform .18s ease; }
+.about-game-plaque[open] .about-game-arrow { transform:rotate(180deg); }
+.guide-content { padding:16px; border-top:1px solid rgba(109,83,54,.23); background:rgba(255,255,255,.12); }
+.guide-content > h2 { margin:0 0 14px; padding:0; border:0; font:600 22px/1.2 var(--tt-serif); }
+.guide-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.guide-grid article { position:relative; padding:14px 14px 13px 17px; background:rgba(255,255,255,.23); border:1px solid rgba(126,100,68,.2); border-left:2px solid #b0956a; }
+.guide-grid h3 { margin:2px 0 6px; color:#4d3a28; font:600 17px/1.2 var(--tt-serif); }
+.guide-grid p { margin:0; color:#66543e !important; font:14px/1.48 var(--tt-serif) !important; }
+.guide-number { color:#a18863; font:11px/1 var(--tt-serif); letter-spacing:.12em; }
+
+/* Contract and raw log market are printed-paper surfaces, not game menus. */
+.paper-contract { color:#493725 !important; background:linear-gradient(145deg,#f1e6ce,#dfcfad) !important; border:1px solid #b89e73 !important; box-shadow:0 5px 13px rgba(62,45,26,.16), inset 0 0 0 3px rgba(255,255,255,.22) !important; }
+.paper-contract p, .paper-contract label { color:#5a4630 !important; }
+.paper-contract h3 { color:#443222 !important; }
+.paper-contract input { color:#493725; background:rgba(255,255,255,.45); border:0; border-bottom:1px solid #9c8055; }
+#raw-log-market { border-left:3px solid #ae8b5b !important; }
+
+/* Responsive layout for narrow phones. */
+@media (max-width:560px) {
+  html, body { font-size:15px; }
+  #hud { gap:5px; }
+  #wallet { display:flex; flex-direction:column; align-items:flex-start; gap:1px; }
+  #wallet span { font-size:10px; }
+  #open-inventory, #open-profile { padding:5px 8px; font-size:12px; }
+  main:not(#boot):not(#map) > section,
+  main:not(#boot):not(#map) > form,
+  main:not(#boot):not(#map) > ul,
+  main:not(#boot):not(#map) > table { padding:13px; }
+  .guide-grid { grid-template-columns:1fr; }
+  .storage-heading { align-items:center; }
+  .storage-count strong { font-size:23px; }
+}
+
+.guide-machine-table { margin-top:16px; padding-top:14px; border-top:1px solid rgba(109,83,54,.22); }
+.guide-machine-table > h3 { margin:0 0 10px; color:#4d3a28; font:600 19px/1.2 var(--tt-serif); }
+.guide-table-scroll { overflow-x:auto; border:1px solid rgba(126,100,68,.23); background:rgba(255,255,255,.2); }
+.guide-table-scroll table { width:100%; min-width:430px; border-collapse:collapse; color:#4c3a28; font:13px/1.3 var(--tt-serif); }
+.guide-table-scroll th, .guide-table-scroll td { padding:8px 9px; text-align:left; border-bottom:1px solid rgba(126,100,68,.17); white-space:nowrap; }
+.guide-table-scroll th { color:#6c573a; background:rgba(123,96,60,.09); font-weight:700; }
+.guide-table-scroll tr:last-child td { border-bottom:0; }
+.guide-table-note { margin-top:9px !important; color:#806b50 !important; font:13px/1.4 var(--tt-serif) !important; }

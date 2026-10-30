@@ -5,7 +5,11 @@
   const WORKER_DAILY_SALARY = 10;
   const FREE_WORKER_LIMIT = 2;
   const GAME_MINUTE_MS = 7500;
+  const OFFLINE_TIME_RATE = 0.65;
   const DAY_MINUTES = 1440;
+  const BASE_LOG_STORAGE = 500;
+  const LOG_STORAGE_PER_WAREHOUSE = 500;
+  const MAX_LOG_STORAGE_UPGRADES = 10;
   const QUALITY = ['rotten', 'normal', 'good', 'excellent', 'perfect'];
   const QUALITY_LABEL = {
     rotten: 'гнилые',
@@ -33,16 +37,16 @@
 
   const MACHINE = [
     null,
-    { price: 0, capacity: 999999, minutes: 30, bonus: 0.02 },
-    { price: 350, capacity: 999999, minutes: 27, bonus: 0.04 },
-    { price: 650, capacity: 999999, minutes: 24, bonus: 0.06 },
-    { price: 1000, capacity: 999999, minutes: 21, bonus: 0.08 },
-    { price: 1500, capacity: 999999, minutes: 18, bonus: 0.10 },
-    { price: 2200, capacity: 999999, minutes: 15, bonus: 0.12 },
-    { price: 3200, capacity: 999999, minutes: 12, bonus: 0.14 },
-    { price: 4500, capacity: 999999, minutes: 9, bonus: 0.16 },
-    { price: 6200, capacity: 999999, minutes: 6, bonus: 0.18 },
-    { price: 8500, capacity: 999999, minutes: 3, bonus: 0.20 }
+    { price: 0, minutes: 25, bonus: 0.02 },
+    { price: 350, minutes: 23, bonus: 0.04 },
+    { price: 650, minutes: 20, bonus: 0.06 },
+    { price: 1000, minutes: 18, bonus: 0.08 },
+    { price: 1500, minutes: 15, bonus: 0.10 },
+    { price: 2200, minutes: 13, bonus: 0.12 },
+    { price: 3200, minutes: 10, bonus: 0.14 },
+    { price: 4500, minutes: 8, bonus: 0.16 },
+    { price: 6200, minutes: 5, bonus: 0.18 },
+    { price: 8500, minutes: 3, bonus: 0.20 }
   ];
   const MAX_MACHINE_LEVEL = 10;
   const MACHINE_BASE = () => ({ level: 1, durability: 100, isRunning: false, queue: Object.fromEntries(QUALITY.map(q => [q, 0])), remaining: 0, processed: 0, queueSchemaVersion: 2, operatorId: null });
@@ -78,6 +82,20 @@
 
   const $ = id => document.getElementById(id);
   const sum = values => values.reduce((a, b) => a + b, 0);
+
+  function getLogStorageCapacity() {
+    const upgrades = clamp(num(state?.sawmill?.logStorageLevel), 0, MAX_LOG_STORAGE_UPGRADES);
+    return BASE_LOG_STORAGE + upgrades * LOG_STORAGE_PER_WAREHOUSE;
+  }
+
+  function getLogStorageUsed() {
+    return sum(QUALITY.map(q => num(state?.sawmill?.logs?.[q])));
+  }
+
+  function getLogWarehousePrice() {
+    const level = clamp(num(state?.sawmill?.logStorageLevel), 0, MAX_LOG_STORAGE_UPGRADES);
+    return 2000 + level * 1500;
+  }
 
   function num(value, min = 0) {
     const n = Number(value);
@@ -309,6 +327,7 @@
         operators: [],
         logs: { rotten: 0, normal: 0, good: 0, excellent: 0, perfect: 0 },
         logsByWoodQuality: createWoodQualityStock(),
+        logStorageLevel: 0,
         planks: 0,
         safeMoney: 0,
         safeExposure: null,
@@ -332,6 +351,7 @@
       report: null,
       delivery: null,
       rawLogDeal: null,
+      rawLogLastSaleDay: 0,
 
       stats: { delivered: 0, revenue: 0, lastDay: 1 }
     };
@@ -360,6 +380,7 @@
 
     s.sawmill = { ...defaults.sawmill, ...(s.sawmill || {}) };
     s.sawmill.logs = Object.fromEntries(QUALITY.map(q => [q, num(s.sawmill.logs?.[q])]));
+    s.sawmill.logStorageLevel = clamp(num(s.sawmill.logStorageLevel), 0, MAX_LOG_STORAGE_UPGRADES);
     const hadWoodStock = s.sawmill.logsByWoodQuality && typeof s.sawmill.logsByWoodQuality === 'object';
     s.sawmill.logsByWoodQuality = createWoodQualityStock();
     if (hadWoodStock) {
@@ -489,6 +510,8 @@
     s.money = num(s.money);
     s.gold = num(s.gold);
     s.day = Math.max(1, num(s.day, 1));
+    s.rawLogLastSaleDay = clamp(num(input.rawLogLastSaleDay), 0, s.day);
+    if (s.rawLogDeal?.stage === 'shipping' && s.rawLogLastSaleDay === 0) s.rawLogLastSaleDay = s.day;
     s.gameMinutes = clamp(num(s.gameMinutes), 0, 1439);
     s.taxDebt = num(s.taxDebt);
     s.taxPenalty = num(s.taxPenalty);
@@ -894,6 +917,9 @@
       state.inventory.secretLogs = Math.min(999999, num(state.inventory.secretLogs) + 1);
     }
     if (zoneEvent === 'empty') return;
+    const freeStorage = Math.max(0, getLogStorageCapacity() - getLogStorageUsed());
+    if (freeStorage <= 0) return;
+
     const quality = zoneEvent === 'rotten' ? 'rotten' : getQuality(worker, zoneEvent === 'ideal' ? 0.60 : 0);
 
     const woodType = state.sawmill.zoneKinds?.[zoneId] || 'birch';
@@ -901,7 +927,7 @@
     const extraLogChance = clamp(axeStats.extraLogChance + starBonus, 0, 0.15);
     const extraLog = Math.random() < extraLogChance;
     const produced = 1 + (extraLog ? 1 : 0);
-    const actualProduced = Math.min(produced, zoneStats.stock);
+    const actualProduced = Math.min(produced, zoneStats.stock, freeStorage);
     state.sawmill.logs[quality] += actualProduced;
     state.sawmill.logsByWoodQuality[woodType][quality] += actualProduced;
     zoneStats.stock = Math.max(0, zoneStats.stock - actualProduced);
@@ -1856,12 +1882,44 @@
     const eventLabel = $('event-zones-summary');
     if (eventLabel) eventLabel.textContent = Object.entries(state.sawmill.eventZones || {}).filter(([,z])=>z).map(([kind,z])=>`Зона ${z}: ${{rotten:'только гнилые брёвна',empty:'пустые брёвна',ideal:'идеальные брёвна'}[kind]}`).join(' · ') || 'Сегодня особых зон нет';
     const rawStatus = $('raw-log-status');
+    const rawSoldToday = state.rawLogLastSaleDay === state.day;
     if (rawStatus) {
       const d = state.rawLogDeal;
-      rawStatus.textContent = !d ? 'Покупатели появляются случайно. Условия зависят от породы и объёма.' : d.stage === 'shipping' ? `Поставка в пути: ${d.amount} брёвен · осталось ${d.remaining} игровых минут.` : d.stage === 'contract' ? `Договор готов: ${d.amount} брёвен по ${d.price}$ за штуку. Подпишите договор ниже.` : `Предложение: ${d.amount} ${d.wood === 'pine' ? 'сосновых' : 'дубовых'} брёвен по ${d.price}$ за штуку.`;
+      rawStatus.textContent = d
+        ? d.stage === 'shipping'
+          ? `Поставка в пути: ${d.amount} брёвен · осталось ${d.remaining} игровых минут. Оплата поступит в сейф.`
+          : d.stage === 'contract'
+            ? `Договор готов: ${d.amount} брёвен по ${d.price}$ за штуку. Подпишите договор ниже.`
+            : `Предложение от «${d.buyer}»: ${d.amount} ${d.wood === 'pine' ? 'сосновых' : 'дубовых'} брёвен по ${d.price}$ за штуку.`
+        : rawSoldToday
+          ? 'На сегодня продажа уже оформлена. Следующая сделка станет доступна после наступления нового игрового дня.'
+          : 'Покупатель появляется случайно. За игровые сутки можно оформить одну поставку.';
     }
     const rawControls = $('raw-log-controls');
-    if (rawControls) rawControls.hidden = Boolean(state.rawLogDeal);
+    if (rawControls) rawControls.hidden = Boolean(state.rawLogDeal) || rawSoldToday;
+    const rawFind = $('raw-log-find'); if (rawFind) rawFind.disabled = rawSoldToday || Boolean(state.rawLogDeal);
+
+    const storageUsed = getLogStorageUsed();
+    const storageCap = getLogStorageCapacity();
+    const storageFree = Math.max(0, storageCap - storageUsed);
+    setText('sawmill-log-total', storageUsed.toLocaleString('ru-RU'));
+    setText('sawmill-log-capacity', storageCap.toLocaleString('ru-RU'));
+    setText('sawmill-log-free', storageFree.toLocaleString('ru-RU'));
+    const storageFill = $('sawmill-log-meter-fill');
+    if (storageFill) storageFill.style.width = `${Math.min(100, storageUsed / Math.max(1, storageCap) * 100)}%`;
+    const storageMeter = $('sawmill-log-meter');
+    if (storageMeter) {
+      storageMeter.setAttribute('aria-valuemax', String(storageCap));
+      storageMeter.setAttribute('aria-valuenow', String(storageUsed));
+    }
+    setText('log-warehouse-count', state.sawmill.logStorageLevel);
+    setText('log-warehouse-capacity', storageCap.toLocaleString('ru-RU'));
+    setText('log-warehouse-cost', state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES ? 'Лимит достигнут' : `${getLogWarehousePrice().toLocaleString('ru-RU')} $`);
+    const warehouseButton = $('buy-log-warehouse');
+    if (warehouseButton) {
+      warehouseButton.disabled = state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES || state.money < getLogWarehousePrice();
+      warehouseButton.textContent = state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES ? 'Все склады построены' : `Построить склад · ${getLogWarehousePrice().toLocaleString('ru-RU')} $`;
+    }
     const rawContract = $('raw-log-contract');
     if (rawContract) rawContract.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'contract';
     const rawActions = $('raw-log-actions'); if (rawActions) rawActions.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'offer';
@@ -1939,7 +1997,8 @@
     setText('plank-price', `${dailyPrice()} $`);
     setText('machine-level', state.sawmill.machine.level);
     setText('machine-durability', state.sawmill.machine.durability);
-    setText('machine-capacity', MACHINE[state.sawmill.machine.level].capacity);
+    setText('machine-capacity', getLogStorageCapacity().toLocaleString('ru-RU'));
+    setText('sawmill-log-capacity-warehouse', getLogStorageCapacity().toLocaleString('ru-RU'));
     setText('machine-pace', MACHINE[state.sawmill.machine.level].minutes);
     setText('machine-bonus', Math.round(MACHINE[state.sawmill.machine.level].bonus * 100));
 
@@ -2379,6 +2438,14 @@
     }
   });
 
+  bind('buy-log-warehouse', () => transaction('Покупка дополнительного склада брёвен', () => {
+    if (state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES) { notify('Достигнут максимум дополнительных складов.', 'error'); return false; }
+    const cost = getLogWarehousePrice();
+    if (!spend(cost)) return false;
+    state.sawmill.logStorageLevel++;
+    notify(`Дополнительный склад построен. Вместимость лесопилки увеличена до ${getLogStorageCapacity().toLocaleString('ru-RU')} брёвен.`);
+  }));
+
   bind('buy-machine', () => transaction('Покупка станка', () => {
     const maxMachines = 5 + Math.max(0, state.sawmill.zones - 1) * 5;
     const total = 1 + state.sawmill.extraMachines.length;
@@ -2554,16 +2621,6 @@
       return false;
     }
 
-    const capacity = MACHINE[machine.level].capacity;
-
-    if (amount > capacity) {
-      notify(
-        `Станок вмещает не больше ${capacity} брёвен за раз.`,
-        'error'
-      );
-      return false;
-    }
-
     if (amount > state.sawmill.logs[selectedQuality]) {
       notify(
         `В наличии только ${state.sawmill.logs[selectedQuality]} брёвен этого качества.`,
@@ -2650,6 +2707,7 @@
 
   bind('raw-log-find', () => transaction('Поиск покупателя брёвен', () => {
     if (state.rawLogDeal) { notify('Сначала завершите текущую сделку.', 'error'); return false; }
+    if (state.rawLogLastSaleDay === state.day) { notify('Продажа брёвен на сегодня уже оформлена. Следующая будет доступна завтра.', 'error'); return false; }
     const wood = $('raw-log-wood')?.value === 'oak' ? 'oak' : 'pine';
     const stock = sum(QUALITY.map(q => num(state.sawmill.logsByWoodQuality?.[wood]?.[q])));
     const buyer = wood === 'pine' ? 'Хвойный кряж' : 'Дубовый стан';
@@ -2675,9 +2733,13 @@
   bind('raw-log-sign', () => transaction('Подписание договора на брёвна', () => {
     const d = state.rawLogDeal; const signature = $('raw-log-signature')?.value?.trim();
     if (!d || d.stage !== 'contract' || !signature || !/^[\p{L}\p{N} .'-]{2,32}$/u.test(signature)) { notify('Введите подпись: 2–32 буквы или цифры, без спецсимволов.', 'error'); return false; }
+    if (state.rawLogLastSaleDay === state.day) { notify('На сегодня лимит продажи брёвен уже использован.', 'error'); return false; }
+    const available = sum(QUALITY.map(q => num(state.sawmill.logsByWoodQuality?.[d.wood]?.[q])));
+    if (available < d.amount) { notify('Запаса нужной породы уже недостаточно для этой поставки. Отмените договор и найдите новое предложение.', 'error'); return false; }
     let remaining = d.amount;
     for (const q of [...QUALITY].reverse()) { const take = Math.min(remaining, state.sawmill.logsByWoodQuality[d.wood][q]); state.sawmill.logsByWoodQuality[d.wood][q] -= take; state.sawmill.logs[q] = Math.max(0, state.sawmill.logs[q] - take); remaining -= take; if (!remaining) break; }
     d.signature = signature; d.signed = true; d.stage = 'shipping'; d.remaining = 90;
+    state.rawLogLastSaleDay = state.day;
     notify('Договор подписан. Брёвна отправлены; доставка займёт 90 игровых минут.');
   }));
   bind('raw-log-cancel', () => transaction('Отмена сделки с брёвнами', () => { state.rawLogDeal = null; }));
@@ -2826,9 +2888,8 @@
       '#machine-quality .quality-card[aria-pressed="true"]'
     );
     const q = selectedCard?.dataset?.quality || null;
-    const capacity = MACHINE[machine.level].capacity;
-    const stock = q ? (state.sawmill.logs[q] || 0) : capacity;
-    const limit = Math.min(capacity, stock);
+    const stock = q ? (state.sawmill.logs[q] || 0) : getLogStorageCapacity();
+    const limit = stock;
 
     let n = Number(event.target.value);
     if (!Number.isFinite(n)) n = 0;
@@ -2882,9 +2943,8 @@
         return;
       }
 
-      const capacity = MACHINE[machine.level].capacity;
       const stock = state.sawmill.logs[q] || 0;
-      const max = Math.min(capacity, stock);
+      const max = stock;
 
       const amountInput = $('machine-amount');
       if (amountInput) amountInput.value = String(max);
@@ -2929,11 +2989,11 @@
 
   function renderProfileTab() {
     const hash = window.location.hash;
-    const selected = ['#tab-chances', '#tab-crew', '#tab-guide'].includes(hash)
+    const selected = ['#tab-chances', '#tab-crew'].includes(hash)
       ? hash
       : '#tab-stats';
 
-    ['tab-stats', 'tab-chances', 'tab-crew', 'tab-guide'].forEach(id => {
+    ['tab-stats', 'tab-chances', 'tab-crew'].forEach(id => {
       const section = $(id);
       if (section) section.hidden = `#${id}` !== selected;
     });
@@ -3041,7 +3101,7 @@
       cloudBootstrapPending = true;
       const elapsed = Math.max(0, now - localLastLogin);
       lastTick = now;
-      if (elapsed > 0) advanceTime(elapsed * 0.5);
+      if (elapsed > 0) advanceTime(elapsed * OFFLINE_TIME_RATE);
       else saveState({ localOnly: true });
       render();
       const cloudReadRevision = gameplayRevision;
@@ -3062,7 +3122,7 @@
         state = cloudState;
         lastCloudSerialized = JSON.stringify(cloudState);
         lastTick = Date.now();
-        if (cloudElapsed > 0) advanceTime(cloudElapsed * 0.5);
+        if (cloudElapsed > 0) advanceTime(cloudElapsed * OFFLINE_TIME_RATE);
         saveState();
         render();
       }).catch(error => {
@@ -3081,7 +3141,7 @@
     if (cloudState) state = cloudState;
     const elapsed = Math.max(0, Date.now() - Math.max(0, Number(state.lastLogin) || Date.now()));
     lastTick = Date.now();
-    if (elapsed > 0) advanceTime(elapsed * 0.5);
+    if (elapsed > 0) advanceTime(elapsed * OFFLINE_TIME_RATE);
     else saveState({ localOnly: true });
     render();
     saveState();
@@ -3110,7 +3170,7 @@
       // Simulate all offline game time since the most recent persisted timestamp.
       const elapsed = Math.max(0, now - lastTick);
       lastTick = now;
-      if (elapsed > 0) advanceTime(elapsed * 0.5);
+      if (elapsed > 0) advanceTime(elapsed * OFFLINE_TIME_RATE);
     }
   });
 
@@ -3118,7 +3178,7 @@
     const now = Date.now();
     const elapsed = Math.max(0, now - lastTick);
     lastTick = now;
-    if (elapsed > 0) advanceTime(elapsed * 0.5);
+    if (elapsed > 0) advanceTime(elapsed * OFFLINE_TIME_RATE);
     saveState({ cloudImmediate: true });
   });
 
