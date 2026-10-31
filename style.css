@@ -1796,3 +1796,14 @@ data, time, .stat-value, .storage-count strong, .safe-stat-value, .worker-level,
 .stat-label,.storage-footnote,.form-hint,.muted { line-height:1.65; }
 #taxes .stat-value { font-size:18px; }
 #sawmill #crew-list li,#sawmill #machine-list li { align-items:center; }
+
+
+/* Forest map artwork belongs to the sawmill zone board, not the village navigation map. */
+body[data-screen="sawmill"] #zone-grid {
+  background-image: linear-gradient(rgba(24, 31, 20, .28), rgba(24, 31, 20, .42)), url("karta.jpeg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  padding: 12px;
+}
