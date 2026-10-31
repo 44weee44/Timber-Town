@@ -110,12 +110,12 @@
     <button type="button" id="close-inventory">Закрыть</button>
   </dialog>
   <main id="sklad">
-    <p><a href="game.html">На карту</a></p>
+    <p class="map-return"><a class="map-return-link" href="game.html">← На карту</a></p>
     <h1>Склады</h1>
     <img src="Warehouse.jpeg" width="1168" height="784" alt="Склад досок">
 
     <section id="warehouse-overview" aria-labelledby="overview-title">
-      <h2 id="overview-title">Склад</h2>
+      <h2 id="overview-title">Склад готовой продукции и сырья</h2>
       <div class="stat-row">
         <div class="stat">
           <span class="stat-label">Доски</span>
@@ -139,7 +139,7 @@
           <data class="stat-value" id="machine-durability" value="100">100</data>
         </div>
       </div>
-      <p class="storage-footnote">Вместимость лесопилки: <strong><data id="sawmill-log-capacity-warehouse" value="500">500</data></strong> брёвен.</p>
+      <p class="storage-footnote">Лимит сырья: <strong><data id="sawmill-log-capacity-warehouse" value="500">500</data></strong> брёвен. Доски: <strong><data id="plank-storage-capacity" value="500">500</data></strong> мест.</p>
       <div id="log-details" class="log-details" hidden>
         <h3>По качеству</h3>
         <ul class="log-quality-details">
@@ -158,23 +158,12 @@
       </div>
     </section>
 
-    <section id="sell" aria-labelledby="sell-title">
-      <h2 id="sell-title">Докладная</h2>
-      <form id="sell-form">
-        <label for="plank-qty">Сколько досок в докладную</label>
-        <input id="plank-qty" type="number" min="1" step="1" value="1" inputmode="numeric">
-        <div class="warehouse-sell-actions">
-          <button type="button" id="sell-planks" disabled>Продать доски</button>
-          <button type="button" id="sell-all-planks" class="gold-action" disabled>Продать всё</button>
-        </div>
-      </form>
-      <p id="report-status">Докладная: нет</p>
-    </section>
-
-    <button type="button" id="toggle-machine" aria-expanded="false" aria-controls="machine" aria-label="Показать панель станка">Станок</button>
+<button type="button" id="toggle-machine" aria-expanded="false" aria-controls="machine" aria-label="Показать панель станка">Станок</button>
 
     <section id="machine" hidden aria-labelledby="machine-title">
       <h2 id="machine-title">Станок</h2>
+      <p>Уровень станка: <strong id="machine-level-warehouse">1</strong>. Улучшение ускоряет обработку каждого бревна.</p>
+      <button type="button" id="upgrade-machine">Улучшить станок</button>
       <p id="machine-state">Стоит</p>
       <div class="stat-row">
         <div class="stat">

@@ -80,11 +80,10 @@
     </li>
   </template>
   <main id="profile">
-    <p><a href="game.html">На карту</a></p>
+    <p class="map-return"><a class="map-return-link" href="game.html">← На карту</a></p>
     <h1>Личное дело</h1>
     <nav aria-label="Разделы профиля">
       <a href="#tab-stats" aria-controls="tab-stats">Статистика</a>
-      <a href="#tab-chances" aria-controls="tab-chances">Шансы</a>
       <a href="#tab-crew" aria-controls="tab-crew">Работники</a>
     </nav>
 
@@ -94,14 +93,15 @@
         <p class="eyebrow">ПУТЕВОДИТЕЛЬ ПО TIMBER TOWN</p>
         <h2>Как устроено ваше предприятие</h2>
         <div class="guide-grid">
-          <article><span class="guide-number">01</span><h3>Лес и работники</h3><p>В управе нанимайте лесорубов и назначайте им делянки. Для работы нужен исправный топор. Первые два найма бесплатны; звёзды определяют качество и эффективность работника.</p></article>
-          <article><span class="guide-number">02</span><h3>Запас брёвен</h3><p>Сырьё поступает на склад лесопилки. Начальная вместимость — 500 брёвен. Каждый дополнительный склад из магазина добавляет ещё 500 мест. Когда запас заполнен, новые брёвна временно не добываются.</p></article>
+          <article><span class="guide-number">01</span><h3>Лес и работники</h3><p>В управе нанимайте лесорубов и назначайте им делянки. Для работы нужен исправный топор. Каждый день в управе появляется 3–8 кандидатов. Цена зависит от звёзд и уровня; характеристики сохраняются за нанятым работником.</p></article>
+          <article><span class="guide-number">02</span><h3>Запас брёвен</h3><p>Сырьё поступает на склад лесопилки. Начальная вместимость — 500 брёвен. Каждый склад леса добавляет 300 мест для брёвен и 100 мест для досок; цена — 1 000 $. Когда запас заполнен, новые брёвна временно не добываются.</p></article>
           <article><span class="guide-number">03</span><h3>Производство досок</h3><p>На лесопилке выберите качество брёвен и укажите партию. Станок перерабатывает по одному бревну за раз. Улучшение уровня сокращает время обработки, а станочник может запускать производство автоматически.</p></article>
-          <article><span class="guide-number">04</span><h3>Продажа досок</h3><p>На складе оформите докладную. В управе нужна действующая торговая лицензия и печать. Затем оплатите доставку — после прибытия выручка поступит в сейф.</p></article>
-          <article><span class="guide-number">05</span><h3>Продажа сырых брёвен</h3><p>На лесопилке сосну закупает «Хвойный кряж», дуб — «Дубовый стан». Покупатель появляется случайно. Проверьте предложение, при желании поторгуйтесь один раз, подготовьте бумажный договор и подпишите его. Одна поставка доступна за игровые сутки; доставка занимает 90 игровых минут.</p></article>
+          <article><span class="guide-number">04</span><h3>Продажа досок</h3><p>В литейной выберите ежедневный заказ на брёвна и/или доски. Проверьте объём, цену и доставку, затем скрепите договор печатью. Если доставку оплачиваете вы — оплатите её в управе. После доставки деньги поступят в сейф.</p></article>
           <article><span class="guide-number">06</span><h3>Сейф и расходы</h3><p>Выручка за доставку поступает в сейф. Переведите деньги в кошелёк, чтобы оплачивать улучшения, ремонт, лицензии и зарплаты. Следите за ежедневными расходами и налоговыми сроками.</p></article>
           <article><span class="guide-number">07</span><h3>Игровое время</h3><p>В обычном режиме один игровой час проходит за 7,5 минуты реального времени. Пока игра закрыта, прогресс продолжается медленнее — примерно на 65% от обычной скорости.</p></article>
         </div>
+        <section class="guide-machine-table"><p class="eyebrow">ПАМЯТКА ПО ДОБЫЧЕ</p><h3>Шансы качества брёвен</h3><div class="guide-table-scroll"><table><thead><tr><th>Условия</th><th>Гнилые</th><th>Обычные</th><th>Хорошие</th><th>Отличные</th><th>Идеальные</th><th>Изменение</th></tr></thead><tbody><tr><td>Базовый шанс: 3 звезды, 1 уровень, берёза, старый топор</td><td>80%</td><td>11,9%</td><td>5%</td><td>3%</td><td>0,1%</td><td>Стартовое распределение</td></tr><tr><td>Каждая звезда выше 3</td><td>−1,5 п.п.</td><td>+0,6 п.п.</td><td>+0,375 п.п.</td><td>+0,3 п.п.</td><td>+0,225 п.п.</td><td>Постепенно улучшает качество</td></tr><tr><td>Каждый уровень выше 1</td><td>Снижается</td><td>Растёт</td><td>Растёт</td><td>Растёт</td><td>Растёт</td><td>Бонус качества +2,5% за уровень</td></tr><tr><td>Сосновая делянка</td><td>−5 п.п.</td><td>+5 п.п.</td><td>—</td><td>—</td><td>—</td><td>Чаще обычные брёвна</td></tr><tr><td>Дубовая делянка</td><td>−8 п.п.</td><td>—</td><td>+4 п.п.</td><td>+3 п.п.</td><td>+1 п.п.</td><td>Больше ценной древесины</td></tr><tr><td>Особая зона «Идеальные»</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Бонус</td><td>Сильно повышает шанс идеального бревна</td></tr></tbody></table></div><p class="guide-table-note">Бонусы топора и звёзд складываются с базовым шансом. Проценты округлены для удобства чтения.</p></section>
+
         <section class="guide-machine-table" aria-labelledby="guide-machine-table-title">
           <p class="eyebrow">ПРОИЗВОДСТВЕННЫЙ СПРАВОЧНИК</p>
           <h3 id="guide-machine-table-title">Уровни станка</h3>
@@ -146,25 +146,6 @@
       </div>
     </section>
 
-    <section id="tab-chances" hidden aria-labelledby="tab-chances-title">
-      <h2 id="tab-chances-title">Шансы</h2>
-      <p id="chances-empty">Некого считать. Нанять можно в управе.</p>
-      <ul id="chance-list"></ul>
-    </section>
-    <template id="chance-card">
-      <li data-worker-id="">
-        <img class="worker-portrait small" alt="" loading="lazy" decoding="async">
-        <p class="worker-name"></p>
-        <p class="worker-axe"></p>
-        <ul class="quality-odds">
-          <li>Гнилое <data class="odd-rotten" value="0">0%</data></li>
-          <li>Обычное <data class="odd-normal" value="0">0%</data></li>
-          <li>Хорошее <data class="odd-good" value="0">0%</data></li>
-          <li>Отличное <data class="odd-excellent" value="0">0%</data></li>
-          <li>Идеальное <data class="odd-perfect" value="0">0%</data></li>
-        </ul>
-      </li>
-    </template>
 
     <section id="tab-crew" hidden aria-labelledby="tab-crew-title">
       <h2 id="tab-crew-title">Работники</h2>
@@ -211,7 +192,7 @@
     </dialog>
     <dialog id="fire-confirm" aria-labelledby="fire-title">
       <h2 id="fire-title">Увольнение</h2>
-      <p>Вернётся 35% от цены найма. За бесплатных — ничего. Топор упадёт в рюкзак.</p>
+      <p>Вернётся 50% от цены покупки. За старых бесплатных работников возврата нет. Топор вернётся в рюкзак.</p>
       <button type="button" id="fire-yes">Уволить</button>
       <button type="button" id="fire-no">Отмена</button>
     </dialog>

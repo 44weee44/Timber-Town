@@ -233,48 +233,17 @@
     </li>
   </template>
   <main id="sawmill">
-    <p><a href="game.html">На карту</a></p>
+    <p class="map-return"><a class="map-return-link" href="game.html">← На карту</a></p>
     <h1>Лесопилка</h1>
     <div class="building-guide"><img src="1skin.jpeg" alt="Служащий здания" loading="lazy" decoding="async"><p>«Сначала подготовь брёвна, потом запускай станок. Хороший порядок работы экономит время.»</p></div>
-    <section id="sawmill-storage" class="sawmill-storage" aria-labelledby="sawmill-storage-title">
-      <div class="storage-heading"><div><p class="eyebrow">ЗАПАС СЫРЬЯ</p><h2 id="sawmill-storage-title">Склад брёвен</h2></div><p class="storage-count"><strong id="sawmill-log-total">0</strong><span> / <data id="sawmill-log-capacity" value="500">500</data></span></p></div>
-      <div id="sawmill-log-meter" class="storage-meter" role="meter" aria-label="Заполненность склада брёвен" aria-valuemin="0" aria-valuemax="500" aria-valuenow="0"><i id="sawmill-log-meter-fill"></i></div>
-      <p class="storage-footnote">Свободно: <strong id="sawmill-log-free">500</strong> брёвен · дополнительный склад увеличивает вместимость.</p>
-    </section>
-    <nav aria-label="Разделы лесопилки">
+<nav aria-label="Разделы лесопилки">
       <a href="#safe">Сейф</a>
       <a href="#crew">Работники</a>
       <a href="#stats">Статистика</a>
       <a href="#zones">Карта зон</a>
     </nav>
 
-    <section id="raw-log-market" aria-labelledby="raw-log-title">
-      <h2 id="raw-log-title">Продажа сырых брёвен</h2>
-      <p>Покупатель появляется не каждый день. Сосну закупает «Хвойный кряж», дуб — «Дубовый стан». Минимальная партия — 20 брёвен.</p>
-      <div id="raw-log-controls">
-        <label for="raw-log-wood">Порода</label>
-        <select id="raw-log-wood"><option value="pine">Сосна</option><option value="oak">Дуб</option></select>
-        <button type="button" id="raw-log-find">Найти покупателя</button>
-      </div>
-      <p id="raw-log-status" aria-live="polite">Покупатели появляются случайно. Условия зависят от породы и объёма.</p>
-      <div id="raw-log-actions">
-        <button type="button" id="raw-log-negotiate">Предложить цену выше</button>
-        <button type="button" id="raw-log-contract-create">Подготовить договор</button>
-        <button type="button" id="raw-log-cancel">Отказаться от сделки</button>
-      </div>
-      <div id="raw-log-contract" hidden class="paper-contract">
-        <p class="paper-kicker">ДОГОВОР ПОСТАВКИ № <span id="raw-contract-number">TT-01</span></p>
-        <h3>Договор купли-продажи лесоматериалов</h3>
-        <p>Покупатель принимает согласованную партию древесины. Поставщик подтверждает наличие товара и согласен передать его перевозчику.</p>
-        <p>Количество и цена указаны в предложении выше. Доставка длится 90 игровых минут. После прибытия сумма перечисляется в сейф.</p>
-        <label for="raw-log-signature">Подпись поставщика</label>
-        <input id="raw-log-signature" type="text" maxlength="32" autocomplete="off" placeholder="Введите имя для подписи">
-        <button type="button" id="raw-log-sign">Подписать и отправить</button>
-        <p class="form-hint">Подпись: 2–32 буквы, цифры, пробел или дефис.</p>
-      </div>
-    </section>
-
-    <section id="safe" aria-labelledby="safe-title">
+<section id="safe" aria-labelledby="safe-title">
       <h2 id="safe-title">Сейф</h2>
 
       <div class="safe-balances">
@@ -334,10 +303,11 @@
     </section>
 
     <section id="crew" aria-labelledby="crew-title">
-      <h2 id="crew-title">Работники</h2>
+      <details class="fold-plaque"><summary id="crew-title">Работники <span class="fold-count">список и состояние</span></summary>
       <p id="crew-empty">На делянке тихо. Первые двое нанимаются в управе даром.</p>
       <ul id="crew-list"></ul>
       <p><a href="profile.html">Топоры и увольнение</a></p>
+      </details>
     </section>
     <template id="worker-row">
       <li data-worker-id="">
@@ -367,16 +337,17 @@
     </section>
 
     <section id="station-crew" aria-labelledby="station-crew-title">
-      <h2 id="station-crew-title">Станочники</h2>
+      <details class="fold-plaque"><summary id="station-crew-title">Станочники <span class="fold-count">обслуживание станков</span></summary>
       <p>Работники без уровня, автоматически обслуживают назначенные станки. Они работают офлайн, пока есть брёвна и прочность станка.</p>
       <ul id="machine-list" class="machine-list"></ul>
       <ul id="operator-list"></ul>
       <p>Всего станков: <data id="machine-count" value="1">1</data> · станочников: <data id="operator-count" value="0">0</data></p>
       <p><a href="shop.html#machine-purchase">Купить станок</a> · <a href="uprava.html#hiring">Нанять станочника</a></p>
+      </details>
     </section>
 
     <section id="zones" aria-labelledby="zones-title">
-      <h2 id="zones-title">Карта зон</h2>
+      <details class="fold-plaque zones-plaque"><summary id="zones-title">Карта зон <span class="fold-count">открыть список делянок</span></summary>
       <p>Зон <data id="zone-count" value="1">1</data> из 28. Мест для людей <data id="worker-cap" value="10">10</data>. В зоне 200 000 брёвен, запас возвращается каждый игровой день.</p>
       <p class="event-zone-legend">События сегодняшнего дня: <strong id="event-zones-summary">События рассчитываются…</strong></p>
       <p>Типы делянок: берёза — обычная добыча; сосна — повышенный выход обычной древесины; дуб — более ценные брёвна. Перемещайте работников между своими зонами в профиле.</p>
@@ -410,6 +381,7 @@
         <button type="button" data-zone="27" data-owned="false" aria-label="Зона 27">27</button>
         <button type="button" data-zone="28" data-owned="false" aria-label="Зона 28">28</button>
       </div>
+      </details>
     </section>
     <dialog id="zone-detail" class="zone-detail-dialog" aria-labelledby="zone-detail-title">
       <h2 id="zone-detail-title">Делянка</h2>

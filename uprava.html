@@ -114,7 +114,7 @@
     </li>
   </template>
   <main id="uprava">
-    <p><a href="game.html">На карту</a></p>
+    <p class="map-return"><a class="map-return-link" href="game.html">← На карту</a></p>
     <h1>Управа</h1>
     <div class="building-guide"><img src="1skin.jpeg" alt="Служащий здания" loading="lazy" decoding="async"><p>«Налог и зарплата учитываются вместе. Следи за ежедневными расходами, и предприятие будет работать спокойно.»</p></div>
     <img src="The_Board.jpeg" width="1168" height="784" alt="Управа">
@@ -142,12 +142,16 @@
       </div>
       <label for="tax-amount">Сумма</label>
       <input id="tax-amount" type="number" min="1" step="1" value="0" inputmode="numeric">
-      <button type="button" id="pay-tax" disabled>Оплатить налог</button>
+      <div class="tax-actions"><button type="button" id="pay-tax" disabled>Оплатить указанную сумму</button><button type="button" id="tax-pay-all" class="gold-action" disabled>Погасить весь долг</button></div>
     </section>
 
     <section id="licenses" aria-labelledby="licenses-title">
       <h2 id="licenses-title">Лицензии</h2>
-      <div class="stat-row">
+      <div class="license-cards">
+        <article class="license-paper"><h3>Лицензия на рубку</h3><p id="chop-license">Действует до дня <data id="chop-until-text" value="20">20</data></p><p>Даёт право лесорубам добывать брёвна на открытых делянках.</p><button type="button" id="renew-chop">Продлить рубку</button></article>
+        <article class="license-paper"><h3>Торговая лицензия</h3><p id="trade-license">Пока не оформлена</p><p>Разрешает заключать договоры на поставку древесины и досок.</p><button type="button" id="buy-trade-license">Оформить · 100 $</button></article>
+      </div>
+      <div class="stat-row" hidden>
         <div class="stat">
           <span class="stat-label">Рубка</span>
           <data class="stat-value" id="chop-until" value="20">до дня 20</data>
@@ -157,40 +161,26 @@
           <data class="stat-value" id="trade-until" value="0">не выдана</data>
         </div>
       </div>
-      <p id="chop-license">Рубка активна до дня <data id="chop-until-text" value="20">20</data></p>
-      <button type="button" id="renew-chop">Продлить рубку</button>
-      <p id="trade-license">Торговая лицензия: ещё не выдана</p>
-      <button type="button" id="buy-trade-license">Купить торговую лицензию · 100$</button>
+
     </section>
 
     <section id="hiring" aria-labelledby="hiring-title">
-      <h2 id="hiring-title">Найм</h2>
-      <div class="stat-row">
-        <div class="stat">
-          <span class="stat-label">Сейчас работников</span>
-          <data class="stat-value" id="worker-count" value="0">0</data>
-        </div>
-        <div class="stat">
-          <span class="stat-label">Вместимость</span>
-          <data class="stat-value" id="worker-cap" value="10">10</data>
-        </div>
-      </div>
-      <p>Первые два найма бесплатны. Третий стоит 200$, каждый следующий — на 200$ дороже. Имя и звёзды закрепляются за работником.</p>
-      <button type="button" id="hire">Нанять бесплатно</button>
-      <hr>
-      <h2>Станочники</h2>
-      <p>Первый станочник стоит 1 500$, каждый следующий — на 1 000$ дороже. Один обслуживает один станок.</p>
-      <button type="button" id="hire-operator">Нанять станочника · 1 500$</button>
-      <p>Всего станочников: <data id="operator-count" value="0">0</data></p>
-      <ul id="operator-list" class="operator-list"></ul>
+      <details class="fold-plaque hire-fold"><summary id="hiring-title">Найм работников <span class="fold-count">ежедневный список кандидатов</span></summary>
+      <div class="stat-row"><div class="stat"><span class="stat-label">Работников нанято</span><data class="stat-value" id="worker-count" value="0">0</data></div><div class="stat"><span class="stat-label">Доступно мест</span><data class="stat-value" id="worker-cap" value="10">10</data></div></div>
+      <p>Каждый игровой день появляется новый набор из 3–8 кандидатов. Цена зависит от квалификации и уровня: 100 $ + 30 $ за звезду + 10 $ за уровень.</p>
+      <div id="hire-market-panel" class="hire-market-panel"><h3>Кандидаты на сегодня</h3><ul id="hire-market-list"></ul></div>
+      </details>
+      <details class="fold-plaque operator-hiring"><summary>Станочники <span class="fold-count">найм и обслуживание оборудования</span></summary>
+        <p>Станочник автоматически запускает производство на одном свободном станке.</p>
+        <button type="button" id="hire-operator">Нанять станочника · 1 500 $</button>
+        <p>Всего станочников: <data id="operator-count" value="0">0</data></p><ul id="operator-list" class="operator-list"></ul>
+      </details>
     </section>
 
     <section id="delivery-pay" aria-labelledby="delivery-title">
-      <h2 id="delivery-title">Доставка</h2>
-      <p id="report-plain">Докладная: нет</p>
-      <p id="report-sealed">Докладная с печатью: нет</p>
-      <p>Пошлина — 50$ + 1$ за доску. Доставка занимает 30 игровых минут, прибыль поступает в сейф лесопилки.</p>
-      <button type="button" id="pay-delivery" disabled>Оплатить доставку</button>
+      <h2 id="delivery-title">Оплата доставки</h2>
+      <div id="delivery-active" hidden class="tax-paper"><h3 id="delivery-active-title">Активный договор</h3><p>Сумма заказа: <strong id="delivery-active-total">0 $</strong></p><p>Доставка: <strong id="delivery-fee">0 $</strong></p><p>После оплаты груз отправится покупателю.</p><button type="button" id="pay-contract-delivery">Оплатить доставку и отправить</button></div>
+      <div id="delivery-shipments"></div>
     </section>
 
   </main>

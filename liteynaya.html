@@ -39,12 +39,18 @@
     </li>
   </template>
   <main id="foundry">
-    <p><a href="game.html">На карту</a></p>
+    <p class="map-return"><a class="map-return-link" href="game.html">← На карту</a></p>
     <h1>Литейная</h1>
     <div class="building-guide"><img src="1skin.jpeg" alt="Служащий здания" loading="lazy" decoding="async"><p>«Проверяй документы перед отправкой товара. Порядок в бумагах экономит деньги и время.»</p></div>
-    <p id="stamp-status" aria-live="polite">Докладную выдают на складе при продаже досок. Сначала поставьте печать — потом оплатите доставку в управе.</p>
-    <button type="button" id="stamp" disabled aria-describedby="stamp-status">Поставить печать</button>
-    <p>Печать требует торговую лицензию. После печати докладную оплачивают в управе.</p>
+    <p class="eyebrow">ЕЖЕДНЕВНЫЕ ЗАКАЗЫ</p>
+    <h2>Поставки древесины</h2>
+    <p>Выберите заказ, проверьте наличие материалов и откройте договор. Заказы обновляются каждый игровой день.</p>
+    <div id="delivery-active" hidden class="tax-paper"><h3 id="delivery-active-title">Активный договор</h3><p>Сумма: <strong id="delivery-active-total">0 $</strong></p><p>Доставка: <strong id="delivery-fee">0 $</strong></p><p>Оплатите доставку в управе, чтобы отправить груз.</p></div>
+    <div id="delivery-offers" class="delivery-offers"></div>
+    <div id="delivery-shipments" class="delivery-shipments"></div>
+    <dialog id="delivery-contract-dialog" class="contract-dialog">
+      <article class="contract-paper"><p class="paper-kicker">TIMBER TOWN · ДОГОВОР ПОСТАВКИ</p><div id="delivery-contract-content"></div><p id="contract-delivery-option">Доставка согласуется отдельно.</p><p id="contract-negotiation-result" class="muted"></p><div class="contract-actions"><button type="button" id="negotiate-price">Торговаться за цену</button><button type="button" id="negotiate-shipping">Попросить оплатить доставку</button></div><div class="stamp-area"><span>МЕСТО ДЛЯ ПЕЧАТИ</span><button type="button" id="seal-delivery-contract" class="seal-button">Поставить печать</button></div><button type="button" id="close-delivery-contract" class="ghost">Закрыть договор</button></article>
+    </dialog>
   </main>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="game.js" defer></script>

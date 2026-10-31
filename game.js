@@ -20,11 +20,11 @@
   };
 
   const AXES = {
-    common:    { name: 'Обычный',   price: 150,  max: 100, wearEvery: 1, rank: 0, qualityBonus: 0.00, extraLogChance: 0.00, secretFindBonus: 0.000 },
-    reinforced:{ name: 'Усиленный', price: 320,  max: 180, wearEvery: 2, rank: 0, qualityBonus: 0.02, extraLogChance: 0.01, secretFindBonus: 0.002 },
-    rare:      { name: 'Редкий',    price: 650,  max: 280, wearEvery: 3, rank: 1, qualityBonus: 0.05, extraLogChance: 0.02, secretFindBonus: 0.004 },
-    legendary: { name: 'Легендарный',price: 1800,max: 500, wearEvery: 5, rank: 2, qualityBonus: 0.08, extraLogChance: 0.035, secretFindBonus: 0.007 },
-    mythic:    { name: 'Мифический',price: 4500, max: 850, wearEvery: 8, rank: 3, qualityBonus: 0.11, extraLogChance: 0.05, secretFindBonus: 0.010 }
+    common:    { name: 'Старый топор', price: 120, max: 400, wearEvery: 1, rank: 0, qualityBonus: 0.00, extraLogChance: 0.00, secretFindBonus: 0.000, chopEvery: 2, perk: 'Надёжный старт, но медленная рубка' },
+    reinforced:{ name: 'Тяжёлый топор', price: 260, max: 400, wearEvery: 1, rank: 0, qualityBonus: 0.01, extraLogChance: 0.025, secretFindBonus: 0.001, chopEvery: 1, perk: 'Иногда приносит дополнительное бревно' },
+    rare:      { name: 'Лёгкий топор', price: 520, max: 400, wearEvery: 1, rank: 1, qualityBonus: 0.035, extraLogChance: 0.045, secretFindBonus: 0.004, chopEvery: 1, perk: 'Ускоренная добыча: чаще приносит второе бревно' },
+    legendary: { name: 'Точный топор', price: 1050, max: 400, wearEvery: 1, rank: 2, qualityBonus: 0.075, extraLogChance: 0.025, secretFindBonus: 0.008, chopEvery: 1, perk: 'Повышает качество древесины' },
+    mythic:    { name: 'Лесной топор', price: 1900, max: 400, wearEvery: 1, rank: 3, qualityBonus: 0.055, extraLogChance: 0.065, secretFindBonus: 0.012, chopEvery: 1, perk: 'Высокий шанс получить +1 бревно' }
   };
 
   const AXE_ICON = {
@@ -84,8 +84,12 @@
   const sum = values => values.reduce((a, b) => a + b, 0);
 
   function getLogStorageCapacity() {
-    const upgrades = clamp(num(state?.sawmill?.logStorageLevel), 0, MAX_LOG_STORAGE_UPGRADES);
-    return BASE_LOG_STORAGE + upgrades * LOG_STORAGE_PER_WAREHOUSE;
+    const upgrades = clamp(num(state?.sawmill?.forestWarehouseLevel ?? state?.sawmill?.logStorageLevel), 0, 50);
+    return BASE_LOG_STORAGE + upgrades * 300;
+  }
+  function getPlankStorageCapacity() {
+    const upgrades = clamp(num(state?.sawmill?.forestWarehouseLevel ?? state?.sawmill?.logStorageLevel), 0, 50);
+    return 500 + upgrades * 100;
   }
 
   function getLogStorageUsed() {
@@ -328,6 +332,7 @@
         logs: { rotten: 0, normal: 0, good: 0, excellent: 0, perfect: 0 },
         logsByWoodQuality: createWoodQualityStock(),
         logStorageLevel: 0,
+        forestWarehouseLevel: 0,
         planks: 0,
         safeMoney: 0,
         safeExposure: null,
@@ -352,6 +357,12 @@
       delivery: null,
       rawLogDeal: null,
       rawLogLastSaleDay: 0,
+      hireMarketDay: 0,
+      hireCandidates: [],
+      deliveryOffersDay: 0,
+      deliveryOffers: [],
+      marketContract: null,
+      marketShipments: [],
 
       stats: { delivered: 0, revenue: 0, lastDay: 1 }
     };
@@ -381,6 +392,7 @@
     s.sawmill = { ...defaults.sawmill, ...(s.sawmill || {}) };
     s.sawmill.logs = Object.fromEntries(QUALITY.map(q => [q, num(s.sawmill.logs?.[q])]));
     s.sawmill.logStorageLevel = clamp(num(s.sawmill.logStorageLevel), 0, MAX_LOG_STORAGE_UPGRADES);
+    s.sawmill.forestWarehouseLevel = clamp(num(s.sawmill.forestWarehouseLevel, s.sawmill.logStorageLevel), 0, 50);
     const hadWoodStock = s.sawmill.logsByWoodQuality && typeof s.sawmill.logsByWoodQuality === 'object';
     s.sawmill.logsByWoodQuality = createWoodQualityStock();
     if (hadWoodStock) {
@@ -438,6 +450,7 @@
               level,
               xp,
               hireCost: num(w.hireCost),
+              chopCooldown: num(w.chopCooldown),
               stars: clamp(Number.isFinite(Number(w.stars)) && w.stars !== null ? Number(w.stars) : 1 + Math.floor(Math.random() * 5), 1, 5),
               zoneId: clamp(num(w.zoneId, 1), 1, Math.max(1, s.sawmill.zones)),
               axe: rarity
@@ -565,6 +578,13 @@
       signed: Boolean(input.rawLogDeal.signed)
     } : null;
 
+    s.hireMarketDay = num(input.hireMarketDay, 0);
+    s.hireCandidates = Array.isArray(input.hireCandidates) ? input.hireCandidates.filter(c => c && typeof c.id === 'string').slice(0, 8).map(c => ({ id:c.id, name:String(c.name || 'Лесоруб').slice(0,32), skin:clamp(num(c.skin,1),1,4), stars:clamp(num(c.stars,1),1,5), level:clamp(num(c.level,1),1,MAX_LEVEL), price:num(c.price), xp:xpForLevel(clamp(num(c.level,1),1,MAX_LEVEL)), zoneId:1 })) : [];
+    s.deliveryOffersDay = num(input.deliveryOffersDay, 0);
+    s.deliveryOffers = Array.isArray(input.deliveryOffers) ? input.deliveryOffers.filter(o => o && typeof o.id === 'string').slice(0,8).map(o => ({ id:o.id, buyer:String(o.buyer||'Покупатель').slice(0,40), items:Array.isArray(o.items)?o.items.filter(i=>['birch','pine','oak','planks'].includes(i.kind)).map(i=>({kind:i.kind,amount:num(i.amount),price:num(i.price)})):[], negotiated:Boolean(o.negotiated), deliveryNegotiated:Boolean(o.deliveryNegotiated), buyerPaysDelivery:Boolean(o.buyerPaysDelivery) })) : [];
+    s.marketContract = input.marketContract && typeof input.marketContract === 'object' ? { ...input.marketContract, id:String(input.marketContract.id||uid()), buyer:String(input.marketContract.buyer||'Покупатель'), items:Array.isArray(input.marketContract.items)?input.marketContract.items:[], stage:['sealed','awaiting-delivery-payment'].includes(input.marketContract.stage)?input.marketContract.stage:'sealed', deliveryFee:num(input.marketContract.deliveryFee), total:num(input.marketContract.total), buyerPaysDelivery:Boolean(input.marketContract.buyerPaysDelivery) } : null;
+    s.marketShipments = Array.isArray(input.marketShipments) ? input.marketShipments.filter(x=>x&&typeof x==='object').slice(0,20).map(x=>({id:String(x.id||uid()),buyer:String(x.buyer||'Покупатель'),total:num(x.total),remaining:num(x.remaining),items:Array.isArray(x.items)?x.items:[]})) : [];
+
     s.stats = {
       ...defaults.stats,
       ...(s.stats || {}),
@@ -630,6 +650,9 @@
 
   let loadedIdentity = getTelegramId();
   let state = loadState();
+  let selectedDeliveryOfferId = null;
+  if (state.hireMarketDay !== state.day) refreshHireMarket();
+  if (state.deliveryOffersDay !== state.day) refreshDeliveryOffers();
   let cloudSaveTimer = null;
   let pendingCloudSnapshot = null;
   let cloudSaveInFlight = Promise.resolve();
@@ -896,6 +919,10 @@
 
   function chop(worker) {
     if (!worker.isWorking) return;
+    const axeConfig = worker.axe && AXES[worker.axe.rarity] ? AXES[worker.axe.rarity] : AXES.common;
+    worker.chopCooldown = num(worker.chopCooldown);
+    if (worker.chopCooldown > 0) { worker.chopCooldown--; return; }
+    worker.chopCooldown = Math.max(0, (axeConfig.chopEvery || 1) - 1);
 
     const license = state.licenses.chopping;
 
@@ -993,6 +1020,7 @@
         }
       }
       if (!machine.isRunning || machine.durability <= 0) return;
+      if (state.sawmill.planks >= getPlankStorageCapacity()) { machine.isRunning = false; notify('Склад досок заполнен. Постройте склад леса или освободите место.', 'error'); return; }
       const config = MACHINE[machine.level];
       machine.remaining -= gameMinutes;
       while (machine.remaining <= 0 && queueTotal() > 0 && machine.durability > 0) {
@@ -1004,7 +1032,7 @@
         const yields = { rotten: 1, normal: 1, good: 2, excellent: 3, perfect: 3 };
         let planks = Math.random() < chances[quality] ? yields[quality] : 0;
         if (planks > 0 && Math.random() < config.bonus) planks++;
-        state.sawmill.planks += planks;
+        state.sawmill.planks = Math.min(getPlankStorageCapacity(), state.sawmill.planks + planks);
         if (machine.processed % 5 === 0) machine.durability = Math.max(0, machine.durability - 3);
         if (queueTotal() > 0) machine.remaining += config.minutes + (operator ? Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2) : 0);
       }
@@ -1020,6 +1048,8 @@
   }
 
   function deliveryTick(gameMinutes = 1) {
+    (state.marketShipments || []).forEach(sh => { sh.remaining -= gameMinutes; if (sh.remaining <= 0) { state.sawmill.safeMoney += sh.total; state.stats.revenue += sh.total; notify(`Заказ от «${sh.buyer}» доставлен: ${sh.total.toLocaleString('ru-RU')} $ поступили в сейф.`); } });
+    state.marketShipments = (state.marketShipments || []).filter(sh => sh.remaining > 0);
     if (state.rawLogDeal?.stage === 'shipping') {
       state.rawLogDeal.remaining -= gameMinutes;
       if (state.rawLogDeal.remaining <= 0) {
@@ -1080,6 +1110,75 @@
     state.sawmill.eventZones = events;
   }
 
+  function refreshHireMarket() {
+    const count = 3 + Math.floor(Math.random()*6);
+    const used = new Set();
+    state.hireCandidates = Array.from({length:count}, () => {
+      let name = NAMES[Math.floor(Math.random()*NAMES.length)];
+      let guard = 0; while (used.has(name) && guard++ < 20) name = NAMES[Math.floor(Math.random()*NAMES.length)]; used.add(name);
+      const stars = 1 + Math.floor(Math.random()*5);
+      const level = 1 + Math.floor(Math.random()*Math.min(8, state.day+1));
+      return { id:uid(), name, skin:1+Math.floor(Math.random()*4), stars, level, xp:xpForLevel(level), price:100 + stars*30 + level*10 };
+    });
+    state.hireMarketDay = state.day;
+  }
+  function refreshDeliveryOffers() {
+    const count = 3 + Math.floor(Math.random()*3);
+    const kinds = ['birch','pine','oak','planks'];
+    const names = ['Северная артель','Мастерская у реки','Строители Старого тракта','Купцы Дубового стана','Городская управа','Каменщики'];
+    state.deliveryOffers = Array.from({length:count}, () => {
+      const n = Math.random() < .45 ? 1 : (Math.random() < .8 ? 2 : 3);
+      const chosen = [...kinds].sort(()=>Math.random()-.5).slice(0,n);
+      const items = chosen.map(kind => ({kind, amount:20+Math.floor(Math.random()*81), price:kind==='planks' ? dailyPrice()+2 : ({birch:4,pine:6,oak:9}[kind]) + Math.floor(state.day/10)}));
+      return {id:uid(),buyer:names[Math.floor(Math.random()*names.length)],items,negotiated:false,deliveryNegotiated:false,buyerPaysDelivery:false};
+    });
+    state.deliveryOffersDay = state.day;
+  }
+  function itemStock(kind) {
+    if (kind === 'planks') return state.sawmill.planks;
+    return sum(QUALITY.map(q => num(state.sawmill.logsByWoodQuality?.[kind]?.[q])));
+  }
+  function hasOfferStock(offer) { return offer.items.every(i => itemStock(i.kind) >= i.amount); }
+  function totalOfferAmount(offer) { return sum(offer.items.map(i=>i.amount)); }
+  function offerTotal(offer) { return sum(offer.items.map(i=>i.amount*i.price)); }
+  function consumeOfferStock(offer) {
+    offer.items.forEach(item => {
+      if (item.kind === 'planks') { state.sawmill.planks -= item.amount; return; }
+      let left = item.amount;
+      for (const q of [...QUALITY].reverse()) { const take=Math.min(left,state.sawmill.logsByWoodQuality[item.kind][q]); state.sawmill.logsByWoodQuality[item.kind][q]-=take; state.sawmill.logs[q]=Math.max(0,state.sawmill.logs[q]-take); left-=take; if(!left)break; }
+    });
+  }
+  function ensureDailyMarkets() {
+    if (!Array.isArray(state.hireCandidates) || state.hireMarketDay !== state.day) refreshHireMarket();
+    if (!Array.isArray(state.deliveryOffers) || state.deliveryOffersDay !== state.day) refreshDeliveryOffers();
+  }
+  function renderHireMarket() {
+    const root=$('hire-market-list'); if(!root)return; root.replaceChildren();
+    state.hireCandidates.forEach(c=>{const li=document.createElement('li');li.className='hire-candidate';const title=document.createElement('strong');title.textContent=c.name;const info=document.createElement('p');info.textContent=`${'★'.repeat(c.stars)}${'☆'.repeat(5-c.stars)} · уровень ${c.level} · цена ${c.price.toLocaleString('ru-RU')} $`;const perk=document.createElement('small');perk.textContent=`Зарплата ${WORKER_DAILY_SALARY} $ за игровые сутки`;const btn=document.createElement('button');btn.type='button';btn.dataset.hireCandidate=c.id;btn.textContent='Нанять';btn.disabled=state.money<c.price||state.sawmill.workers.length>=state.sawmill.zones*10;li.append(title,info,perk,btn);root.append(li);});
+    if(!state.hireCandidates.length){const p=document.createElement('p');p.textContent='Сегодня все кандидаты уже наняты. Новый список появится завтра.';root.append(p);}
+  }
+  function fillDeliveryContract(offer) {
+    const root=$('delivery-contract-content'); if(!root)return; root.replaceChildren();
+    const h=document.createElement('h3');h.textContent=`Договор поставки · ${offer.buyer}`;root.append(h);
+    offer.items.forEach(i=>{const p=document.createElement('p');p.textContent=`${{birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind]} — ${i.amount.toLocaleString('ru-RU')} шт. по ${i.price.toLocaleString('ru-RU')} $ за штуку`;root.append(p);});
+    const total=document.createElement('strong');total.textContent=`Общая выплата: ${offerTotal(offer).toLocaleString('ru-RU')} $`;root.append(total);
+    setText('contract-delivery-option',offer.buyerPaysDelivery?'Доставку оплачивает покупатель.':'Доставку оплачивает поставщик.');
+    const enough=hasOfferStock(offer); const priceBtn=$('negotiate-price'); if(priceBtn)priceBtn.disabled=!enough||offer.negotiated; const shipBtn=$('negotiate-shipping');if(shipBtn)shipBtn.disabled=!enough||offer.deliveryNegotiated;const seal=$('seal-delivery-contract');if(seal)seal.disabled=!enough||!state.licenses.trade.active||state.day>state.licenses.trade.expiresDay;
+  }
+
+  function renderDeliveryMarket() {
+    const root=$('delivery-offers');
+    const locked=Boolean(state.marketContract && state.marketContract.stage==='awaiting-delivery-payment');
+    if (root) {
+      root.replaceChildren();
+      state.deliveryOffers.forEach(o=>{const card=document.createElement('article');card.className='delivery-offer';const h=document.createElement('h3');h.textContent=o.buyer;const lines=document.createElement('ul');o.items.forEach(i=>{const li=document.createElement('li');const label={birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind];li.textContent=`${label}: ${i.amount.toLocaleString('ru-RU')} шт. × ${i.price.toLocaleString('ru-RU')} $ = ${(i.amount*i.price).toLocaleString('ru-RU')} $`;lines.append(li);});const sumEl=document.createElement('strong');sumEl.textContent=`Всего: ${offerTotal(o).toLocaleString('ru-RU')} $`;const stock=document.createElement('p');stock.textContent=hasOfferStock(o)?'Все материалы есть в наличии':'Не хватает материалов для этого заказа';stock.className=hasOfferStock(o)?'stock-ok':'stock-no';const btn=document.createElement('button');btn.type='button';btn.dataset.deliveryOffer=o.id;btn.textContent='Открыть договор';btn.disabled=locked;card.append(h,lines,sumEl,stock,btn);root.append(card);});
+    }
+    const active=$('delivery-active'); if(active){active.hidden=!state.marketContract; if(state.marketContract){const c=state.marketContract;setText('delivery-active-title',`${c.buyer} · ${c.stage==='awaiting-delivery-payment'?'ожидает оплаты доставки':'поставка отправлена'}`);setText('delivery-active-total',`${c.total.toLocaleString('ru-RU')} $`);setText('delivery-fee',`${c.deliveryFee.toLocaleString('ru-RU')} $`);const pay=$('pay-contract-delivery');if(pay)pay.hidden=c.stage!=='awaiting-delivery-payment';}}
+  }
+  function renderShipments() {
+    const root=$('delivery-shipments');if(!root)return;root.replaceChildren();state.marketShipments.forEach(sh=>{const p=document.createElement('p');p.textContent=`${sh.buyer}: доставка в пути, осталось ${sh.remaining} игровых минут.`;root.append(p);});
+  }
+
   function dayTick() {
     if (state.taxDebt + state.taxPenalty > 0) {
       state.overdueDays++;
@@ -1089,6 +1188,8 @@
     }
 
     state.day++;
+    refreshHireMarket();
+    refreshDeliveryOffers();
     Object.entries(state.sawmill.zoneStats || {}).forEach(([id, zone]) => {
       if (Number(id) <= state.sawmill.zones) { zone.stock = 200000; zone.cutToday = 0; }
     });
@@ -1362,7 +1463,7 @@
       if (index < 0) return false;
 
       const worker = state.sawmill.workers[index];
-      const refund = Math.floor(worker.hireCost * 0.35);
+      const refund = worker.hireCost > 0 ? Math.floor(worker.hireCost * 0.5) : 0;
 
       if (worker.axe) {
         addAxeToInventory(worker.axe.rarity, worker.axe.durability);
@@ -1858,6 +1959,7 @@
     setText('daily-wages', `${((state.sawmill.workers.length + state.sawmill.operators.length) * WORKER_DAILY_SALARY).toLocaleString('ru-RU')} $`);
     setText('daily-total', `${(50 + (state.sawmill.workers.length + state.sawmill.operators.length) * WORKER_DAILY_SALARY).toLocaleString('ru-RU')} $`);
     setText('tax-penalty', `${state.taxPenalty.toLocaleString('ru-RU')} $`);
+    const payAll=$('tax-pay-all'); if(payAll) payAll.disabled=(state.taxDebt+state.taxPenalty)<=0 || state.money<(state.taxDebt+state.taxPenalty);
     setText('overdue-days', state.overdueDays);
 
     const ownedStock = Object.entries(state.sawmill.zoneStats || {}).reduce((total, [id, zone]) => Number(id) <= state.sawmill.zones ? total + num(zone.stock) : total, 0);
@@ -1881,6 +1983,7 @@
     if (sellAllButton) sellAllButton.disabled = state.sawmill.planks <= 0 || Boolean(state.report);
     const eventLabel = $('event-zones-summary');
     if (eventLabel) eventLabel.textContent = Object.entries(state.sawmill.eventZones || {}).filter(([,z])=>z).map(([kind,z])=>`Зона ${z}: ${{rotten:'только гнилые брёвна',empty:'пустые брёвна',ideal:'идеальные брёвна'}[kind]}`).join(' · ') || 'Сегодня особых зон нет';
+    renderHireMarket(); renderDeliveryMarket(); renderShipments();
     const rawStatus = $('raw-log-status');
     const rawSoldToday = state.rawLogLastSaleDay === state.day;
     if (rawStatus) {
@@ -1912,13 +2015,15 @@
       storageMeter.setAttribute('aria-valuemax', String(storageCap));
       storageMeter.setAttribute('aria-valuenow', String(storageUsed));
     }
-    setText('log-warehouse-count', state.sawmill.logStorageLevel);
+    setText('log-warehouse-count', state.sawmill.forestWarehouseLevel);
+    setText('plank-storage-capacity', getPlankStorageCapacity().toLocaleString('ru-RU'));
+    setText('forest-warehouse-level', state.sawmill.forestWarehouseLevel);
     setText('log-warehouse-capacity', storageCap.toLocaleString('ru-RU'));
-    setText('log-warehouse-cost', state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES ? 'Лимит достигнут' : `${getLogWarehousePrice().toLocaleString('ru-RU')} $`);
+    setText('log-warehouse-cost', '1 000 $');
     const warehouseButton = $('buy-log-warehouse');
     if (warehouseButton) {
-      warehouseButton.disabled = state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES || state.money < getLogWarehousePrice();
-      warehouseButton.textContent = state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES ? 'Все склады построены' : `Построить склад · ${getLogWarehousePrice().toLocaleString('ru-RU')} $`;
+      warehouseButton.disabled = state.money < 1000;
+      warehouseButton.textContent = 'Построить склад леса · 1 000 $';
     }
     const rawContract = $('raw-log-contract');
     if (rawContract) rawContract.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'contract';
@@ -1996,6 +2101,8 @@
     setText('planks', state.sawmill.planks);
     setText('plank-price', `${dailyPrice()} $`);
     setText('machine-level', state.sawmill.machine.level);
+    setText('machine-level-warehouse', state.sawmill.machine.level);
+    const upgradeBtn=$('upgrade-machine'); if(upgradeBtn){const next=state.sawmill.machine.level+1;upgradeBtn.disabled=next>MAX_MACHINE_LEVEL||state.money<MACHINE[Math.min(next,MAX_MACHINE_LEVEL)].price;upgradeBtn.textContent=next>MAX_MACHINE_LEVEL?'Максимальный уровень':`Улучшить станок · ${MACHINE[next].price.toLocaleString('ru-RU')} $`;}
     setText('machine-durability', state.sawmill.machine.durability);
     setText('machine-capacity', getLogStorageCapacity().toLocaleString('ru-RU'));
     setText('sawmill-log-capacity-warehouse', getLogStorageCapacity().toLocaleString('ru-RU'));
@@ -2027,9 +2134,10 @@
       night: 'map-night'
     };
 
+    const hasSeasonalMaps = Boolean($('map-day') || $('map-dusk') || $('map-night'));
     Object.entries(periodElements).forEach(([period, id]) => {
       const element = $(id);
-      if (element) element.hidden = period !== getPeriod();
+      if (element) element.hidden = hasSeasonalMaps && period !== getPeriod();
     });
 
     const exposure = state.sawmill.safeExposure;
@@ -2376,41 +2484,22 @@
 
   Object.keys(AXES).forEach(rarity => { bind(`buy-${rarity}`, () => buyAxe(rarity)); });
 
-  bind('hire', () => transaction('Найм работника', () => {
-    const workers = state.sawmill.workers;
-    const capacity = state.sawmill.zones * 10;
-
-    if (workers.length >= capacity) {
-      notify('Нет свободных мест.', 'error');
-      return false;
-    }
-
-    const isFreeHire = state.freeHiresUsed < FREE_WORKER_LIMIT;
-    const cost = isFreeHire ? 0 : 200 + state.paidHiresCount * 200;
-    if (cost > 0 && !spend(cost)) return false;
-
-    workers.push({
-      id: uid(),
-      name: NAMES[Math.floor(Math.random() * NAMES.length)],
-      skin: 1 + Math.floor(Math.random() * 4),
-      level: 1,
-      xp: 0,
-      hireCost: cost,
-      stars: isFreeHire ? 2 + Math.floor(Math.random() * 2) : 1 + Math.floor(Math.random() * 5),
-      zoneId: 1,
-      axe: null,
-      isWorking: false
+  bind('hire', () => { $('hire-market-panel')?.scrollIntoView({behavior:'smooth',block:'center'}); });
+  document.addEventListener('click', event => {
+    const candidateButton = event.target.closest('[data-hire-candidate]');
+    if (!candidateButton) return;
+    const candidateId = candidateButton.dataset.hireCandidate;
+    transaction('Найм работника', () => {
+      const idx = state.hireCandidates.findIndex(c => c.id === candidateId);
+      if (idx < 0) return false;
+      const candidate = state.hireCandidates[idx];
+      if (state.sawmill.workers.length >= state.sawmill.zones * 10) { notify('Нет свободных мест для работников.','error'); return false; }
+      if (!spend(candidate.price)) return false;
+      state.sawmill.workers.push({ id:uid(), name:candidate.name, skin:candidate.skin, level:candidate.level, xp:xpForLevel(candidate.level), hireCost:candidate.price, stars:candidate.stars, zoneId:1, axe:null, isWorking:false });
+      state.hireCandidates.splice(idx,1);
+      notify(`${candidate.name} нанят за ${candidate.price.toLocaleString('ru-RU')} $. Его карточка добавлена в список работников.`);
     });
-
-    if (isFreeHire) state.freeHiresUsed++;
-    else state.paidHiresCount++;
-    const hired = workers[workers.length - 1];
-    notify(
-      cost > 0
-        ? `${hired.name} нанят за ${cost}$ · ${'★'.repeat(hired.stars)}${'☆'.repeat(5-hired.stars)}. Выдайте ему топор в профиле.`
-        : `${hired.name} нанят бесплатно · ${'★'.repeat(hired.stars)}${'☆'.repeat(5-hired.stars)}. Выдайте ему топор в профиле.`
-    );
-  }));
+  });
 
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-machine-action]');
@@ -2438,12 +2527,11 @@
     }
   });
 
-  bind('buy-log-warehouse', () => transaction('Покупка дополнительного склада брёвен', () => {
-    if (state.sawmill.logStorageLevel >= MAX_LOG_STORAGE_UPGRADES) { notify('Достигнут максимум дополнительных складов.', 'error'); return false; }
-    const cost = getLogWarehousePrice();
-    if (!spend(cost)) return false;
-    state.sawmill.logStorageLevel++;
-    notify(`Дополнительный склад построен. Вместимость лесопилки увеличена до ${getLogStorageCapacity().toLocaleString('ru-RU')} брёвен.`);
+  bind('buy-log-warehouse', () => transaction('Покупка склада леса', () => {
+    if (!spend(1000)) return false;
+    state.sawmill.forestWarehouseLevel = num(state.sawmill.forestWarehouseLevel) + 1;
+    state.sawmill.logStorageLevel = state.sawmill.forestWarehouseLevel;
+    notify(`Склад леса построен. Вместимость увеличена на 300 брёвен и 100 досок. Теперь: ${getLogStorageCapacity().toLocaleString('ru-RU')} брёвен и ${getPlankStorageCapacity().toLocaleString('ru-RU')} досок.`);
   }));
 
   bind('buy-machine', () => transaction('Покупка станка', () => {
@@ -2544,7 +2632,9 @@
 
   bind('pay-tax', () => transaction('Оплата налога', () => {
     const due = state.taxDebt + state.taxPenalty;
-    const requested = num($('tax-amount')?.value, 0);
+    const allRequested = $('tax-pay-all')?.dataset.active === '1';
+    if (allRequested && state.money < due) { notify('В кошельке недостаточно денег, чтобы полностью закрыть долг.','error'); return false; }
+    const requested = allRequested ? due : num($('tax-amount')?.value, 0);
     const amount = Math.min(due, requested, state.money);
 
     if (amount <= 0) {
@@ -2755,6 +2845,43 @@
     );
   });
 
+  document.addEventListener('click', event => {
+    const open = event.target.closest('[data-delivery-offer]');
+    if (open) {
+      const offer=state.deliveryOffers.find(o=>o.id===open.dataset.deliveryOffer); if(!offer)return;
+      if(state.marketContract && state.marketContract.stage==='awaiting-delivery-payment'){notify('Сначала оплатите доставку предыдущего заказа в управе.','error');return;}
+      if(!hasOfferStock(offer)){notify('Не хватает материалов. Заказ нельзя принять или обсуждать без полного объёма.','error');return;}
+      const dialog=$('delivery-contract-dialog'); if(!dialog)return;
+      selectedDeliveryOfferId=offer.id;
+      fillDeliveryContract(offer);
+      const result=$('contract-negotiation-result');if(result)result.textContent='';
+      dialog.showModal();return;
+    }
+    if(event.target.closest('#negotiate-price')){
+      const offer=state.deliveryOffers.find(o=>o.id===selectedDeliveryOfferId);if(!offer||offer.negotiated)return;if(!hasOfferStock(offer)){notify('Материалов уже недостаточно для переговоров.','error');return;}
+      const volume=Math.min(1,totalOfferAmount(offer)/250);const chance=.12+volume*.22;
+      offer.negotiated=true;if(Math.random()<chance){offer.items.forEach(i=>i.price=Math.ceil(i.price*1.15));notify('Покупатель согласился поднять цену на 15%.');}else notify('Покупатель не согласился менять цену.');
+      renderDeliveryMarket();fillDeliveryContract(offer);const p=$('contract-negotiation-result');if(p)p.textContent='Условия договора обновлены.';return;
+    }
+    if(event.target.closest('#negotiate-shipping')){
+      const offer=state.deliveryOffers.find(o=>o.id===selectedDeliveryOfferId);if(!offer||offer.deliveryNegotiated)return;if(!hasOfferStock(offer)){notify('Материалов недостаточно — переговоры невозможны.','error');return;}
+      offer.deliveryNegotiated=true;const chance=.08+Math.min(.24,totalOfferAmount(offer)/350*.24);offer.buyerPaysDelivery=Math.random()<chance;fillDeliveryContract(offer);setText('contract-delivery-option',offer.buyerPaysDelivery?'Покупатель согласился оплатить доставку':'Покупатель отказался оплачивать доставку');notify(offer.buyerPaysDelivery?'Покупатель оплатит доставку.':'Доставку оплачивает поставщик.');return;
+    }
+    if(event.target.closest('#seal-delivery-contract')){
+      if(!state.licenses.trade.active || state.day>state.licenses.trade.expiresDay){notify('Для заключения договора нужна действующая торговая лицензия. Оформите её в управе.','error');return;}
+      const offer=state.deliveryOffers.find(o=>o.id===selectedDeliveryOfferId);if(!offer||!hasOfferStock(offer)){notify('Нельзя поставить печать: не хватает полного объёма материалов.','error');return;}
+      if(state.marketContract && state.marketContract.stage==='awaiting-delivery-payment'){notify('Сначала оплатите доставку предыдущего заказа.','error');return;}
+      const total=offerTotal(offer), fee=50+totalOfferAmount(offer)*2;consumeOfferStock(offer);
+      const contract={id:offer.id,buyer:offer.buyer,items:offer.items,total,deliveryFee:fee,buyerPaysDelivery:offer.buyerPaysDelivery,stage:offer.buyerPaysDelivery?'sealed':'awaiting-delivery-payment'};
+      state.deliveryOffers=state.deliveryOffers.filter(o=>o.id!==offer.id);
+      if(offer.buyerPaysDelivery){state.marketShipments.push({id:uid(),buyer:offer.buyer,total,remaining:90,items:offer.items});notify('Печать поставлена! Покупатель оплачивает доставку, груз отправлен. Можно взять следующий заказ.');}
+      else {state.marketContract=contract;notify('Договор скреплён печатью. Теперь оплатите доставку в управе, чтобы отправить груз.');}
+      $('delivery-contract-dialog')?.close();saveState();render();return;
+    }
+  });
+  bind('close-delivery-contract',()=> $('delivery-contract-dialog')?.close());
+  bind('pay-contract-delivery',()=>transaction('Оплата доставки по договору',()=>{const c=state.marketContract;if(!c||c.stage!=='awaiting-delivery-payment')return false;if(!spend(c.deliveryFee))return false;state.marketShipments.push({id:c.id,buyer:c.buyer,total:c.total,remaining:90,items:c.items});state.marketContract=null;notify('Доставка оплачена. Заказ отправлен на 90 игровых минут.');}));
+  bind('tax-pay-all',()=>{const input=$('tax-amount');if(input)input.value=String(state.taxDebt+state.taxPenalty);const b=$('tax-pay-all');if(b)b.dataset.active='1';$('pay-tax')?.click();if(b)b.dataset.active='0';});
   bind('renew-chop', () => transaction('Продление лицензии на рубку', () => {
     if (!spend(300)) return false;
 
@@ -2989,11 +3116,11 @@
 
   function renderProfileTab() {
     const hash = window.location.hash;
-    const selected = ['#tab-chances', '#tab-crew'].includes(hash)
+    const selected = ['#tab-crew'].includes(hash)
       ? hash
       : '#tab-stats';
 
-    ['tab-stats', 'tab-chances', 'tab-crew'].forEach(id => {
+    ['tab-stats', 'tab-crew'].forEach(id => {
       const section = $(id);
       if (section) section.hidden = `#${id}` !== selected;
     });
@@ -3120,6 +3247,7 @@
         }
         const cloudElapsed = Math.max(0, Date.now() - Math.max(0, Number(cloudState.lastLogin) || Date.now()));
         state = cloudState;
+        ensureDailyMarkets();
         lastCloudSerialized = JSON.stringify(cloudState);
         lastTick = Date.now();
         if (cloudElapsed > 0) advanceTime(cloudElapsed * OFFLINE_TIME_RATE);
@@ -3139,6 +3267,7 @@
     const cloudState = await cloudLoadState();
     cloudBootstrapPending = false;
     if (cloudState) state = cloudState;
+    ensureDailyMarkets();
     const elapsed = Math.max(0, Date.now() - Math.max(0, Number(state.lastLogin) || Date.now()));
     lastTick = Date.now();
     if (elapsed > 0) advanceTime(elapsed * OFFLINE_TIME_RATE);
