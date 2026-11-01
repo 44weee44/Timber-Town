@@ -8,10 +8,10 @@
 </head>
 <body data-screen="foundry">
   <header id="hud">
-    <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
+    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
     <button type="button" id="open-inventory" aria-haspopup="dialog" aria-controls="inventory"><span>Рюкзак</span></button>
     <a href="profile.html" id="open-profile">Профиль</a>
-    <p id="clock"><time id="game-time" datetime="07:00">07:00</time></p>
+    <p id="wallet"><span>Кошелёк</span> <data id="money" value="1000">1 000$</data></p>
   </header>
   <div id="toasts" aria-live="polite"></div>
   <template id="toast-template">
@@ -45,7 +45,7 @@
     <p class="eyebrow">ЕЖЕДНЕВНЫЕ ЗАКАЗЫ</p>
     <h2>Поставки древесины</h2>
     <p>Выберите заказ, проверьте наличие материалов и откройте договор. Заказы обновляются каждый игровой день.</p>
-    <div id="delivery-active" hidden class="tax-paper"><h3 id="delivery-active-title">Активный договор</h3><p>Сумма: <strong id="delivery-active-total">0 $</strong></p><p>Доставка: <strong id="delivery-fee">0 $</strong></p><p>Оплатите доставку в управе, чтобы отправить груз. Если передумали, договор можно отменить со штрафом 10% от суммы заказа.</p><button type="button" id="cancel-market-contract" class="danger-action" hidden>Отменить договор · штраф 10%</button></div>
+    <div id="delivery-active" hidden class="tax-paper"><h3 id="delivery-active-title">Активный договор</h3><p>Сумма: <strong id="delivery-active-total">0 $</strong></p><p>Доставка: <strong id="delivery-fee">0 $</strong></p><p>Оплатите доставку в управе, чтобы отправить груз.</p><button type="button" id="cancel-market-contract" class="danger">Отменить договор · штраф 10%</button></div>
     <div id="delivery-offers" class="delivery-offers"></div>
     <div id="delivery-shipments" class="delivery-shipments"></div>
     <dialog id="delivery-contract-dialog" class="contract-dialog">

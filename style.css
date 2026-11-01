@@ -1332,7 +1332,7 @@ body[data-screen="boot"] #boot-art {
   height: 100dvh;
   min-width: 100vw;
   min-height: 100dvh;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center center;
 }
 
@@ -1809,32 +1809,15 @@ body[data-screen="sawmill"] #zone-grid {
 }
 
 
-/* Финальная коррекция загрузочного экрана, кнопки карты и плавных раскрывающихся секций. */
-.map-return-link,
-.map-return-link:hover,
-.map-return-link:focus-visible,
-.map-return-link:active {
-  background: transparent !important;
-  color: var(--gold-light) !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  text-decoration: none;
-  padding-inline: 2px;
-}
-.map-return-link:active { transform: translateY(1px); }
-
-/* Плавное раскрытие и закрытие вкладок в браузерах с поддержкой details-content. */
-@supports selector(details::details-content) {
-  details::details-content {
-    block-size: 0;
-    opacity: 0;
-    overflow: clip;
-    transition: block-size .28s ease, content-visibility .28s allow-discrete, opacity .22s ease;
-  }
-  details[open]::details-content { block-size: auto; opacity: 1; }
-}
-details > summary { cursor: pointer; }
-details[open] > summary { color: var(--gold-light); }
-@media (prefers-reduced-motion: reduce) {
-  details::details-content { transition: none !important; }
-}
+/* Requested polish: transparent map shortcut, smooth folds and readable controls. */
+.map-return-link { background:transparent !important; color:#fff1d2 !important; border:1px solid rgba(255,239,205,.55) !important; box-shadow:0 2px 8px rgba(0,0,0,.55) !important; text-shadow:0 1px 3px #17110b; }
+button, .button, a[role="button"] { color:#fff0d0; }
+button:disabled, button[disabled] { color:#b7aa91; }
+details.fold-plaque > :not(summary) { overflow:hidden; animation:tt-fold-in .24s ease both; transform-origin:top; }
+@keyframes tt-fold-in { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+@media (prefers-reduced-motion:reduce) { details.fold-plaque > :not(summary) { animation:none; } }
+#hud { grid-template-columns:auto auto auto minmax(0,1fr); }
+#clock { grid-column:1; grid-row:1; }
+#open-inventory { grid-column:2; grid-row:1; }
+#open-profile { grid-column:3; grid-row:1; }
+#wallet { grid-column:4; grid-row:1; justify-self:stretch; }
