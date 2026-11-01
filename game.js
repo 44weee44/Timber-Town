@@ -2300,11 +2300,11 @@
       button.dataset.wood = wood;
       const woodLabel = ({birch:'Берёза',pine:'Сосна',oak:'Дуб'})[wood] || 'Берёза';
       const eventLabel = ({rotten:'гнилые',empty:'пустые',ideal:'идеальные'})[eventType] || '';
-      button.title = `Зона ${zone} · ${woodLabel}${eventLabel ? ` · событие: ${eventLabel}` : ''}${owned ? ' · ваша' : ' · не куплена'}`;
-      button.textContent = `${zone} · ${{birch:'Б',pine:'С',oak:'Д'}[wood]}${eventType ? ({rotten:' Г',empty:' Ø',ideal:' ★'})[eventType] : ''}`;
+      button.title = `Зона ${zone} · ${woodLabel}${eventLabel ? ` · событие: ${eventLabel}` : ''}${owned ? ' · ваша' : zone === state.sawmill.zones + 1 ? ' · можно купить' : ' · закрыта'}`;
+      button.textContent = String(zone);
       button.setAttribute(
         'aria-label',
-        owned ? `Зона ${zone}, куплена` : `Зона ${zone}`
+        `Зона ${zone}, ${woodLabel}${eventLabel ? `, ${eventLabel}` : ''}, ${owned ? 'ваша' : zone === state.sawmill.zones + 1 ? 'можно купить' : 'закрыта'}`
       );
     });
 

@@ -1920,3 +1920,159 @@ body[data-screen="boot"] #play { background:rgba(54,78,48,.94) !important; color
 #delivery-contract-dialog .contract-paper h3,
 #delivery-contract-dialog .contract-paper strong,
 #delivery-contract-dialog .contract-paper span { color:#493725 !important; }
+
+/* Forest plot sheet: karta.jpeg is a 7×4 tile map, one cell per cutting zone. */
+body[data-screen="sawmill"] main#sawmill #zones {
+  background: linear-gradient(180deg, rgba(22, 32, 22, .96), rgba(14, 20, 16, .98)) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid {
+  position: relative;
+  display: block;
+  width: min(100%, 560px);
+  margin: 10px auto 4px;
+  aspect-ratio: 698 / 833;
+  padding: 0 !important;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: #1a2418 !important;
+  background-image: url("karta.jpeg") !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .38), inset 0 0 0 1px rgba(232, 206, 150, .28);
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button {
+  position: absolute;
+  width: calc(100% / 7);
+  height: 25%;
+  margin: 0;
+  min-height: 0 !important;
+  padding: 0 0 7% !important;
+  display: flex !important;
+  align-items: flex-end;
+  justify-content: center;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: inset 0 0 0 1px rgba(20, 14, 8, .28) !important;
+  color: #fff8ea !important;
+  font: 700 clamp(11px, 2.6vw, 15px)/1 "Russo One", system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-shadow: 0 1px 2px #000, 0 0 6px #000 !important;
+  opacity: 1 !important;
+  filter: none !important;
+  cursor: pointer;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 1) { left: 0; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 2) { left: calc(100% / 7); }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 3) { left: calc(200% / 7); }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 4) { left: calc(300% / 7); }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 5) { left: calc(400% / 7); }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 6) { left: calc(500% / 7); }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(7n + 7) { left: calc(600% / 7); }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(-n + 7) { top: 0; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(n + 8):nth-of-type(-n + 14) { top: 25%; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(n + 15):nth-of-type(-n + 21) { top: 50%; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button:nth-of-type(n + 22) { top: 75%; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button::before {
+  content: "";
+  position: absolute;
+  top: 8%;
+  left: 10%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e6d7a8;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55);
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-wood="pine"]::before { background: #7dbe72; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-wood="oak"]::before { background: #d49245; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-wood="birch"]::before { background: #efe3bc; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button::after {
+  content: none;
+  position: absolute;
+  top: 6%;
+  right: 8%;
+  color: #fff6df;
+  font: 700 11px/1 "Russo One", system-ui, sans-serif;
+  text-shadow: 0 1px 2px #000;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-event="rotten"]::after { content: "Г"; color: #d7d2b4; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-event="empty"]::after { content: "∅"; color: #c8c2b2; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-event="ideal"]::after { content: "★"; color: #ffe08a; }
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="true"] {
+  background: linear-gradient(180deg, rgba(232, 196, 106, .05), rgba(110, 150, 72, .22)) !important;
+  box-shadow: inset 0 0 0 2px rgba(240, 208, 120, .92) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="false"]:disabled {
+  background: rgba(7, 12, 8, .58) !important;
+  color: rgba(255, 244, 220, .72) !important;
+  cursor: default;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="false"]:not(:disabled) {
+  background: rgba(226, 182, 87, .2) !important;
+  box-shadow: inset 0 0 0 2px #f0d078, 0 0 12px rgba(226, 182, 87, .35) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-event="ideal"][data-owned="true"] {
+  box-shadow: inset 0 0 0 2px #ffe08a, 0 0 10px rgba(226, 182, 87, .45) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button:hover:not(:disabled) {
+  filter: brightness(1.12) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button:focus-visible {
+  outline: 2px solid #ffe7a8;
+  outline-offset: -4px;
+  z-index: 1;
+}
+body[data-screen="sawmill"] .zones-plaque {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body[data-screen="sawmill"] .zones-plaque > summary {
+  display: flex;
+  width: 100%;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 0 8px !important;
+  color: #f4d78f !important;
+  font: 600 18px/1.2 Georgia, "Times New Roman", serif !important;
+}
+
+/* «На карту»: только текст, без плашки и без заливки. */
+p.map-return,
+main:not(#boot):not(#map) > p.map-return,
+body[data-screen="sawmill"] main#sawmill > p.map-return {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+a.map-return-link,
+a.map-return-link:hover,
+a.map-return-link:focus,
+a.map-return-link:active {
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: none;
+  min-height: 40px;
+  padding: 8px 2px !important;
+  color: #fff6e4 !important;
+  font: 600 16px/1.2 Georgia, "Times New Roman", serif !important;
+  letter-spacing: .01em;
+  text-decoration: none !important;
+  text-shadow: 0 1px 2px #0c120e, 0 2px 8px rgba(0, 0, 0, .85) !important;
+}
+a.map-return-link:hover,
+a.map-return-link:focus-visible {
+  color: #ffe7a8 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 3px;
+}
+
