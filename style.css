@@ -1821,3 +1821,102 @@ details.fold-plaque > :not(summary) { overflow:hidden; animation:tt-fold-in .24s
 #open-inventory { grid-column:2; grid-row:1; }
 #open-profile { grid-column:3; grid-row:1; }
 #wallet { grid-column:4; grid-row:1; justify-self:stretch; }
+
+
+/* === Единая тёмная лесная тема: без светлых карточек на тёмном фоне === */
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > form,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > ul,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > table,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section > div:not(.building-guide),
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .stat,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .safe-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .machine-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .operator-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .wood-stock-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .zone-detail-grid > div {
+  background:linear-gradient(145deg,rgba(35,48,34,.96),rgba(20,29,22,.97)) !important;
+  color:#f0e4c8 !important;
+  border:1px solid rgba(213,184,119,.22) !important;
+  box-shadow:0 5px 16px rgba(0,0,0,.22) !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) p,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) li,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) label,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) small,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .form-hint,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .muted { color:#e4d7b9 !important; }
+body[data-screen]:not([data-screen="boot"]) main:not(#map) h1,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) h2,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) h3,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) strong,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) data,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) time { color:#f4d78f !important; }
+body[data-screen]:not([data-screen="boot"]) main:not(#map) a { color:#f0d89e !important; }
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .btn,
+body[data-screen]:not([data-screen="boot"]) #inventory button {
+  color:#fff0d0 !important;
+  background:linear-gradient(180deg,#526b45,#344a35) !important;
+  border:1px solid rgba(230,202,143,.42) !important;
+  border-radius:6px !important;
+  box-shadow:0 3px 0 rgba(8,14,9,.75), inset 0 1px rgba(255,255,255,.08) !important;
+  font:600 13px/1.25 var(--tt-serif) !important;
+  text-shadow:0 1px 1px rgba(0,0,0,.35);
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button:hover:not(:disabled),
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .btn:hover { filter:brightness(1.12); }
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button:disabled { opacity:.45; filter:saturate(.55); }
+body[data-screen]:not([data-screen="boot"]) main:not(#map) input,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) select {
+  color:#f5e8c9 !important; background:#172219 !important;
+  border:1px solid rgba(213,184,119,.42) !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) input::placeholder { color:#a99b7d !important; }
+#hud {
+  background:linear-gradient(180deg,rgba(24,35,25,.97),rgba(17,26,19,.97)) !important;
+  border-bottom:1px solid rgba(220,188,120,.32) !important;
+  box-shadow:0 4px 14px rgba(0,0,0,.3) !important;
+  gap:clamp(5px,1.4vw,12px) !important;
+  padding:7px clamp(8px,2vw,18px) !important;
+}
+#clock,#wallet { background:rgba(8,15,10,.38) !important; border:1px solid rgba(224,192,126,.25) !important; border-radius:7px !important; color:#f5e8c9 !important; }
+#open-inventory,#open-profile {
+  min-height:42px !important; height:42px !important; padding:7px 12px !important;
+  border:1px solid rgba(236,207,150,.38) !important; border-radius:7px !important;
+  background:linear-gradient(180deg,#5c7048,#3c543b) !important;
+  color:#fff0d0 !important; box-shadow:0 3px 0 rgba(0,0,0,.42) !important;
+  font:600 12px/1.15 var(--tt-serif) !important; letter-spacing:.02em;
+}
+#open-inventory:active,#open-profile:active { transform:translateY(2px) !important; box-shadow:0 1px 0 rgba(0,0,0,.42) !important; }
+.map-return-link { background:transparent !important; border:0 !important; box-shadow:none !important; color:#fff0d0 !important; text-shadow:0 2px 5px #101810,0 0 8px #101810 !important; padding:8px 10px !important; }
+.map-return-link:hover { background:rgba(12,20,14,.24) !important; }
+/* Договор остаётся отдельной бумажной поверхностью; это единственный намеренно светлый документ. */
+.contract-paper,.contract-paper p,.contract-paper h3,.contract-paper strong { color:#493725 !important; }
+.contract-paper { background:linear-gradient(135deg,#e2d3ad,#cdb98d) !important; }
+.contract-paper button { color:#fff0d0 !important; }
+.seal-button { background:#a83e32 !important; border:3px double #8e352d !important; }
+
+/* Экран загрузки: фотография заполняет экран, панель ложится на нижнюю информационную полосу изображения. */
+body[data-screen="boot"] #boot-art { object-fit:cover !important; object-position:center center !important; }
+body[data-screen="boot"] #boot-hud {
+  width:min(540px,calc(100% - 24px));
+  background:linear-gradient(180deg,rgba(10,17,11,.08),rgba(10,17,11,.66)) !important;
+  border:0 !important; box-shadow:none !important; border-radius:0 !important;
+  color:#fff0d0 !important; padding:12px 16px max(14px,env(safe-area-inset-bottom)) !important;
+}
+body[data-screen="boot"] #loading-status,
+body[data-screen="boot"] #tip { color:#fff0d0 !important; text-shadow:0 2px 5px rgba(0,0,0,.9) !important; }
+body[data-screen="boot"] #boot-hud::before { display:none !important; content:none !important; }
+body[data-screen="boot"] #load-slot { background:rgba(5,10,6,.62) !important; border:1px solid rgba(255,239,205,.58) !important; }
+body[data-screen="boot"] #play { background:rgba(54,78,48,.94) !important; color:#fff0d0 !important; border:1px solid rgba(255,239,205,.65) !important; box-shadow:0 3px 0 rgba(0,0,0,.6) !important; }
+/* Building permits and tax panels follow the same dark forest palette. */
+.license-paper,.tax-paper { background:linear-gradient(145deg,rgba(35,48,34,.98),rgba(20,29,22,.99)) !important; color:#e9ddc2 !important; border:1px solid rgba(213,184,119,.25) !important; }
+.license-paper h3,.tax-paper h3,.license-paper strong,.tax-paper strong { color:#f4d78f !important; }
+.license-paper p,.tax-paper p,.license-paper label,.tax-paper label { color:#e4d7b9 !important; }
+#delivery-contract-dialog .contract-paper,
+#delivery-contract-dialog .contract-paper p,
+#delivery-contract-dialog .contract-paper h3,
+#delivery-contract-dialog .contract-paper strong,
+#delivery-contract-dialog .contract-paper span { color:#493725 !important; }

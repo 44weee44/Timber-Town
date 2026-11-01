@@ -13,18 +13,18 @@
   <style>
     body[data-screen="boot"] { min-height:100dvh; height:100dvh; overflow:hidden; background:#24201a; }
     body[data-screen="boot"]::before, body[data-screen="boot"]::after { content:none; }
-    #boot-art { position:fixed; inset:0; z-index:0; width:100vw; height:100dvh; min-height:100dvh; object-fit:contain; object-position:center center; background:#24201a; image-rendering:auto; pointer-events:none; }
+    #boot-art { position:fixed; inset:0; z-index:0; width:100vw; height:100dvh; min-height:100dvh; object-fit:cover; object-position:center center; background:#24201a; image-rendering:auto; pointer-events:none; }
     #boot { position:relative; z-index:1; min-height:100dvh; height:100dvh; }
     body[data-screen="boot"] #boot h1 { position:fixed; z-index:2; top:calc(env(safe-area-inset-top) + clamp(22px,6vh,56px)); left:16px; right:16px; width:auto; height:auto; margin:0; overflow:visible; clip:auto; color:#f0e3ca; font:clamp(25px,7vw,42px)/1.15 Georgia,serif; letter-spacing:.1em; text-align:center; text-shadow:0 2px 4px #18130f, 0 0 20px rgba(0,0,0,.5); }
-    #boot-hud { position:fixed; z-index:3; left:50%; bottom:0; translate:-50% 0; width:min(540px, calc(100% - 28px)); display:grid; gap:9px; padding:18px 20px calc(17px + env(safe-area-inset-bottom)); color:#372c21; background:linear-gradient(145deg,rgba(239,228,205,.96),rgba(213,198,169,.96)); border:1px solid rgba(91,68,44,.72); box-shadow:0 12px 36px rgba(0,0,0,.34), inset 0 0 0 4px rgba(255,250,236,.28); }
-    #boot-hud::before { content:"TIMBER TOWN  ·  ЛЕСНОЕ ХОЗЯЙСТВО"; display:block; padding-bottom:8px; border-bottom:1px solid rgba(91,68,44,.25); color:#78634a; font:10px/1.2 Georgia,serif; letter-spacing:.16em; text-align:center; }
-    #loading-status { margin:0; color:#4c3b2b; font:16px/1.35 Georgia,serif; text-align:center; }
-    #tip { margin:0; color:#78664f; font:13px/1.45 Georgia,serif; text-align:center; }
-    #load-slot { height:7px; width:100%; overflow:hidden; background:rgba(75,57,39,.17); border:1px solid rgba(91,68,44,.26); box-shadow:inset 0 1px 2px rgba(42,30,19,.14); }
-    #load-fill { display:block; width:0%; height:100%; background:linear-gradient(90deg,#9d7948,#c8a66b); transition:width .2s ease; }
+    #boot-hud { position:fixed; z-index:3; left:50%; bottom:0; translate:-50% 0; width:min(540px, calc(100% - 28px)); display:grid; gap:9px; padding:18px 20px calc(17px + env(safe-area-inset-bottom)); color:#fff0d0; background:linear-gradient(180deg,rgba(12,20,14,.10),rgba(12,20,14,.72)); border:0; box-shadow:none; backdrop-filter:none; }
+    #boot-hud::before { content:""; display:none; padding-bottom:8px; border-bottom:1px solid rgba(255,239,205,.35); color:#f0d99e; font:10px/1.2 Georgia,serif; letter-spacing:.16em; text-align:center; }
+    #loading-status { margin:0; color:#fff0d0; text-shadow:0 2px 5px rgba(0,0,0,.85); font:16px/1.35 Georgia,serif; text-align:center; }
+    #tip { margin:0; color:#eadbbd; text-shadow:0 2px 5px rgba(0,0,0,.85); font:13px/1.45 Georgia,serif; text-align:center; }
+    #load-slot { height:7px; width:100%; overflow:hidden; background:rgba(8,12,8,.55); border:1px solid rgba(255,239,205,.5); box-shadow:inset 0 1px 2px rgba(42,30,19,.14); }
+    #load-fill { display:block; width:0%; height:100%; background:linear-gradient(90deg,#b88b43,#f1d28a); transition:width .2s ease; }
     #load-bar, #load-pct, #load-readout, #boot-credit, #boot-divider, #tip-list { display:none !important; }
-    body[data-screen="boot"] #play { position:relative; left:auto; bottom:auto; translate:none; width:100%; min-height:44px; margin:2px 0 0; border:1px solid #695036; border-radius:2px; background:#5b4935; color:#f5ead4; box-shadow:0 3px 0 #382b20; font:16px Georgia,serif; letter-spacing:.04em; text-transform:none; text-decoration:none; }
-    body[data-screen="boot"] #play:active { transform:translateY(2px); box-shadow:0 1px 0 #382b20; }
+    body[data-screen="boot"] #play { position:relative; left:auto; bottom:auto; translate:none; width:100%; min-height:44px; margin:2px 0 0; border:1px solid rgba(255,239,205,.65); border-radius:2px; background:rgba(36,55,37,.92); color:#fff0d0; box-shadow:0 3px 0 rgba(0,0,0,.55); font:16px Georgia,serif; letter-spacing:.04em; text-transform:none; text-decoration:none; }
+    body[data-screen="boot"] #play:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.55); }
     body[data-screen="boot"] #play[aria-disabled="true"] { opacity:.45; pointer-events:none; }
     #boot-storage-warning { margin:0; padding:8px 10px; border:1px solid #97645a; background:#f1ddd3; color:#713d32; font:12px/1.4 Georgia,serif; text-align:center; }
     @media (max-width:420px) {

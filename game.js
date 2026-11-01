@@ -1174,7 +1174,7 @@
     offer.items.forEach(i=>{const p=document.createElement('p');p.textContent=`${{birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind]} — ${i.amount.toLocaleString('ru-RU')} шт. по ${i.price.toLocaleString('ru-RU')} $ за штуку`;root.append(p);});
     const total=document.createElement('strong');total.textContent=`Общая выплата: ${offerTotal(offer).toLocaleString('ru-RU')} $`;root.append(total);
     setText('contract-delivery-option',offer.buyerPaysDelivery?'Доставку оплачивает покупатель.':'Доставку оплачивает поставщик.');
-    const enough=hasOfferStock(offer); const priceBtn=$('negotiate-price'); if(priceBtn)priceBtn.disabled=!enough||offer.negotiated; const shipBtn=$('negotiate-shipping');if(shipBtn)shipBtn.disabled=!enough||offer.deliveryNegotiated;const seal=$('seal-delivery-contract');if(seal)seal.disabled=!enough||!state.licenses.trade.active||state.day>state.licenses.trade.expiresDay;
+    const enough=hasOfferStock(offer); const priceBtn=$('negotiate-price'); if(priceBtn)priceBtn.disabled=!enough||offer.negotiated; const shipBtn=$('negotiate-shipping');if(shipBtn)shipBtn.disabled=!enough||offer.deliveryNegotiated;const seal=$('seal-delivery-contract');if(seal)seal.disabled=!enough;
   }
 
   function renderDeliveryMarket() {
@@ -2878,17 +2878,32 @@
       const offer=state.deliveryOffers.find(o=>o.id===selectedDeliveryOfferId);if(!offer||offer.deliveryNegotiated)return;if(!hasOfferStock(offer)){notify('Материалов недостаточно — переговоры невозможны.','error');return;}
       offer.deliveryNegotiated=true;const chance=.08+Math.min(.24,totalOfferAmount(offer)/350*.24);offer.buyerPaysDelivery=Math.random()<chance;fillDeliveryContract(offer);setText('contract-delivery-option',offer.buyerPaysDelivery?'Покупатель согласился оплатить доставку':'Покупатель отказался оплачивать доставку');notify(offer.buyerPaysDelivery?'Покупатель оплатит доставку.':'Доставку оплачивает поставщик.');return;
     }
-    if(event.target.closest('#seal-delivery-contract')){
-      if(!state.licenses.trade.active || state.day>state.licenses.trade.expiresDay){notify('Для заключения договора нужна действующая торговая лицензия. Оформите её в управе.','error');return;}
-      const offer=state.deliveryOffers.find(o=>o.id===selectedDeliveryOfferId);if(!offer||!hasOfferStock(offer)){notify('Нельзя поставить печать: не хватает полного объёма материалов.','error');return;}
-      if(state.marketContract && state.marketContract.stage==='awaiting-delivery-payment'){notify('Сначала оплатите доставку предыдущего заказа.','error');return;}
-      const total=offerTotal(offer), fee=50+totalOfferAmount(offer)*2;const stockRefund=consumeOfferStock(offer);
-      const contract={id:offer.id,buyer:offer.buyer,items:offer.items,total,deliveryFee:fee,buyerPaysDelivery:offer.buyerPaysDelivery,stockRefund,stage:offer.buyerPaysDelivery?'sealed':'awaiting-delivery-payment'};
-      state.deliveryOffers=state.deliveryOffers.filter(o=>o.id!==offer.id);
-      if(offer.buyerPaysDelivery){state.marketShipments.push({id:uid(),buyer:offer.buyer,total,remaining:90,items:offer.items});notify('Печать поставлена! Покупатель оплачивает доставку, груз отправлен. Можно взять следующий заказ.');}
-      else {state.marketContract=contract;notify('Договор скреплён печатью. Теперь оплатите доставку в управе, чтобы отправить груз.');}
-      $('delivery-contract-dialog')?.close();saveState();render();return;
+  });
+  bind('seal-delivery-contract', () => {
+    const offer = state.deliveryOffers.find(item => item.id === selectedDeliveryOfferId);
+    if (!offer) { notify('Не удалось найти выбранный заказ. Закройте договор и откройте его заново.', 'error'); return; }
+    if (!state.licenses.trade.active || state.day > state.licenses.trade.expiresDay) {
+      notify('Для заключения договора нужна действующая торговая лицензия. Оформите её в управе.', 'error'); return;
     }
+    if (!hasOfferStock(offer)) { notify('Нельзя поставить печать: не хватает полного объёма материалов.', 'error'); fillDeliveryContract(offer); return; }
+    if (state.marketContract && state.marketContract.stage === 'awaiting-delivery-payment') {
+      notify('Сначала оплатите доставку предыдущего заказа в управе.', 'error'); return;
+    }
+    const total = offerTotal(offer);
+    const fee = 50 + totalOfferAmount(offer) * 2;
+    const stockRefund = consumeOfferStock(offer);
+    const contract = { id:offer.id, buyer:offer.buyer, items:offer.items, total, deliveryFee:fee, buyerPaysDelivery:offer.buyerPaysDelivery, stockRefund, stage:offer.buyerPaysDelivery?'sealed':'awaiting-delivery-payment' };
+    state.deliveryOffers = state.deliveryOffers.filter(item => item.id !== offer.id);
+    if (offer.buyerPaysDelivery) {
+      state.marketShipments.push({ id:uid(), buyer:offer.buyer, total, remaining:90, items:offer.items });
+      notify('Печать поставлена! Покупатель оплачивает доставку, груз отправлен. Можно взять следующий заказ.');
+    } else {
+      state.marketContract = contract;
+      notify('Договор скреплён печатью. Теперь оплатите доставку в управе, чтобы отправить груз.');
+    }
+    $('delivery-contract-dialog')?.close();
+    saveState();
+    render();
   });
   bind('close-delivery-contract',()=> $('delivery-contract-dialog')?.close());
   bind('pay-contract-delivery',()=>transaction('Оплата доставки по договору',()=>{const c=state.marketContract;if(!c||c.stage!=='awaiting-delivery-payment')return false;if(!spend(c.deliveryFee))return false;state.marketShipments.push({id:c.id,buyer:c.buyer,total:c.total,remaining:90,items:c.items});state.marketContract=null;notify('Доставка оплачена. Заказ отправлен на 90 игровых минут.');}));
