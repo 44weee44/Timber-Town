@@ -31,7 +31,7 @@
     common: '1axeskin.jpeg',
     rare: '2axeskin.jpeg',
     legendary: '3axeskin.jpeg',
-    mythic: '4aceskin.jpeg',
+    mythic: '4axeskin.jpeg',
     reinforced: '5axeskin.jpeg'
   };
 
@@ -923,6 +923,8 @@
     worker.chopCooldown = num(worker.chopCooldown);
     if (worker.chopCooldown > 0) { worker.chopCooldown--; return; }
     worker.chopCooldown = Math.max(0, (axeConfig.chopEvery || 1) - 1);
+    // A small shared pause makes the whole crew gather wood a little more slowly.
+    if (Math.random() < 0.18) return;
 
     const license = state.licenses.chopping;
 
@@ -1173,7 +1175,7 @@
       root.replaceChildren();
       state.deliveryOffers.forEach(o=>{const card=document.createElement('article');card.className='delivery-offer';const h=document.createElement('h3');h.textContent=o.buyer;const lines=document.createElement('ul');o.items.forEach(i=>{const li=document.createElement('li');const label={birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind];li.textContent=`${label}: ${i.amount.toLocaleString('ru-RU')} шт. × ${i.price.toLocaleString('ru-RU')} $ = ${(i.amount*i.price).toLocaleString('ru-RU')} $`;lines.append(li);});const sumEl=document.createElement('strong');sumEl.textContent=`Всего: ${offerTotal(o).toLocaleString('ru-RU')} $`;const stock=document.createElement('p');stock.textContent=hasOfferStock(o)?'Все материалы есть в наличии':'Не хватает материалов для этого заказа';stock.className=hasOfferStock(o)?'stock-ok':'stock-no';const btn=document.createElement('button');btn.type='button';btn.dataset.deliveryOffer=o.id;btn.textContent='Открыть договор';btn.disabled=locked;card.append(h,lines,sumEl,stock,btn);root.append(card);});
     }
-    const active=$('delivery-active'); if(active){active.hidden=!state.marketContract; if(state.marketContract){const c=state.marketContract;setText('delivery-active-title',`${c.buyer} · ${c.stage==='awaiting-delivery-payment'?'ожидает оплаты доставки':'поставка отправлена'}`);setText('delivery-active-total',`${c.total.toLocaleString('ru-RU')} $`);setText('delivery-fee',`${c.deliveryFee.toLocaleString('ru-RU')} $`);const pay=$('pay-contract-delivery');if(pay)pay.hidden=c.stage!=='awaiting-delivery-payment';}}
+    const active=$('delivery-active'); if(active){active.hidden=!state.marketContract; if(state.marketContract){const c=state.marketContract;setText('delivery-active-title',`${c.buyer} · ${c.stage==='awaiting-delivery-payment'?'ожидает оплаты доставки':'поставка отправлена'}`);setText('delivery-active-total',`${c.total.toLocaleString('ru-RU')} $`);setText('delivery-fee',`${c.deliveryFee.toLocaleString('ru-RU')} $`);const pay=$('pay-contract-delivery');if(pay)pay.hidden=c.stage!=='awaiting-delivery-payment';const cancel=$('cancel-market-contract');if(cancel)cancel.hidden=c.stage!=='awaiting-delivery-payment';}}
   }
   function renderShipments() {
     const root=$('delivery-shipments');if(!root)return;root.replaceChildren();state.marketShipments.forEach(sh=>{const p=document.createElement('p');p.textContent=`${sh.buyer}: доставка в пути, осталось ${sh.remaining} игровых минут.`;root.append(p);});
@@ -2880,6 +2882,22 @@
     }
   });
   bind('close-delivery-contract',()=> $('delivery-contract-dialog')?.close());
+  bind('cancel-market-contract',()=>transaction('Отмена договора поставки',()=>{
+    const c=state.marketContract;
+    if(!c || c.stage!=='awaiting-delivery-payment') return false;
+    // Return the reserved materials to the warehouse before closing the contract.
+    c.items.forEach(item=>{
+      if(item.kind==='planks') { state.sawmill.planks += num(item.amount); return; }
+      const kind=['birch','pine','oak'].includes(item.kind)?item.kind:'birch';
+      const amount=Math.max(0,num(item.amount));
+      state.sawmill.logsByWoodQuality[kind].normal += amount;
+      state.sawmill.logs.normal += amount;
+    });
+    const penalty=Math.max(1,Math.ceil(num(c.total)*0.10));
+    state.taxPenalty += penalty;
+    state.marketContract=null;
+    notify(`Договор отменён. Материалы возвращены на склад. Штраф ${penalty.toLocaleString('ru-RU')} $ добавлен к налогу один раз.`,'error');
+  }));
   bind('pay-contract-delivery',()=>transaction('Оплата доставки по договору',()=>{const c=state.marketContract;if(!c||c.stage!=='awaiting-delivery-payment')return false;if(!spend(c.deliveryFee))return false;state.marketShipments.push({id:c.id,buyer:c.buyer,total:c.total,remaining:90,items:c.items});state.marketContract=null;notify('Доставка оплачена. Заказ отправлен на 90 игровых минут.');}));
   bind('tax-pay-all',()=>{const input=$('tax-amount');if(input)input.value=String(state.taxDebt+state.taxPenalty);const b=$('tax-pay-all');if(b)b.dataset.active='1';$('pay-tax')?.click();if(b)b.dataset.active='0';});
   bind('renew-chop', () => transaction('Продление лицензии на рубку', () => {
