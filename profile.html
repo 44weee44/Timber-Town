@@ -85,16 +85,22 @@
     <nav aria-label="Разделы профиля">
       <a href="#tab-stats" aria-controls="tab-stats">Статистика</a>
       <a href="#tab-crew" aria-controls="tab-crew">Работники</a>
+      <a href="#tab-ideas" aria-controls="tab-ideas">Идеи для разработки</a>
     </nav>
 
     <details class="about-game-plaque" id="about-game">
       <summary><span class="about-game-icon" aria-hidden="true"></span><span><strong>О игре</strong><small>Правила, производство и торговля</small></span><span class="about-game-arrow">⌄</span></summary>
       <div class="guide-content">
-        <p class="eyebrow">ПУТЕВОДИТЕЛЬ ПО TIMBER TOWN</p>
+        <div class="guide-cover">
+          <p class="eyebrow">ПУТЕВОДИТЕЛЬ ПО TIMBER TOWN</p>
+          <h2>Добро пожаловать в Тимбер-Таун</h2>
+          <p>Начни с трёх шагов: найми лесорубов в управе, выдай им исправные топоры и следи за запасом брёвен. Когда сырьё накопится — запусти станок, а готовую продукцию отправляй по заказам литейной.</p>
+          <div class="guide-cover-steps"><span>01 · Нанять</span><span>02 · Добыть</span><span>03 · Переработать и продать</span></div>
+        </div>
         <h2>Как устроено ваше предприятие</h2>
         <div class="guide-grid">
           <article><span class="guide-number">01</span><h3>Лес и работники</h3><p>В управе нанимайте лесорубов и назначайте им делянки. Для работы нужен исправный топор. Каждый день в управе появляется 3–8 кандидатов. Цена зависит от звёзд и уровня; характеристики сохраняются за нанятым работником.</p></article>
-          <article><span class="guide-number">02</span><h3>Запас брёвен</h3><p>Сырьё поступает на склад лесопилки. Начальная вместимость — 500 брёвен. Каждый склад леса добавляет 300 мест для брёвен и 100 мест для досок; цена — 1 000 $. Когда запас заполнен, новые брёвна временно не добываются.</p></article>
+          <article><span class="guide-number">02</span><h3>Запас брёвен</h3><p>Сырьё поступает на склад лесопилки. Начальная вместимость — 500 брёвен. Однократная покупка склада леса добавляет 300 мест для брёвен и 100 мест для досок; цена — 1 000 $. Когда запас заполнен, новые брёвна временно не добываются.</p></article>
           <article><span class="guide-number">03</span><h3>Производство досок</h3><p>На лесопилке выберите качество брёвен и укажите партию. Станок перерабатывает по одному бревну за раз. Улучшение уровня сокращает время обработки, а станочник может запускать производство автоматически.</p></article>
           <article><span class="guide-number">04</span><h3>Продажа досок</h3><p>В литейной выберите ежедневный заказ на брёвна и/или доски. Проверьте объём, цену и доставку, затем скрепите договор печатью. Если доставку оплачиваете вы — оплатите её в управе. После доставки деньги поступят в сейф.</p></article>
           <article><span class="guide-number">06</span><h3>Сейф и расходы</h3><p>Выручка за доставку поступает в сейф. Переведите деньги в кошелёк, чтобы оплачивать улучшения, ремонт, лицензии и зарплаты. Следите за ежедневными расходами и налоговыми сроками.</p></article>
@@ -109,16 +115,16 @@
             <table>
               <thead><tr><th>Уровень</th><th>Улучшение</th><th>Минут на бревно</th><th>Бонусная доска</th></tr></thead>
               <tbody>
-                <tr><td>1</td><td>Старт</td><td>25</td><td>2%</td></tr>
-                <tr><td>2</td><td>350 $</td><td>23</td><td>4%</td></tr>
-                <tr><td>3</td><td>650 $</td><td>20</td><td>6%</td></tr>
-                <tr><td>4</td><td>1 000 $</td><td>18</td><td>8%</td></tr>
-                <tr><td>5</td><td>1 500 $</td><td>15</td><td>10%</td></tr>
-                <tr><td>6</td><td>2 200 $</td><td>13</td><td>12%</td></tr>
-                <tr><td>7</td><td>3 200 $</td><td>10</td><td>14%</td></tr>
-                <tr><td>8</td><td>4 500 $</td><td>8</td><td>16%</td></tr>
-                <tr><td>9</td><td>6 200 $</td><td>5</td><td>18%</td></tr>
-                <tr><td>10</td><td>8 500 $</td><td>3</td><td>20%</td></tr>
+                <tr><td>1</td><td>Старт</td><td>15</td><td>2%</td></tr>
+                <tr><td>2</td><td>350 $</td><td>12</td><td>4%</td></tr>
+                <tr><td>3</td><td>650 $</td><td>10</td><td>6%</td></tr>
+                <tr><td>4</td><td>1 000 $</td><td>8</td><td>8%</td></tr>
+                <tr><td>5</td><td>1 500 $</td><td>5</td><td>10%</td></tr>
+                <tr><td>6</td><td>2 200 $</td><td>4</td><td>12%</td></tr>
+                <tr><td>7</td><td>3 200 $</td><td>3</td><td>14%</td></tr>
+                <tr><td>8</td><td>4 500 $</td><td>2</td><td>16%</td></tr>
+                <tr><td>9</td><td>6 200 $</td><td>1</td><td>18%</td></tr>
+                <tr><td>10</td><td>8 500 $</td><td>1</td><td>20%</td></tr>
               </tbody>
             </table>
           </div>
@@ -144,6 +150,7 @@
         <span class="telegram-id-label">Telegram ID</span>
         <span class="telegram-id-value muted" id="telegram-id-value">ID доступен при запуске через Telegram</span>
       </div>
+      <button type="button" id="reset-progress" class="danger">Сбросить прогресс</button>
     </section>
 
 
@@ -157,6 +164,21 @@
       <p id="profile-crew-empty">Работников нет.</p>
       <ul id="profile-crew"></ul>
     </section>
+    <section id="tab-ideas" hidden aria-labelledby="tab-ideas-title">
+      <h2 id="tab-ideas-title">Идеи для разработки</h2>
+      <p>Предложи улучшение для Timber Town. Укажи своё имя и опиши идею — сообщение появится в терминале разработчика на этом устройстве.</p>
+      <form id="idea-form" class="idea-form">
+        <label for="idea-sender-name">Твоё имя</label>
+        <input id="idea-sender-name" name="senderName" type="text" maxlength="40" required autocomplete="nickname" placeholder="Как к тебе обращаться">
+        <label for="idea-message">Идея</label>
+        <textarea id="idea-message" name="idea" rows="5" maxlength="2000" required placeholder="Опиши, что добавить или изменить в игре…"></textarea>
+        <button type="submit">Отправить идею</button>
+        <p id="idea-submit-status" role="status" class="muted"></p>
+      </form>
+      <p class="idea-storage-note">Важно: в текущем проекте нет серверной части для общей почты между разными игроками. Сейчас идеи сохраняются локально в браузере и доступны в терминале на этом же устройстве и домене.</p>
+      <a id="ideas-admin-link" class="idea-admin-link" href="ideas-terminal.html" hidden>Открыть терминал разработчика</a>
+    </section>
+
     <template id="profile-worker">
       <li data-worker-id="">
         <img class="worker-portrait" alt="" loading="lazy" decoding="async">
@@ -178,7 +200,6 @@
       </li>
     </template>
 
-    <button type="button" id="reset-progress">Сбросить прогресс</button>
     <dialog id="reset-step-1" aria-labelledby="reset-1-title">
       <h2 id="reset-1-title">Точно стереть всё?</h2>
       <button type="button" id="reset-continue">Да, дальше</button>

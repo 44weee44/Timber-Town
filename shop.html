@@ -47,44 +47,55 @@
       <li data-rarity="common">
         <img class="axe-icon" src="1axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Старый топор</h2>
-        <p>120 $ · прочность 400 · рубит медленнее остальных</p>
+        <p>120 $ · прочность 400 · надёжный старт</p><p class="axe-antibuff">Минус: медленная рубка.</p>
         <button type="button" id="buy-common">Купить</button>
       </li>
       <li data-rarity="reinforced">
         <img class="axe-icon" src="5axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Тяжёлый топор</h2>
-        <p>260 $ · прочность 400 · иногда даёт дополнительное бревно</p>
+        <p>260 $ · прочность 400 · прочный инструмент</p><p class="axe-antibuff">Минус: тяжелее остальных, поэтому рубит медленнее.</p>
         <button type="button" id="buy-reinforced">Купить</button>
       </li>
       <li data-rarity="rare">
         <img class="axe-icon" src="2axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Лёгкий топор</h2>
-        <p>520 $ · прочность 400 · ускоряет рубку</p>
+        <p>520 $ · прочность 400 · лёгкий и быстрый</p><p class="axe-antibuff">Минус: сниженный шанс получить дополнительное бревно.</p>
         <button type="button" id="buy-rare">Купить</button>
       </li>
       <li data-rarity="legendary">
         <img class="axe-icon" src="3axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Точный топор</h2>
-        <p>1 050 $ · прочность 400 · повышает качество брёвен</p>
+        <p>1 050 $ · прочность 400 · качество не ниже хорошего</p><p class="axe-antibuff">Минус: не приносит дополнительные и секретные брёвна.</p>
         <button type="button" id="buy-legendary">Купить</button>
       </li>
       <li data-rarity="mythic">
-        <img class="axe-icon" src="4aceskin.jpeg" alt="" loading="lazy" decoding="async">
+        <img class="axe-icon" src="4axeskin.jpeg" alt="" loading="lazy" decoding="async">
         <h2>Лесной топор</h2>
-        <p>1 900 $ · прочность 400 · высокий шанс получить +1 бревно</p>
+        <p>1 900 $ · прочность 400 · дополнительные находки и меньший износ</p><p class="axe-antibuff">Антибаффов нет.</p>
         <button type="button" id="buy-mythic">Купить</button>
       </li>
     </ul>
     <section id="log-warehouse-purchase" aria-labelledby="log-warehouse-title">
       <p class="eyebrow">РАСШИРЕНИЕ ПРЕДПРИЯТИЯ</p>
       <h2 id="log-warehouse-title">Склад леса</h2>
-      <p>Постройте ещё один крытый склад, чтобы лесорубы могли накапливать больше сырья. Каждый склад добавляет 300 мест для брёвен и 100 мест для досок. Стоимость каждого склада — 1 000 $.</p>
+      <p>Купите дополнительный крытый склад, чтобы увеличить запас сырья. Покупка доступна один раз: она добавляет 300 мест для брёвен и 100 мест для досок. Стоимость — 1 000 $.</p>
       <div class="warehouse-upgrade-summary">
-        <span>Построено: <strong id="log-warehouse-count">0</strong></span>
+        <span>Статус покупки: <strong id="log-warehouse-count">0</strong></span>
         <span>Общая вместимость: <strong id="log-warehouse-capacity">500</strong> брёвен</span>
         <span>Стоимость: <strong id="log-warehouse-cost">1 000 $</strong></span>
       </div>
-      <button type="button" id="buy-log-warehouse">Построить склад леса · 1 000 $</button>
+      <button type="button" id="buy-log-warehouse">Купить склад леса · 1 000 $</button>
+    </section>
+
+    <section id="secret-log-market" aria-labelledby="secret-log-market-title">
+      <p class="eyebrow">ОСОБАЯ СДЕЛКА</p>
+      <h2 id="secret-log-market-title">Покупатель секретных брёвен</h2>
+      <p>Цена фиксированная — 200 $ за штуку. За игровые сутки можно продать не более 10 секретных брёвен.</p>
+      <div class="secret-log-market-stats"><span>В рюкзаке: <strong id="secret-logs-stock">0</strong></span><span>Продано сегодня: <strong id="secret-logs-sold">0/10</strong></span><span>Осталось продать: <strong id="secret-logs-limit">10</strong></span></div>
+      <label for="secret-log-quantity">Количество для продажи</label>
+      <input id="secret-log-quantity" type="number" min="1" max="10" step="1" value="1" inputmode="numeric">
+      <button type="button" id="sell-secret-logs">Продать выбранное · 200 $/шт.</button>
+      <button type="button" id="sell-all-secret-logs" class="ghost">Продать всё доступное</button>
     </section>
 
     <section id="machine-purchase">

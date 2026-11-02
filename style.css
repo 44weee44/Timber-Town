@@ -2585,3 +2585,61 @@ body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="false"]:d
     transition: none !important;
   }
 }
+
+
+/* Timber Town · additions for ideas, the market and compact management cards */
+#delivery-offers { display:block; }
+.axe-antibuff { color:#e88f83 !important; font-size:.78em; line-height:1.45; margin-top:4px; }
+#secret-log-market { margin-top:18px; padding:16px; border:1px solid rgba(220,185,105,.45); border-radius:10px; background:linear-gradient(145deg,rgba(67,51,25,.50),rgba(17,29,19,.92)); }
+#secret-log-market label { display:block; margin:12px 0 6px; }
+#secret-log-market input { width:100%; max-width:220px; min-height:44px; }
+.secret-log-market-stats { display:flex; flex-wrap:wrap; gap:8px 18px; color:var(--cream-soft); }
+.secret-log-market-stats strong { color:var(--gold); }
+#secret-log-market button { margin:8px 6px 0 0; }
+#profile > nav { display:flex; flex-wrap:wrap; gap:8px; }
+#profile > nav a { padding:9px 12px; border:1px solid var(--line); border-radius:6px; }
+#profile > nav a[aria-current="page"] { color:var(--gold); border-color:var(--gold); background:rgba(214,175,95,.10); }
+.guide-cover { padding:clamp(16px,4vw,28px); margin:0 0 18px; border:1px solid rgba(223,190,115,.55); border-radius:10px; background:radial-gradient(circle at 85% 10%,rgba(198,139,63,.28),transparent 38%),linear-gradient(135deg,#263d2d,#18271f 54%,#3f3020); box-shadow:inset 0 0 0 3px rgba(0,0,0,.16),0 8px 22px rgba(0,0,0,.2); }
+.guide-cover h2 { color:#f2d28a; font-size:clamp(18px,4vw,26px); margin:6px 0 10px; }
+.guide-cover > p:not(.eyebrow) { max-width:760px; line-height:1.65; color:#f1e5c9; }
+.guide-cover-steps { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.guide-cover-steps span { padding:8px 10px; border-radius:5px; color:#172219; background:#d7b86e; font-weight:700; font-size:.82em; }
+.idea-form { display:grid; gap:8px; max-width:700px; }
+.idea-form label { margin-top:8px; color:var(--gold); }
+.idea-form input,.idea-form textarea { width:100%; box-sizing:border-box; padding:12px; color:var(--cream); background:var(--ink); border:1px solid var(--line); border-radius:6px; font:inherit; }
+.idea-form textarea { resize:vertical; min-height:120px; }
+.idea-storage-note { color:#c8b997; font-size:.82em; line-height:1.55; padding:10px 12px; border-left:3px solid var(--gold); background:rgba(0,0,0,.18); }
+.idea-admin-link { display:inline-block; margin-top:10px; color:var(--gold); }
+.idea-admin-link[hidden] { display:none; }
+.telegram-identity-gate { position:fixed; z-index:10000; inset:0; display:grid; place-items:center; padding:20px; background:rgba(4,9,6,.96); }
+.telegram-identity-gate[hidden] { display:none; }
+.telegram-identity-gate section { width:min(100%,520px); padding:22px; border:2px solid var(--gold); border-radius:10px; background:#17251a; color:var(--cream); box-shadow:0 18px 60px #0009; }
+.telegram-identity-gate h2 { color:var(--gold); }
+.telegram-identity-gate section > div { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+#ideas-terminal { max-width:1100px; margin:0 auto; padding:clamp(14px,3vw,28px); }
+.terminal-header { padding:18px; border:1px solid var(--gold); border-radius:8px; background:linear-gradient(130deg,#203a2a,#44321e); }
+.terminal-header h1 { color:var(--gold); }
+.terminal-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.terminal-layout { display:grid; grid-template-columns:minmax(220px,.85fr) minmax(0,1.5fr); gap:14px; }
+.terminal-idea-list { list-style:none; margin:0; padding:0; display:grid; align-content:start; gap:8px; }
+.terminal-idea-item { width:100%; display:grid; text-align:left; gap:5px; padding:12px; border:1px solid var(--line); border-radius:6px; background:rgba(0,0,0,.25); color:var(--cream); }
+.terminal-idea-item small,.terminal-meta { color:var(--cream-soft); font-size:.78em; }
+.terminal-idea-item span { line-height:1.4; }
+.terminal-idea-detail { min-height:190px; padding:16px; border:1px solid rgba(210,177,103,.45); border-radius:7px; background:rgba(0,0,0,.28); }
+.terminal-idea-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.65; }
+.delivery-offer-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin:10px 0 20px; }
+.special-offers-heading { color:#f2d27c; border-bottom:1px solid rgba(234,195,98,.45); padding-bottom:8px; }
+.normal-offers-heading { color:var(--cream); border-bottom:1px solid var(--line); padding-bottom:8px; }
+.special-delivery-offer { border:1px solid #d7b45d; background:linear-gradient(145deg,rgba(104,78,29,.82),rgba(35,42,27,.96)); box-shadow:inset 0 0 0 1px rgba(255,226,151,.16),0 5px 16px rgba(0,0,0,.2); }
+.special-delivery-offer h3,.special-delivery-offer > strong { color:#f4d57e; }
+.special-delivery-offer button { border-color:#e0bd65; }
+.special-offers-empty { color:#d5bf8b; font-style:italic; }
+.sawmill-worker-card { display:flex; align-items:center; gap:10px; padding:9px 12px; }
+.sawmill-worker-card .worker-portrait { width:52px; height:52px; object-fit:cover; flex:0 0 auto; }
+.sawmill-worker-card .worker-info { display:grid; gap:2px; }
+.sawmill-worker-card .worker-name { font-weight:700; margin:0; }
+.sawmill-worker-card .worker-level,.sawmill-worker-card .worker-status { margin:0; font-size:.82em; color:var(--cream-soft); }
+.composition-table { width:100%; border-collapse:collapse; font-size:.84em; }
+.composition-table th,.composition-table td { border-bottom:1px solid var(--line); padding:8px 6px; text-align:center; }
+.composition-table th:first-child { text-align:left; }
+@media(max-width:650px) { .terminal-layout { grid-template-columns:1fr; } .terminal-idea-list { max-height:300px; overflow:auto; } .composition-table { min-width:640px; } }

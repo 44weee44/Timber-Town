@@ -310,14 +310,12 @@
       </details>
     </section>
     <template id="worker-row">
-      <li data-worker-id="">
+      <li data-worker-id="" class="sawmill-worker-card">
         <img class="worker-portrait" alt="" aria-hidden="true" loading="lazy" decoding="async">
         <div class="worker-info">
           <p class="worker-name"></p>
           <p class="worker-level"></p>
-          <p class="worker-skin" hidden></p>
           <p class="worker-status"></p>
-          <progress class="worker-carry" max="4" value="0">0/4</progress>
         </div>
       </li>
     </template>
@@ -337,12 +335,10 @@
     </section>
 
     <section id="station-crew" aria-labelledby="station-crew-title">
-      <details class="fold-plaque"><summary id="station-crew-title">Станочники <span class="fold-count">обслуживание станков</span></summary>
-      <p>Работники без уровня, автоматически обслуживают назначенные станки. Они работают офлайн, пока есть брёвна и прочность станка.</p>
-      <ul id="machine-list" class="machine-list"></ul>
+      <details class="fold-plaque"><summary id="station-crew-title">Станочники <span class="fold-count">список работников</span></summary>
+      <p>Список работников, назначенных на обслуживание станков.</p>
       <ul id="operator-list"></ul>
-      <p>Всего станков: <data id="machine-count" value="1">1</data> · станочников: <data id="operator-count" value="0">0</data></p>
-      <p><a href="shop.html#machine-purchase">Купить станок</a> · <a href="uprava.html#hiring">Нанять станочника</a></p>
+      <p id="operator-list-empty" class="muted">Станочники пока не наняты.</p>
       </details>
     </section>
 

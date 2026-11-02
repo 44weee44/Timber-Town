@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b140e">
+  <link rel="stylesheet" href="style.css">
+  <title>Терминал идей — Timber Town</title>
+</head>
+<body data-screen="ideas-terminal">
+  <main id="ideas-terminal">
+    <p class="map-return"><a class="map-return-link" href="profile.html#tab-ideas">← В профиль</a></p>
+    <header class="terminal-header"><p class="eyebrow">TIMBER TOWN · PRIVATE</p><h1>Терминал разработчика</h1><p>Вход разрешён только Telegram ID 8512058647.</p></header>
+    <section id="terminal-denied" hidden><h2>Доступ закрыт</h2><p>Этот раздел доступен только владельцу проекта.</p></section>
+    <section id="terminal-content" hidden>
+      <div class="terminal-toolbar"><p>Входящие идеи: <strong id="terminal-count">0</strong></p><button type="button" id="terminal-refresh">Обновить</button></div>
+      <p id="terminal-empty">Пока нет идей.</p>
+      <div class="terminal-layout"><ul id="terminal-idea-list" class="terminal-idea-list"></ul><article id="terminal-idea-detail" class="terminal-idea-detail"><p class="muted">Выбери сообщение слева.</p></article></div>
+      <p class="idea-storage-note">Это локальная очередь браузера. Для получения предложений от игроков на других устройствах нужен общий сервер/API; Telegram CloudStorage изолирован по аккаунтам и не подходит для общей почты.</p>
+    </section>
+  </main>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+  (() => {
+    'use strict';
+    const ADMIN_ID = '8512058647';
+    const KEY = 'timber-town:ideas:inbox:v1';
+    const app = window.Telegram?.WebApp;
+    try { app?.ready?.(); } catch {}
+    let user = app?.initDataUnsafe?.user || null;
+    if (!user && app?.initData) { try { const raw = new URLSearchParams(app.initData).get('user'); if (raw) user = JSON.parse(raw); } catch {} }
+    const isAdmin = user?.id != null && String(user.id) === ADMIN_ID;
+    const content = document.getElementById('terminal-content');
+    const denied = document.getElementById('terminal-denied');
+    if (!isAdmin) { denied.hidden = false; return; }
+    content.hidden = false;
+    let currentId = null;
+    function read() { try { const data = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(data) ? data : []; } catch { return []; } }
+    function showDetail(item) {
+      currentId = item.id;
+      const root = document.getElementById('terminal-idea-detail');
+      root.replaceChildren();
+      const h = document.createElement('h2'); h.textContent = item.senderName || 'Без имени';
+      const meta = document.createElement('p'); meta.className = 'terminal-meta';
+      const tg = item.telegram || {};
+      meta.textContent = `Telegram ID: ${tg.id || 'не указан'} · Username: ${tg.username ? '@' + tg.username : 'не указан'}`;
+      const date = document.createElement('p'); date.className = 'terminal-meta'; date.textContent = item.createdAt ? new Date(item.createdAt).toLocaleString('ru-RU') : 'Дата неизвестна';
+      const body = document.createElement('p'); body.className = 'terminal-idea-text'; body.textContent = item.idea || '';
+      root.append(h, meta, date, body);
+    }
+    function render() {
+      const items = read();
+      document.getElementById('terminal-count').textContent = String(items.length);
+      document.getElementById('terminal-empty').hidden = items.length > 0;
+      const list = document.getElementById('terminal-idea-list'); list.replaceChildren();
+      items.forEach(item => {
+        const li = document.createElement('li');
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'terminal-idea-item';
+        const title = document.createElement('strong'); title.textContent = item.senderName || 'Без имени';
+        const tg = item.telegram || {}; const sender = document.createElement('small'); sender.textContent = `ID ${tg.id || '—'}${tg.username ? ' · @' + tg.username : ''}`;
+        const preview = document.createElement('span'); preview.textContent = String(item.idea || '').slice(0, 110);
+        button.append(title, sender, preview); button.addEventListener('click', () => showDetail(item));
+        li.append(button); list.append(li);
+      });
+      const selected = items.find(item => item.id === currentId);
+      if (selected) showDetail(selected);
+      else if (items.length) showDetail(items[0]);
+      else document.getElementById('terminal-idea-detail').innerHTML = '<p class="muted">Выбери сообщение слева.</p>';
+    }
+    document.getElementById('terminal-refresh').addEventListener('click', render);
+    render();
+  })();
+  </script>
+</body>
+</html>

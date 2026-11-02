@@ -20,33 +20,33 @@
   };
 
   const AXES = {
-    common:    { name: 'Старый топор', price: 120, max: 400, wearEvery: 1, rank: 0, qualityBonus: 0.00, extraLogChance: 0.00, secretFindBonus: 0.000, chopEvery: 2, perk: 'Надёжный старт, но медленная рубка' },
-    reinforced:{ name: 'Тяжёлый топор', price: 260, max: 400, wearEvery: 1, rank: 0, qualityBonus: 0.01, extraLogChance: 0.025, secretFindBonus: 0.001, chopEvery: 1, perk: 'Иногда приносит дополнительное бревно' },
-    rare:      { name: 'Лёгкий топор', price: 520, max: 400, wearEvery: 1, rank: 1, qualityBonus: 0.035, extraLogChance: 0.045, secretFindBonus: 0.004, chopEvery: 1, perk: 'Ускоренная добыча: чаще приносит второе бревно' },
-    legendary: { name: 'Точный топор', price: 1050, max: 400, wearEvery: 1, rank: 2, qualityBonus: 0.075, extraLogChance: 0.025, secretFindBonus: 0.008, chopEvery: 1, perk: 'Повышает качество древесины' },
-    mythic:    { name: 'Лесной топор', price: 1900, max: 400, wearEvery: 1, rank: 3, qualityBonus: 0.055, extraLogChance: 0.065, secretFindBonus: 0.012, chopEvery: 1, perk: 'Высокий шанс получить +1 бревно' }
+    common:    { name: 'Старый топор', price: 120, max: 400, wearRate: 1, rank: 0, qualityBonus: 0.00, extraLogChance: 0.00, secretFindBonus: 0.000, chopEvery: 2, perk: 'Надёжный старт', antiBuff: 'Минус: медленная рубка.' },
+    reinforced:{ name: 'Тяжёлый топор', price: 260, max: 400, wearRate: 1, rank: 0, qualityBonus: 0.01, extraLogChance: 0.025, secretFindBonus: 0.001, chopEvery: 3, perk: 'Уверенная рубка', antiBuff: 'Минус: тяжелее остальных, поэтому рубит медленнее.' },
+    rare:      { name: 'Лёгкий топор', price: 520, max: 400, wearRate: 0.85, rank: 1, qualityBonus: 0.035, extraLogChance: 0.012, secretFindBonus: 0.004, chopEvery: 1, perk: 'Лёгкий и быстрый', antiBuff: 'Минус: сниженный шанс получить дополнительное бревно.' },
+    legendary: { name: 'Точный топор', price: 1050, max: 400, wearRate: 0.65, rank: 2, qualityBonus: 0.075, extraLogChance: 0, secretFindBonus: 0, chopEvery: 1, perk: 'Качество не ниже хорошего', antiBuff: 'Минус: не приносит дополнительные и секретные брёвна.' },
+    mythic:    { name: 'Лесной топор', price: 1900, max: 400, wearRate: 0.50, rank: 3, qualityBonus: 0.055, extraLogChance: 0.065, secretFindBonus: 0.012, chopEvery: 1, perk: 'Дополнительные находки и меньший износ', antiBuff: 'Антибаффов нет.' }
   };
 
   const AXE_ICON = {
     common: '1axeskin.jpeg',
     rare: '2axeskin.jpeg',
     legendary: '3axeskin.jpeg',
-    mythic: '4aceskin.jpeg',
+    mythic: '4axeskin.jpeg',
     reinforced: '5axeskin.jpeg'
   };
 
   const MACHINE = [
     null,
-    { price: 0, minutes: 25, bonus: 0.02 },
-    { price: 350, minutes: 23, bonus: 0.04 },
-    { price: 650, minutes: 20, bonus: 0.06 },
-    { price: 1000, minutes: 18, bonus: 0.08 },
-    { price: 1500, minutes: 15, bonus: 0.10 },
-    { price: 2200, minutes: 13, bonus: 0.12 },
-    { price: 3200, minutes: 10, bonus: 0.14 },
-    { price: 4500, minutes: 8, bonus: 0.16 },
-    { price: 6200, minutes: 5, bonus: 0.18 },
-    { price: 8500, minutes: 3, bonus: 0.20 }
+    { price: 0, minutes: 15, bonus: 0.02 },
+    { price: 350, minutes: 12, bonus: 0.04 },
+    { price: 650, minutes: 10, bonus: 0.06 },
+    { price: 1000, minutes: 8, bonus: 0.08 },
+    { price: 1500, minutes: 5, bonus: 0.10 },
+    { price: 2200, minutes: 4, bonus: 0.12 },
+    { price: 3200, minutes: 3, bonus: 0.14 },
+    { price: 4500, minutes: 2, bonus: 0.16 },
+    { price: 6200, minutes: 1, bonus: 0.18 },
+    { price: 8500, minutes: 1, bonus: 0.20 }
   ];
   const MAX_MACHINE_LEVEL = 10;
   const MACHINE_BASE = () => ({ level: 1, durability: 100, isRunning: false, queue: Object.fromEntries(QUALITY.map(q => [q, 0])), remaining: 0, processed: 0, queueSchemaVersion: 2, operatorId: null });
@@ -357,6 +357,8 @@
       delivery: null,
       rawLogDeal: null,
       rawLogLastSaleDay: 0,
+      secretLogsSoldDay: 1,
+      secretLogsSoldToday: 0,
       hireMarketDay: 0,
       hireCandidates: [],
       deliveryOffersDay: 0,
@@ -392,7 +394,7 @@
     s.sawmill = { ...defaults.sawmill, ...(s.sawmill || {}) };
     s.sawmill.logs = Object.fromEntries(QUALITY.map(q => [q, num(s.sawmill.logs?.[q])]));
     s.sawmill.logStorageLevel = clamp(num(s.sawmill.logStorageLevel), 0, MAX_LOG_STORAGE_UPGRADES);
-    s.sawmill.forestWarehouseLevel = clamp(num(s.sawmill.forestWarehouseLevel, s.sawmill.logStorageLevel), 0, 50);
+    s.sawmill.forestWarehouseLevel = clamp(Math.max(num(input.sawmill?.forestWarehouseLevel), num(input.sawmill?.logStorageLevel)), 0, 50);
     const hadWoodStock = s.sawmill.logsByWoodQuality && typeof s.sawmill.logsByWoodQuality === 'object';
     s.sawmill.logsByWoodQuality = createWoodQualityStock();
     if (hadWoodStock) {
@@ -457,7 +459,7 @@
                 ? {
                     rarity,
                     durability: clamp(num(w.axe.durability), 0, AXES[rarity].max),
-                    wear: num(w.axe.wear)
+                    wear: clamp(Number(w.axe.wear) || 0, 0, 0.999)
                   }
                 : null,
               isWorking: w.isWorking !== false
@@ -525,6 +527,8 @@
     s.day = Math.max(1, num(s.day, 1));
     s.rawLogLastSaleDay = clamp(num(input.rawLogLastSaleDay), 0, s.day);
     if (s.rawLogDeal?.stage === 'shipping' && s.rawLogLastSaleDay === 0) s.rawLogLastSaleDay = s.day;
+    s.secretLogsSoldDay = clamp(num(input.secretLogsSoldDay, s.day), 1, s.day);
+    s.secretLogsSoldToday = s.secretLogsSoldDay === s.day ? clamp(num(input.secretLogsSoldToday), 0, 10) : 0;
     s.gameMinutes = clamp(num(s.gameMinutes), 0, 1439);
     s.taxDebt = num(s.taxDebt);
     s.taxPenalty = num(s.taxPenalty);
@@ -581,7 +585,8 @@
     s.hireMarketDay = num(input.hireMarketDay, 0);
     s.hireCandidates = Array.isArray(input.hireCandidates) ? input.hireCandidates.filter(c => c && typeof c.id === 'string').slice(0, 8).map(c => ({ id:c.id, name:String(c.name || 'Лесоруб').slice(0,32), skin:clamp(num(c.skin,1),1,4), stars:clamp(num(c.stars,1),1,5), level:clamp(num(c.level,1),1,MAX_LEVEL), price:num(c.price), xp:xpForLevel(clamp(num(c.level,1),1,MAX_LEVEL)), zoneId:1 })) : [];
     s.deliveryOffersDay = num(input.deliveryOffersDay, 0);
-    s.deliveryOffers = Array.isArray(input.deliveryOffers) ? input.deliveryOffers.filter(o => o && typeof o.id === 'string').slice(0,8).map(o => ({ id:o.id, buyer:String(o.buyer||'Покупатель').slice(0,40), items:Array.isArray(o.items)?o.items.filter(i=>['birch','pine','oak','planks'].includes(i.kind)).map(i=>({kind:i.kind,amount:num(i.amount),price:num(i.price)})):[], negotiated:Boolean(o.negotiated), deliveryNegotiated:Boolean(o.deliveryNegotiated), buyerPaysDelivery:Boolean(o.buyerPaysDelivery) })) : [];
+    s.deliveryOfferSchemaVersion = num(input.deliveryOfferSchemaVersion);
+    s.deliveryOffers = Array.isArray(input.deliveryOffers) ? input.deliveryOffers.filter(o => o && typeof o.id === 'string').slice(0,10).map(o => ({ id:o.id, buyer:String(o.buyer||'Покупатель').slice(0,60), special:Boolean(o.special), items:Array.isArray(o.items)?o.items.filter(i=>['birch','pine','oak','planks'].includes(i.kind)).map(i=>({kind:i.kind,quality:QUALITY.includes(i.quality)?i.quality:null,amount:num(i.amount),price:num(i.price)})):[], negotiated:Boolean(o.negotiated), deliveryNegotiated:Boolean(o.deliveryNegotiated), buyerPaysDelivery:Boolean(o.buyerPaysDelivery) })) : [];
     s.marketContract = input.marketContract && typeof input.marketContract === 'object' ? { ...input.marketContract, id:String(input.marketContract.id||uid()), buyer:String(input.marketContract.buyer||'Покупатель'), items:Array.isArray(input.marketContract.items)?input.marketContract.items:[], stage:['sealed','awaiting-delivery-payment'].includes(input.marketContract.stage)?input.marketContract.stage:'sealed', deliveryFee:num(input.marketContract.deliveryFee), total:num(input.marketContract.total), buyerPaysDelivery:Boolean(input.marketContract.buyerPaysDelivery) } : null;
     s.marketShipments = Array.isArray(input.marketShipments) ? input.marketShipments.filter(x=>x&&typeof x==='object').slice(0,20).map(x=>({id:String(x.id||uid()),buyer:String(x.buyer||'Покупатель'),total:num(x.total),remaining:num(x.remaining),items:Array.isArray(x.items)?x.items:[]})) : [];
 
@@ -652,7 +657,7 @@
   let state = loadState();
   let selectedDeliveryOfferId = null;
   if (state.hireMarketDay !== state.day) refreshHireMarket();
-  if (state.deliveryOffersDay !== state.day) refreshDeliveryOffers();
+  if (state.deliveryOfferSchemaVersion < 2 || state.deliveryOffersDay !== state.day || !Array.isArray(state.deliveryOffers)) refreshDeliveryOffers();
   let cloudSaveTimer = null;
   let pendingCloudSnapshot = null;
   let cloudSaveInFlight = Promise.resolve();
@@ -943,18 +948,22 @@
     const events = state.sawmill.eventZones || {};
     const zoneEvent = Object.keys(events).find(key => events[key] === zoneId) || null;
     const axeStats = AXES[worker.axe.rarity] || AXES.common;
-    if (zoneEvent && Math.random() < Math.min(0.05, 0.01 + axeStats.secretFindBonus)) {
+    const preciseAxe = worker.axe.rarity === 'legendary';
+    if (!preciseAxe && zoneEvent && Math.random() < Math.min(0.05, 0.01 + axeStats.secretFindBonus)) {
       state.inventory.secretLogs = Math.min(999999, num(state.inventory.secretLogs) + 1);
     }
     if (zoneEvent === 'empty') return;
     const freeStorage = Math.max(0, getLogStorageCapacity() - getLogStorageUsed());
     if (freeStorage <= 0) return;
 
-    const quality = zoneEvent === 'rotten' ? 'rotten' : getQuality(worker, zoneEvent === 'ideal' ? 0.60 : 0);
+    const rolledQuality = zoneEvent === 'rotten' && !preciseAxe
+      ? 'rotten'
+      : getQuality(worker, zoneEvent === 'ideal' ? 0.60 : 0);
+    const quality = preciseAxe && QUALITY.indexOf(rolledQuality) < QUALITY.indexOf('good') ? 'good' : rolledQuality;
 
     const woodType = state.sawmill.zoneKinds?.[zoneId] || 'birch';
     const starBonus = (clamp(Number(worker.stars) || 3, 1, 5) - 3) * 0.025;
-    const extraLogChance = clamp(axeStats.extraLogChance + starBonus, 0, 0.15);
+    const extraLogChance = preciseAxe ? 0 : clamp(axeStats.extraLogChance + starBonus, 0, 0.15);
     const extraLog = Math.random() < extraLogChance;
     const produced = 1 + (extraLog ? 1 : 0);
     const actualProduced = Math.min(produced, zoneStats.stock, freeStorage);
@@ -983,11 +992,10 @@
       }
     }
 
-    worker.axe.wear = (worker.axe.wear || 0) + 1;
-
-    if (worker.axe.wear >= AXES[worker.axe.rarity].wearEvery) {
+    worker.axe.wear = (Number(worker.axe.wear) || 0) + (axeStats.wearRate || 1);
+    while (worker.axe.wear >= 1) {
       worker.axe.durability = Math.max(0, worker.axe.durability - 1);
-      worker.axe.wear = 0;
+      worker.axe.wear -= 1;
     }
 
     if (worker.axe.durability <= 0) {
@@ -1008,7 +1016,7 @@
       if (operator && machine.durability > 0) {
         if (queueTotal() > 0 && !machine.isRunning) {
           // Resume a paused/previously interrupted batch; never overwrite it.
-          machine.remaining = Math.max(1, Number(machine.remaining) || 0) + Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2);
+          machine.remaining = Math.max(1, Number(machine.remaining) || 0);
           machine.isRunning = true;
         } else if (!machine.isRunning && queueTotal() === 0 && sum(QUALITY.map(q => state.sawmill.logs[q])) > 0) {
           const quality = QUALITY.slice().reverse().find(q => state.sawmill.logs[q] > 0);
@@ -1017,7 +1025,7 @@
             machine.queue = Object.fromEntries(QUALITY.map(q => [q, q === quality ? amount : 0]));
             state.sawmill.logs[quality] -= amount;
             consumeWoodForQuality(quality, amount);
-            machine.remaining = MACHINE[machine.level].minutes + Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2);
+            machine.remaining = MACHINE[machine.level].minutes;
             machine.isRunning = true;
           }
         }
@@ -1037,7 +1045,7 @@
         if (planks > 0 && Math.random() < config.bonus) planks++;
         state.sawmill.planks = Math.min(getPlankStorageCapacity(), state.sawmill.planks + planks);
         if (machine.processed % 5 === 0) machine.durability = Math.max(0, machine.durability - 3);
-        if (queueTotal() > 0) machine.remaining += config.minutes + (operator ? Math.max(5, 15 - clamp(Number(operator.stars) || 3, 1, 5) * 2) : 0);
+        if (queueTotal() > 0) machine.remaining += config.minutes;
       }
       if (queueTotal() <= 0) {
         machine.isRunning = false;
@@ -1125,23 +1133,45 @@
     });
     state.hireMarketDay = state.day;
   }
-  function refreshDeliveryOffers() {
-    const count = 3 + Math.floor(Math.random()*3);
-    const kinds = ['birch','pine','oak','planks'];
-    const names = ['Северная артель','Мастерская у реки','Строители Старого тракта','Купцы Дубового стана','Городская управа','Каменщики'];
-    state.deliveryOffers = Array.from({length:count}, () => {
-      const n = Math.random() < .45 ? 1 : (Math.random() < .8 ? 2 : 3);
-      const chosen = [...kinds].sort(()=>Math.random()-.5).slice(0,n);
-      const items = chosen.map(kind => ({kind, amount:20+Math.floor(Math.random()*81), price:kind==='planks' ? dailyPrice()+2 : ({birch:4,pine:6,oak:9}[kind]) + Math.floor(state.day/10)}));
-      return {id:uid(),buyer:names[Math.floor(Math.random()*names.length)],items,negotiated:false,deliveryNegotiated:false,buyerPaysDelivery:false};
-    });
-    state.deliveryOffersDay = state.day;
+  function deliveryQualityLabel(quality) {
+    return ({ rotten:'гнилое', normal:'обычное', good:'хорошее', excellent:'отличное', perfect:'идеальное' })[quality] || '';
   }
-  function itemStock(kind) {
+  function deliveryUnitPrice(kind, quality, special = false) {
+    if (kind === 'planks') return dailyPrice() + (special ? 8 : 2);
+    const woodBase = { birch:4, pine:7, oak:10 }[kind] || 4;
+    const qualityFactor = { rotten:0.5, normal:1, good:1.6, excellent:2.5, perfect:4 }[quality] || 1;
+    return Math.max(1, Math.round((woodBase + Math.floor(state.day / 10)) * qualityFactor * (special ? 1.65 : 1)));
+  }
+  function refreshDeliveryOffers() {
+    const normalCount = 6 + Math.floor(Math.random() * 2);
+    const specialCount = Math.floor(Math.random() * 4);
+    const kinds = ['birch','pine','oak','planks'];
+    const names = ['Северная артель','Мастерская у реки','Строители Старого тракта','Купцы Дубового стана','Городская управа','Каменщики','Мебельная мастерская','Плотники старого порта','Бригада мостовщиков','Городская строительная контора'];
+    const shuffledNames = [...names].sort(() => Math.random() - 0.5);
+    const makeOffer = (special, index) => {
+      const n = 1 + Math.floor(Math.random() * 3);
+      const chosen = [...kinds].sort(() => Math.random() - 0.5).slice(0, n);
+      const items = chosen.map(kind => {
+        const quality = kind === 'planks' ? null : QUALITY[Math.floor(Math.random() * QUALITY.length)];
+        const amount = kind === 'planks' ? 12 + Math.floor(Math.random() * 45) : 10 + Math.floor(Math.random() * 46);
+        return { kind, quality, amount, price: deliveryUnitPrice(kind, quality, special) };
+      });
+      const buyer = special
+        ? ['Золотая артель','Королевские мастера','Купцы Золотого тракта'][index % 3]
+        : shuffledNames[index % shuffledNames.length];
+      return { id:uid(), buyer, special, items, negotiated:false, deliveryNegotiated:false, buyerPaysDelivery:false };
+    };
+    state.deliveryOffers = Array.from({length:normalCount}, (_,i) => makeOffer(false,i))
+      .concat(Array.from({length:specialCount}, (_,i) => makeOffer(true,i)));
+    state.deliveryOffersDay = state.day;
+    state.deliveryOfferSchemaVersion = 2;
+  }
+  function itemStock(kind, quality = null) {
     if (kind === 'planks') return state.sawmill.planks;
+    if (quality && QUALITY.includes(quality)) return num(state.sawmill.logsByWoodQuality?.[kind]?.[quality]);
     return sum(QUALITY.map(q => num(state.sawmill.logsByWoodQuality?.[kind]?.[q])));
   }
-  function hasOfferStock(offer) { return offer.items.every(i => itemStock(i.kind) >= i.amount); }
+  function hasOfferStock(offer) { return offer.items.every(i => itemStock(i.kind, i.quality) >= i.amount); }
   function totalOfferAmount(offer) { return sum(offer.items.map(i=>i.amount)); }
   function offerTotal(offer) { return sum(offer.items.map(i=>i.amount*i.price)); }
   function consumeOfferStock(offer) {
@@ -1149,7 +1179,8 @@
     offer.items.forEach(item => {
       if (item.kind === 'planks') { state.sawmill.planks -= item.amount; refund.push({kind:'planks',amount:item.amount}); return; }
       let left = item.amount;
-      for (const q of [...QUALITY].reverse()) {
+      const qualities = item.quality ? [item.quality] : [...QUALITY].reverse();
+      for (const q of qualities) {
         const take=Math.min(left,state.sawmill.logsByWoodQuality[item.kind][q]);
         if (take > 0) refund.push({kind:item.kind,quality:q,amount:take});
         state.sawmill.logsByWoodQuality[item.kind][q]-=take;
@@ -1171,20 +1202,63 @@
   function fillDeliveryContract(offer) {
     const root=$('delivery-contract-content'); if(!root)return; root.replaceChildren();
     const h=document.createElement('h3');h.textContent=`Договор поставки · ${offer.buyer}`;root.append(h);
-    offer.items.forEach(i=>{const p=document.createElement('p');p.textContent=`${{birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind]} — ${i.amount.toLocaleString('ru-RU')} шт. по ${i.price.toLocaleString('ru-RU')} $ за штуку`;root.append(p);});
+    offer.items.forEach(i=>{const p=document.createElement('p');const quality=i.quality?` · качество: ${deliveryQualityLabel(i.quality)}`:'';p.textContent=`${{birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind]}${quality} — ${i.amount.toLocaleString('ru-RU')} шт. по ${i.price.toLocaleString('ru-RU')} $ за штуку`;root.append(p);});
     const total=document.createElement('strong');total.textContent=`Общая выплата: ${offerTotal(offer).toLocaleString('ru-RU')} $`;root.append(total);
     setText('contract-delivery-option',offer.buyerPaysDelivery?'Доставку оплачивает покупатель.':'Доставку оплачивает поставщик.');
     const enough=hasOfferStock(offer); const priceBtn=$('negotiate-price'); if(priceBtn)priceBtn.disabled=!enough||offer.negotiated; const shipBtn=$('negotiate-shipping');if(shipBtn)shipBtn.disabled=!enough||offer.deliveryNegotiated;const seal=$('seal-delivery-contract');if(seal)seal.disabled=!enough;
   }
 
   function renderDeliveryMarket() {
-    const root=$('delivery-offers');
-    const locked=Boolean(state.marketContract && state.marketContract.stage==='awaiting-delivery-payment');
+    const root = $('delivery-offers');
+    const locked = Boolean(state.marketContract && state.marketContract.stage === 'awaiting-delivery-payment');
     if (root) {
       root.replaceChildren();
-      state.deliveryOffers.forEach(o=>{const card=document.createElement('article');card.className='delivery-offer';const h=document.createElement('h3');h.textContent=o.buyer;const lines=document.createElement('ul');o.items.forEach(i=>{const li=document.createElement('li');const label={birch:'Берёзовые брёвна',pine:'Сосновые брёвна',oak:'Дубовые брёвна',planks:'Доски'}[i.kind];li.textContent=`${label}: ${i.amount.toLocaleString('ru-RU')} шт. × ${i.price.toLocaleString('ru-RU')} $ = ${(i.amount*i.price).toLocaleString('ru-RU')} $`;lines.append(li);});const sumEl=document.createElement('strong');sumEl.textContent=`Всего: ${offerTotal(o).toLocaleString('ru-RU')} $`;const stock=document.createElement('p');stock.textContent=hasOfferStock(o)?'Все материалы есть в наличии':'Не хватает материалов для этого заказа';stock.className=hasOfferStock(o)?'stock-ok':'stock-no';const btn=document.createElement('button');btn.type='button';btn.dataset.deliveryOffer=o.id;btn.textContent='Открыть договор';btn.disabled=locked;card.append(h,lines,sumEl,stock,btn);root.append(card);});
+      const renderGroup = (title, offers, special = false) => {
+        if (!offers.length) return;
+        const heading = document.createElement('h3');
+        heading.className = special ? 'special-offers-heading' : 'normal-offers-heading';
+        heading.textContent = title;
+        root.append(heading);
+        const grid = document.createElement('div');
+        grid.className = special ? 'delivery-offer-grid special-offer-grid' : 'delivery-offer-grid';
+        offers.forEach(o => {
+          const card = document.createElement('article');
+          card.className = `delivery-offer${o.special ? ' special-delivery-offer' : ''}`;
+          const h = document.createElement('h3'); h.textContent = o.buyer;
+          const lines = document.createElement('ul');
+          o.items.forEach(i => {
+            const li = document.createElement('li');
+            const label = {birch:'Берёза',pine:'Сосна',oak:'Дуб',planks:'Доски'}[i.kind];
+            const quality = i.quality ? ` · качество: ${deliveryQualityLabel(i.quality)}` : '';
+            li.textContent = `${label}${quality}: ${i.amount.toLocaleString('ru-RU')} шт. × ${i.price.toLocaleString('ru-RU')} $ = ${(i.amount*i.price).toLocaleString('ru-RU')} $`;
+            lines.append(li);
+          });
+          const sumEl = document.createElement('strong'); sumEl.textContent = `Всего: ${offerTotal(o).toLocaleString('ru-RU')} $`;
+          const stock = document.createElement('p'); stock.textContent = hasOfferStock(o) ? 'Все материалы есть в наличии' : 'Не хватает материалов нужной породы или качества';
+          stock.className = hasOfferStock(o) ? 'stock-ok' : 'stock-no';
+          const btn = document.createElement('button'); btn.type = 'button'; btn.dataset.deliveryOffer = o.id; btn.textContent = 'Открыть договор'; btn.disabled = locked;
+          card.append(h, lines, sumEl, stock, btn); grid.append(card);
+        });
+        root.append(grid);
+      };
+      renderGroup('Обычные заказы на сегодня', state.deliveryOffers.filter(o => !o.special));
+      renderGroup('Особые золотые заказы', state.deliveryOffers.filter(o => o.special), true);
+      if (!state.deliveryOffers.some(o => o.special)) {
+        const note = document.createElement('p'); note.className = 'special-offers-empty'; note.textContent = 'Сегодня особых заказов нет. Проверьте литейную завтра.'; root.append(note);
+      }
     }
-    const active=$('delivery-active'); if(active){active.hidden=!state.marketContract; if(state.marketContract){const c=state.marketContract;setText('delivery-active-title',`${c.buyer} · ${c.stage==='awaiting-delivery-payment'?'ожидает оплаты доставки':'поставка отправлена'}`);setText('delivery-active-total',`${c.total.toLocaleString('ru-RU')} $`);setText('delivery-fee',`${c.deliveryFee.toLocaleString('ru-RU')} $`);const pay=$('pay-contract-delivery');if(pay)pay.hidden=c.stage!=='awaiting-delivery-payment';const cancel=$('cancel-market-contract');if(cancel)cancel.hidden=c.stage!=='awaiting-delivery-payment';}}
+    const active = $('delivery-active');
+    if (active) {
+      active.hidden = !state.marketContract;
+      if (state.marketContract) {
+        const c = state.marketContract;
+        setText('delivery-active-title', `${c.buyer} · ${c.stage === 'awaiting-delivery-payment' ? 'ожидает оплаты доставки' : 'поставка отправлена'}`);
+        setText('delivery-active-total', `${c.total.toLocaleString('ru-RU')} $`);
+        setText('delivery-fee', `${c.deliveryFee.toLocaleString('ru-RU')} $`);
+        const pay = $('pay-contract-delivery'); if (pay) pay.hidden = c.stage !== 'awaiting-delivery-payment';
+        const cancel = $('cancel-market-contract'); if (cancel) cancel.hidden = c.stage !== 'awaiting-delivery-payment';
+      }
+    }
   }
   function renderShipments() {
     const root=$('delivery-shipments');if(!root)return;root.replaceChildren();state.marketShipments.forEach(sh=>{const p=document.createElement('p');p.textContent=`${sh.buyer}: доставка в пути, осталось ${sh.remaining} игровых минут.`;root.append(p);});
@@ -1199,6 +1273,8 @@
     }
 
     state.day++;
+    state.secretLogsSoldDay = state.day;
+    state.secretLogsSoldToday = 0;
     refreshHireMarket();
     refreshDeliveryOffers();
     Object.entries(state.sawmill.zoneStats || {}).forEach(([id, zone]) => {
@@ -2032,10 +2108,19 @@
     setText('log-warehouse-capacity', storageCap.toLocaleString('ru-RU'));
     setText('log-warehouse-cost', '1 000 $');
     const warehouseButton = $('buy-log-warehouse');
+    const warehouseOwned = num(state.sawmill.forestWarehouseLevel || state.sawmill.logStorageLevel) > 0;
     if (warehouseButton) {
-      warehouseButton.disabled = state.money < 1000;
-      warehouseButton.textContent = 'Построить склад леса · 1 000 $';
+      warehouseButton.disabled = warehouseOwned || state.money < 1000;
+      warehouseButton.textContent = warehouseOwned ? 'Склад леса уже куплен' : 'Купить склад леса · 1 000 $';
     }
+    const secretRemaining = state.secretLogsSoldDay === state.day ? Math.max(0, 10 - state.secretLogsSoldToday) : 10;
+    setText('secret-logs-stock', state.inventory.secretLogs.toLocaleString('ru-RU'));
+    setText('secret-logs-sold', `${state.secretLogsSoldDay === state.day ? state.secretLogsSoldToday : 0}/10`);
+    setText('secret-logs-limit', secretRemaining);
+    const secretQty = $('secret-log-quantity');
+    if (secretQty) { secretQty.max = String(Math.min(state.inventory.secretLogs, secretRemaining)); if (Number(secretQty.value) > Number(secretQty.max)) secretQty.value = secretQty.max; if (Number(secretQty.value) < 1 && Number(secretQty.max) > 0) secretQty.value = '1'; }
+    const secretSell = $('sell-secret-logs'); if (secretSell) secretSell.disabled = state.inventory.secretLogs <= 0 || secretRemaining <= 0;
+    const secretAll = $('sell-all-secret-logs'); if (secretAll) secretAll.disabled = state.inventory.secretLogs <= 0 || secretRemaining <= 0;
     const rawContract = $('raw-log-contract');
     if (rawContract) rawContract.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'contract';
     const rawActions = $('raw-log-actions'); if (rawActions) rawActions.hidden = !state.rawLogDeal || state.rawLogDeal.stage !== 'offer';
@@ -2102,11 +2187,13 @@
         const detail = li.querySelector('p');
         if (name) name.textContent = `${op.name} · ${'★'.repeat(op.stars || 3)}${'☆'.repeat(5-(op.stars || 3))}`;
         if (detail) detail.textContent = machine
-          ? `Станок ${op.machineIndex + 1} · зарплата ${WORKER_DAILY_SALARY}$/день · задержка ${Math.max(5, 15 - clamp(Number(op.stars) || 3, 1, 5) * 2)} мин` 
+          ? `Назначен на станок ${op.machineIndex + 1} · зарплата ${WORKER_DAILY_SALARY}$ за игровые сутки`
           : 'Нет назначенного станка';
         fragment.append(li);
       });
       operatorList.replaceChildren(fragment);
+      const emptyOperators = $('operator-list-empty');
+      if (emptyOperators) emptyOperators.hidden = (state.sawmill.operators || []).length > 0;
     }
 
     setText('planks', state.sawmill.planks);
@@ -2126,7 +2213,10 @@
     );
 
     QUALITY.forEach(q => setText(`logs-${q}`, state.sawmill.logs[q]));
-    WOOD_TYPES.forEach(wood => setText(`wood-${wood}-logs`, sum(QUALITY.map(q => state.sawmill.logsByWoodQuality?.[wood]?.[q] || 0))));
+    WOOD_TYPES.forEach(wood => {
+      setText(`wood-${wood}-logs`, sum(QUALITY.map(q => state.sawmill.logsByWoodQuality?.[wood]?.[q] || 0)));
+      QUALITY.forEach(quality => setText(`composition-${wood}-${quality}`, num(state.sawmill.logsByWoodQuality?.[wood]?.[quality]).toLocaleString('ru-RU')));
+    });
 
     setText('hours-worked', state.sawmill.hoursWorked.toFixed(1));
     setText('logs-today', state.sawmill.logsToday);
@@ -2495,6 +2585,23 @@
 
   Object.keys(AXES).forEach(rarity => { bind(`buy-${rarity}`, () => buyAxe(rarity)); });
 
+  function sellSecretLogs(requested) {
+    return transaction('Продажа секретных брёвен', () => {
+      const soldToday = state.secretLogsSoldDay === state.day ? num(state.secretLogsSoldToday) : 0;
+      const remainingLimit = Math.max(0, 10 - soldToday);
+      const amount = Math.min(num(requested), num(state.inventory.secretLogs), remainingLimit);
+      if (amount <= 0) { notify('Нет секретных брёвен или дневной лимит уже исчерпан.', 'error'); return false; }
+      state.inventory.secretLogs -= amount;
+      state.secretLogsSoldDay = state.day;
+      state.secretLogsSoldToday = soldToday + amount;
+      state.money += amount * 200;
+      state.stats.revenue += amount * 200;
+      notify(`Продано ${amount} секретных брёвен. Получено ${(amount * 200).toLocaleString('ru-RU')} $.`);
+    });
+  }
+  bind('sell-secret-logs', () => sellSecretLogs($('secret-log-quantity')?.value));
+  bind('sell-all-secret-logs', () => sellSecretLogs(Math.min(state.inventory.secretLogs, 10 - (state.secretLogsSoldDay === state.day ? state.secretLogsSoldToday : 0))));
+
   bind('hire', () => { $('hire-market-panel')?.scrollIntoView({behavior:'smooth',block:'center'}); });
   document.addEventListener('click', event => {
     const candidateButton = event.target.closest('[data-hire-candidate]');
@@ -2539,10 +2646,11 @@
   });
 
   bind('buy-log-warehouse', () => transaction('Покупка склада леса', () => {
+    if (num(state.sawmill.forestWarehouseLevel || state.sawmill.logStorageLevel) > 0) { notify('Склад леса уже куплен.', 'error'); return false; }
     if (!spend(1000)) return false;
-    state.sawmill.forestWarehouseLevel = num(state.sawmill.forestWarehouseLevel) + 1;
-    state.sawmill.logStorageLevel = state.sawmill.forestWarehouseLevel;
-    notify(`Склад леса построен. Вместимость увеличена на 300 брёвен и 100 досок. Теперь: ${getLogStorageCapacity().toLocaleString('ru-RU')} брёвен и ${getPlankStorageCapacity().toLocaleString('ru-RU')} досок.`);
+    state.sawmill.forestWarehouseLevel = 1;
+    state.sawmill.logStorageLevel = Math.max(1, num(state.sawmill.logStorageLevel));
+    notify(`Склад леса куплен. Вместимость увеличена на 300 брёвен и 100 досок. Теперь: ${getLogStorageCapacity().toLocaleString('ru-RU')} брёвен и ${getPlankStorageCapacity().toLocaleString('ru-RU')} досок.`);
   }));
 
   bind('buy-machine', () => transaction('Покупка станка', () => {
@@ -3141,13 +3249,65 @@
   bind('crew-prev', () => { crewPage = Math.max(0, crewPage - 1); renderProfileCrew(); });
   bind('crew-next', () => { crewPage++; renderProfileCrew(); });
 
+
+  const IDEA_INBOX_KEY = 'timber-town:ideas:inbox:v1';
+  const ADMIN_TELEGRAM_ID = '8512058647';
+  function readIdeaInbox() {
+    try { const value = JSON.parse(localStorage.getItem(IDEA_INBOX_KEY) || '[]'); return Array.isArray(value) ? value : []; }
+    catch { return []; }
+  }
+  const ideaForm = $('idea-form');
+  if (ideaForm) {
+    const currentUser = telegramUser();
+    const adminLink = $('ideas-admin-link');
+    if (adminLink && String(currentUser?.id || '') === ADMIN_TELEGRAM_ID) adminLink.hidden = false;
+    ideaForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const senderName = String($('idea-sender-name')?.value || '').trim().slice(0, 40);
+      const ideaText = String($('idea-message')?.value || '').trim().slice(0, 2000);
+      const status = $('idea-submit-status');
+      if (!senderName || !ideaText) { if (status) status.textContent = 'Заполни имя и текст идеи.'; return; }
+      const user = telegramUser() || {};
+      const inbox = readIdeaInbox();
+      inbox.unshift({ id:uid(), createdAt:new Date().toISOString(), senderName, idea:ideaText,
+        telegram:{ id:user.id == null ? null : String(user.id), username:String(user.username || ''), firstName:String(user.first_name || ''), lastName:String(user.last_name || '') } });
+      try {
+        localStorage.setItem(IDEA_INBOX_KEY, JSON.stringify(inbox.slice(0, 500)));
+        ideaForm.reset();
+        if (status) status.textContent = 'Идея сохранена в локальный терминал. Спасибо!';
+      } catch (error) {
+        console.error(error);
+        if (status) status.textContent = 'Не удалось сохранить идею: память браузера недоступна.';
+      }
+    });
+  }
+
+  function showTelegramIdentityGate() {
+    let gate = $('telegram-identity-gate');
+    if (gate) { gate.hidden = false; return; }
+    gate = document.createElement('div');
+    gate.id = 'telegram-identity-gate';
+    gate.className = 'telegram-identity-gate';
+    gate.innerHTML = '<section role="alertdialog" aria-modal="true" aria-labelledby="telegram-gate-title"><h2 id="telegram-gate-title">Не удалось определить Telegram ID</h2><p>Сохранение привязано к Telegram-аккаунту. Вернись в чат с ботом и открой игру кнопкой запуска, затем нажми «Проверить снова».</p><div><button type="button" id="telegram-gate-retry">Проверить снова</button><button type="button" id="telegram-gate-close" class="danger">Закрыть игру</button></div></section>';
+    document.body.append(gate);
+    $('telegram-gate-retry')?.addEventListener('click', () => {
+      const id = getTelegramId();
+      if (id !== 'browser') window.location.reload();
+      else notify('Telegram ID всё ещё не получен. Открой игру из чата с ботом.', 'error');
+    });
+    $('telegram-gate-close')?.addEventListener('click', () => {
+      try { window.Telegram?.WebApp?.close?.(); } catch {}
+      if (!window.Telegram?.WebApp?.close) window.close();
+    });
+  }
+
   function renderProfileTab() {
     const hash = window.location.hash;
-    const selected = ['#tab-crew'].includes(hash)
+    const selected = ['#tab-crew', '#tab-ideas'].includes(hash)
       ? hash
       : '#tab-stats';
 
-    ['tab-stats', 'tab-crew'].forEach(id => {
+    ['tab-stats', 'tab-crew', 'tab-ideas'].forEach(id => {
       const section = $(id);
       if (section) section.hidden = `#${id}` !== selected;
     });
@@ -3229,6 +3389,10 @@
     const identityWaitMs = telegramApp ? 700 : 0;
     while (getTelegramId() === 'browser' && Date.now() - startedAt < identityWaitMs) {
       await new Promise(resolve => window.setTimeout(resolve, 50));
+    }
+    if (telegramApp && String(telegramApp.initData || '').length > 0 && getTelegramId() === 'browser') {
+      showTelegramIdentityGate();
+      return;
     }
     if (getTelegramId() !== loadedIdentity) {
       loadedIdentity = getTelegramId();
