@@ -3151,6 +3151,10 @@
       const section = $(id);
       if (section) section.hidden = `#${id}` !== selected;
     });
+    document.querySelectorAll('#profile > nav a[href^="#tab-"]').forEach(link => {
+      if (link.getAttribute('href') === selected) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
   }
 
   window.addEventListener('hashchange', renderProfileTab);

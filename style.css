@@ -2076,3 +2076,512 @@ a.map-return-link:focus-visible {
   text-underline-offset: 3px;
 }
 
+
+
+/* ============================================================
+   Timber Town — single surface
+   Для кого: игрок на телефоне, между делянкой и сейфом.
+   Эстетика: тёмный полевой журнал, не неон и не пергамент в рамке.
+   Главное: деньги, действие, активная вкладка.
+   Ломается: узкий HUD и карта делянок — их геометрию не трогаем.
+   Исключение: печать договора остаётся двойным кругом — это штамп, не UI-рамка.
+   ============================================================ */
+:root {
+  --tt-bg: #121815;
+  --tt-bone: #e7dece;
+  --tt-mute: #a39680;
+  --tt-gold: #e2b657;
+  --tt-moss: #3d5c40;
+  --tt-moss-2: #4d7350;
+  --tt-brass: #d4b36a;
+  --tt-blood: #8d3b34;
+  --tt-line: rgba(231, 222, 206, .14);
+  --tt-serif: Georgia, "Palatino Linotype", "Book Antiqua", serif;
+}
+
+body[data-screen]:not([data-screen="boot"]):not([data-screen="map"]) {
+  background: var(--tt-bg) !important;
+  color: var(--tt-bone);
+}
+
+/* Одна поверхность. Вложенные блоки не получают вторую рамку. */
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > form,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > ul,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > table,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section > div,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .stat,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .safe-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .machine-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .operator-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .wood-stock-card,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .zone-detail-grid > div,
+#safe .safe-card,
+#safe .safe-card-primary,
+#safe .safe-panel,
+#safe .safe-panel-deposit,
+#safe .safe-panel-withdraw,
+#safe .safe-input-row,
+.machine-batch,
+.machine-lock-banner,
+.license-paper,
+.tax-paper,
+.fold-plaque,
+.about-game-plaque,
+.guide-grid article,
+.guide-content,
+.guide-table-scroll,
+.hire-market-panel,
+.hire-candidate,
+.delivery-offer,
+#log-piles li,
+#axe-catalog > li,
+#broken-axes > li,
+#crew-list > li,
+#profile-crew > li,
+#chance-list > li,
+.paper-contract,
+.contract-paper {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > form,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > ul,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > table {
+  margin: 0 0 8px !important;
+  padding: 4px 0 16px !important;
+  color: var(--tt-bone) !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+body[data-screen]:not([data-screen="boot"]) main:not(#map) > section + section {
+  border-top: 1px solid var(--tt-line) !important;
+  padding-top: 16px !important;
+}
+
+/* Текст костяной. Золото — только у чисел и денег. */
+body[data-screen]:not([data-screen="boot"]) main:not(#map) h1,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) h2,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) h3 {
+  color: var(--tt-bone) !important;
+  text-shadow: none !important;
+}
+main:not(#boot):not(#map) > h1 {
+  border-bottom: 1px solid var(--tt-line) !important;
+  font-weight: 500 !important;
+}
+main:not(#boot):not(#map) h2 {
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  font-size: 20px !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) p,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) li,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) label,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) small {
+  color: #d9d0bf !important;
+}
+.stat-label,
+.safe-stat-label,
+.eyebrow,
+.muted,
+.storage-footnote,
+.form-hint,
+#wallet > span,
+.safe-hint,
+.machine-batch-title,
+.safe-panel-title {
+  color: var(--tt-mute) !important;
+}
+data,
+time,
+.stat-value,
+.safe-stat-value,
+.storage-count strong,
+#money,
+.worker-stars {
+  color: var(--tt-gold) !important;
+}
+
+/* Повторяющиеся записи — заливка без обводки, чтобы не слипались. */
+#profile-crew > li,
+#crew-list > li,
+#axe-catalog > li,
+.operator-card,
+.hire-candidate,
+.delivery-offer,
+.machine-card,
+.wood-stock-card {
+  background: rgba(255, 255, 255, .045) !important;
+  border-radius: 8px !important;
+  padding: 12px !important;
+}
+.stat,
+#safe .safe-card,
+#safe .safe-panel,
+#safe .safe-input-row,
+.machine-batch {
+  background: transparent !important;
+  padding: 0 !important;
+}
+#safe .safe-card-primary .safe-stat-value {
+  font-size: 26px !important;
+}
+.guide-grid article,
+.about-game-plaque {
+  background: rgba(255, 255, 255, .04) !important;
+  border-radius: 8px !important;
+}
+.guide-content {
+  background: transparent !important;
+  border-top: 1px solid var(--tt-line) !important;
+}
+#log-piles li,
+.log-quality-details li {
+  background: transparent !important;
+  border-radius: 0 !important;
+  border-bottom: 1px solid var(--tt-line) !important;
+  padding: 8px 0 !important;
+}
+
+/* Вкладки: одна плашка, активная — мох, без отдельных рамок. */
+main:not(#boot):not(#map) > nav {
+  display: flex !important;
+  flex-wrap: nowrap;
+  gap: 4px !important;
+  width: 100%;
+  margin: 0 0 16px !important;
+  padding: 4px !important;
+  background: rgba(0, 0, 0, .28) !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+main:not(#boot):not(#map) > nav a {
+  flex: 1 1 0;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--tt-mute) !important;
+  font: 600 14px/1.2 var(--tt-serif) !important;
+  text-decoration: none !important;
+  text-align: center;
+}
+main:not(#boot):not(#map) > nav a[aria-current="page"] {
+  background: var(--tt-moss) !important;
+  color: var(--tt-bone) !important;
+}
+
+.quality-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body[data-screen]:not([data-screen="boot"]) button.quality-card {
+  flex: 1 1 calc(33% - 6px);
+  min-height: 44px !important;
+  padding: 8px 8px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(0, 0, 0, .28) !important;
+  box-shadow: none !important;
+  color: #d5cbb8 !important;
+}
+body[data-screen]:not([data-screen="boot"]) button.quality-card[aria-pressed="true"] {
+  background: var(--tt-moss) !important;
+  color: var(--tt-bone) !important;
+  box-shadow: inset 0 3px 0 var(--tt-gold) !important;
+}
+
+/* Кнопки: одна заливка, без обводки и без «кирпичной» тени. */
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .btn,
+body[data-screen]:not([data-screen="boot"]) #inventory button {
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--tt-moss) !important;
+  color: #f4eadc !important;
+  box-shadow: none !important;
+  font: 600 14px/1.2 var(--tt-serif) !important;
+  text-shadow: none !important;
+  letter-spacing: .01em;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button:hover:not(:disabled),
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .btn:hover {
+  background: var(--tt-moss-2) !important;
+  filter: none;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button:active:not(:disabled) {
+  transform: translateY(1px);
+  filter: none;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button:disabled {
+  opacity: .42;
+  filter: none;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button.ghost,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .safe-quick button,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .crew-pagination button {
+  background: transparent !important;
+  color: #d7cbb4 !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #play,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #hire,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #zone-buy-yes,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #upgrade-machine,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #pay-tax,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #sell-planks,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #start-machine,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #pay-delivery,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #stamp,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) [id^="buy-"],
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #safe-deposit,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #safe-withdraw,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button.gold-action {
+  background: var(--tt-brass) !important;
+  color: #23180f !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #reset-progress,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #reset-yes,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #fire-yes,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .fire-worker,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) #repair-machine {
+  background: var(--tt-blood) !important;
+  color: #f8ebe8 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .axe-choices .equip-axe {
+  width: 100%;
+  justify-content: flex-start;
+  background: rgba(255, 255, 255, .05) !important;
+  color: var(--tt-bone) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) .seal-button {
+  background: #a83e32 !important;
+  color: #f5d7a8 !important;
+  border: 3px double #8e352d !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button.quality-card {
+  flex: 1 1 calc(33% - 6px);
+  min-height: 44px !important;
+  padding: 8px 8px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(0, 0, 0, .28) !important;
+  box-shadow: none !important;
+  color: #d5cbb8 !important;
+}
+body[data-screen]:not([data-screen="boot"]) main:not(#map) button.quality-card[aria-pressed="true"] {
+  background: var(--tt-moss) !important;
+  color: var(--tt-bone) !important;
+  box-shadow: inset 0 3px 0 var(--tt-gold) !important;
+}
+
+body[data-screen]:not([data-screen="boot"]) main:not(#map) input,
+body[data-screen]:not([data-screen="boot"]) main:not(#map) select,
+#inventory input {
+  min-height: 40px;
+  color: var(--tt-bone) !important;
+  background: rgba(0, 0, 0, .28) !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: inset 0 -1px 0 rgba(226, 182, 87, .45) !important;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--tt-gold) !important;
+  outline-offset: 2px;
+}
+
+/* Иконки HUD — простые глифы, один размер. */
+#open-inventory,
+#open-profile {
+  gap: 6px !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 0 10px !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: var(--tt-moss) !important;
+  box-shadow: none !important;
+  color: var(--tt-bone) !important;
+  font: 600 13px/1 var(--tt-serif) !important;
+}
+#open-inventory::before,
+#open-profile::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: currentColor;
+}
+#open-inventory::before {
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M9 6.5V6a3 3 0 0 1 6 0v.5h2.2A1.8 1.8 0 0 1 19 8.3v10A1.8 1.8 0 0 1 17.2 20H6.8A1.8 1.8 0 0 1 5 18.3v-10A1.8 1.8 0 0 1 6.8 6.5H9zm1.4 0h3.2V6a1.6 1.6 0 0 0-3.2 0v.5zM8.2 12h7.6v1.6H8.2z'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M9 6.5V6a3 3 0 0 1 6 0v.5h2.2A1.8 1.8 0 0 1 19 8.3v10A1.8 1.8 0 0 1 17.2 20H6.8A1.8 1.8 0 0 1 5 18.3v-10A1.8 1.8 0 0 1 6.8 6.5H9zm1.4 0h3.2V6a1.6 1.6 0 0 0-3.2 0v.5zM8.2 12h7.6v1.6H8.2z'/></svg>") center / contain no-repeat;
+}
+#open-profile::before {
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M12 12.2a3.6 3.6 0 1 0-3.6-3.6 3.6 3.6 0 0 0 3.6 3.6zm0 1.6c-3.9 0-7 2-7 4.5V20h14v-1.7c0-2.5-3.1-4.5-7-4.5z'/></svg>") center / contain no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' d='M12 12.2a3.6 3.6 0 1 0-3.6-3.6 3.6 3.6 0 0 0 3.6 3.6zm0 1.6c-3.9 0-7 2-7 4.5V20h14v-1.7c0-2.5-3.1-4.5-7-4.5z'/></svg>") center / contain no-repeat;
+}
+body[data-screen="profile"] #open-profile {
+  background: #2c4630 !important;
+  box-shadow: inset 0 -2px 0 var(--tt-gold) !important;
+}
+#hud {
+  background: #101612 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--tt-line) !important;
+  box-shadow: none !important;
+}
+#clock,
+#wallet {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: var(--tt-bone) !important;
+}
+.axe-icon,
+#inventory-list .axe-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  background: transparent;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.worker-portrait {
+  border: 0 !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+.about-game-icon {
+  font-size: 0 !important;
+  border: 0 !important;
+  background: var(--tt-moss) !important;
+  color: var(--tt-bone);
+}
+.about-game-icon::before {
+  content: "i";
+  font: 600 16px/1 var(--tt-serif);
+  color: var(--tt-bone);
+}
+main:not(#boot):not(#map) img:not(.worker-portrait):not(.axe-icon) {
+  border: 0 !important;
+}
+.building-guide {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 0 8px !important;
+}
+
+/* Рюкзак: один лист, слот без второй обводки. Редкость — полоска сверху. */
+dialog,
+#inventory {
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: #1a221c !important;
+  color: var(--tt-bone) !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, .45) !important;
+}
+#inventory-list > li {
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: rgba(0, 0, 0, .28) !important;
+  box-shadow: none !important;
+}
+#inventory-list > li[data-rarity="common"] { box-shadow: inset 0 3px 0 #8a9ba8 !important; }
+#inventory-list > li[data-rarity="rare"] { box-shadow: inset 0 3px 0 #3d6fbf !important; }
+#inventory-list > li[data-rarity="legendary"] { box-shadow: inset 0 3px 0 #e2b657 !important; }
+#inventory-list > li[data-rarity="mythic"] { box-shadow: inset 0 3px 0 #7a4ea3 !important; }
+#inventory-list > li.inventory-empty-slot {
+  background: rgba(0, 0, 0, .14) !important;
+  box-shadow: none !important;
+}
+
+/* Карта делянок: клетка без рамки, своя делянка — золотая черта снизу. */
+body[data-screen="sawmill"] main#sawmill #zone-grid {
+  box-shadow: none !important;
+  border: 0 !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="true"] {
+  background: linear-gradient(180deg, transparent, rgba(61, 92, 64, .35)) !important;
+  box-shadow: inset 0 -3px 0 var(--tt-gold) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="false"]:not(:disabled) {
+  background: rgba(226, 182, 87, .16) !important;
+  box-shadow: inset 0 -3px 0 var(--tt-brass) !important;
+}
+body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="false"]:disabled {
+  background: rgba(7, 12, 8, .5) !important;
+  box-shadow: none !important;
+}
+
+.contract-paper,
+.paper-contract {
+  color: #493725 !important;
+  background: #e6d7b4 !important;
+  border-radius: 2px !important;
+}
+.contract-paper p,
+.contract-paper h3,
+.contract-paper strong,
+.contract-paper label,
+.paper-contract p,
+.paper-contract h3,
+.paper-contract label {
+  color: #493725 !important;
+}
+
+@media (max-width: 380px) {
+  #open-inventory,
+  #open-profile {
+    padding: 0 8px !important;
+    font-size: 12px !important;
+  }
+  main:not(#boot):not(#map) > nav a {
+    font-size: 13px !important;
+    padding: 8px 6px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button,
+  main:not(#boot):not(#map) > nav a {
+    transition: none !important;
+  }
+}
