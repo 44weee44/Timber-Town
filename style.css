@@ -2643,3 +2643,407 @@ body[data-screen="sawmill"] main#sawmill #zone-grid button[data-owned="false"]:d
 .composition-table th,.composition-table td { border-bottom:1px solid var(--line); padding:8px 6px; text-align:center; }
 .composition-table th:first-child { text-align:left; }
 @media(max-width:650px) { .terminal-layout { grid-template-columns:1fr; } .terminal-idea-list { max-height:300px; overflow:auto; } .composition-table { min-width:640px; } }
+
+/* ============================================================
+   Timber Town — выравнивание текста на всех вкладках
+   Заголовки стоят над фото, подписи вкладок не ломаются,
+   «На карту» в потоке страницы, карточки читаются слева направо.
+   ============================================================ */
+p.map-return,
+main:not(#boot):not(#map) > p.map-return,
+body[data-screen="sawmill"] main#sawmill > p.map-return {
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  order: -6 !important;
+  width: auto !important;
+  margin: 0 0 2px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+a.map-return-link,
+a.map-return-link:hover,
+a.map-return-link:focus,
+a.map-return-link:active {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  min-height: 36px !important;
+  padding: 4px 2px !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f4e7cf !important;
+  font: 600 15px/1 Georgia, "Palatino Linotype", serif !important;
+  letter-spacing: .01em !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .65) !important;
+}
+
+body[data-screen]:not([data-screen="boot"]):not([data-screen="map"]) main:not(#map) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+}
+main:not(#boot):not(#map) > h1,
+body[data-screen="sawmill"] main#sawmill > h1 {
+  order: -5 !important;
+  margin: 0 0 12px !important;
+  padding: 0 0 10px !important;
+  background: transparent !important;
+  border-bottom: 1px solid rgba(231, 222, 206, .16) !important;
+  color: #f6edd9 !important;
+  font: 600 clamp(26px, 6.2vw, 34px)/1.15 Georgia, "Palatino Linotype", serif !important;
+  letter-spacing: .012em !important;
+  text-align: left !important;
+  text-shadow: none !important;
+}
+main:not(#boot):not(#map) > img,
+body[data-screen="sawmill"] main#sawmill > img {
+  order: -4 !important;
+  position: static !important;
+  top: auto !important;
+  grid-row: auto !important;
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  height: clamp(148px, 34vw, 240px) !important;
+  max-height: 240px !important;
+  margin: 0 0 14px !important;
+  object-fit: cover !important;
+  object-position: center 42% !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .28) !important;
+}
+
+/* Вкладки: подпись в одну строку, по центру кнопки, без сжатия. */
+main:not(#boot):not(#map) > nav,
+#profile > nav,
+body[data-screen="sawmill"] main#sawmill > nav,
+body[data-screen="sawmill"] main#sawmill > nav[aria-label="Разделы лесопилки"] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  order: -3 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 16px !important;
+  padding: 4px !important;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  background: rgba(0, 0, 0, .32) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: inset 0 0 0 1px rgba(231, 222, 206, .08) !important;
+  scrollbar-width: none;
+}
+main:not(#boot):not(#map) > nav::-webkit-scrollbar,
+#profile > nav::-webkit-scrollbar { display: none; }
+main:not(#boot):not(#map) > nav a,
+#profile > nav a {
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  padding: 8px 14px !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #cfc3ad !important;
+  font: 600 14px/1 Georgia, "Palatino Linotype", serif !important;
+  letter-spacing: .01em !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+main:not(#boot):not(#map) > nav a[aria-current="page"],
+#profile > nav a[aria-current="page"] {
+  background: #3d5c40 !important;
+  color: #f7f1e4 !important;
+  box-shadow: inset 0 -2px 0 #e2b657 !important;
+}
+
+/* Шапка: время, кнопки и кошелёк на одной линии, текст по центру. */
+#hud {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-height: 56px !important;
+}
+#clock,
+#open-inventory,
+#open-profile,
+#wallet {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+#clock {
+  flex: 0 0 auto !important;
+  min-width: 58px !important;
+  padding: 0 8px !important;
+  font: 600 15px/1 Georgia, "Palatino Linotype", serif !important;
+  text-align: center !important;
+}
+#open-inventory,
+#open-profile {
+  flex: 0 0 auto !important;
+  gap: 6px !important;
+  padding: 0 10px !important;
+  font: 600 13px/1 Georgia, "Palatino Linotype", serif !important;
+}
+#open-inventory > span {
+  display: inline-flex !important;
+  align-items: center !important;
+  line-height: 1 !important;
+  transform: none !important;
+}
+#wallet {
+  flex: 1 1 auto !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  padding: 0 10px !important;
+  overflow: hidden !important;
+}
+#wallet > span {
+  line-height: 1 !important;
+  font-size: 12px !important;
+}
+#money {
+  line-height: 1 !important;
+  font-size: clamp(13px, 3.4vw, 16px) !important;
+  text-align: right !important;
+}
+
+/* Реплика служащего: портрет и текст на одной высоте. */
+.building-guide {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 0 14px !important;
+  padding: 10px 12px !important;
+  background: rgba(255, 255, 255, .045) !important;
+  border-radius: 12px !important;
+}
+.building-guide img {
+  width: 56px !important;
+  height: 56px !important;
+  flex: 0 0 56px !important;
+  margin: 0 !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+  border-radius: 10px !important;
+}
+.building-guide p {
+  flex: 1 1 auto !important;
+  margin: 0 !important;
+  text-align: left !important;
+  font: 15px/1.45 Georgia, "Palatino Linotype", serif !important;
+}
+
+/* Магазин: иконка слева, название и цена ровно напротив неё. */
+#axe-catalog {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin: 0 0 16px !important;
+  padding: 0 !important;
+}
+#axe-catalog > li {
+  display: grid !important;
+  grid-template-columns: 72px minmax(0, 1fr) !important;
+  grid-template-areas:
+    "icon name"
+    "icon desc"
+    "icon anti"
+    "btn btn" !important;
+  align-items: center !important;
+  column-gap: 12px !important;
+  row-gap: 2px !important;
+  padding: 12px !important;
+}
+#axe-catalog > li > .axe-icon {
+  grid-area: icon !important;
+  width: 72px !important;
+  height: 72px !important;
+  align-self: center !important;
+  object-fit: cover !important;
+  border-radius: 10px !important;
+}
+#axe-catalog > li > h2 {
+  grid-area: name !important;
+  align-self: end !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 18px !important;
+  line-height: 1.15 !important;
+  text-align: left !important;
+}
+#axe-catalog > li > p {
+  grid-area: desc !important;
+  align-self: start !important;
+  margin: 0 !important;
+  text-align: left !important;
+  line-height: 1.35 !important;
+}
+#axe-catalog > li > .axe-antibuff {
+  grid-area: anti !important;
+  margin: 2px 0 0 !important;
+  line-height: 1.35 !important;
+}
+#axe-catalog > li > button {
+  grid-area: btn !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  margin-top: 8px !important;
+}
+
+/* Списки запасов: название слева, число справа, одна базовая линия. */
+#log-piles {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+#log-piles li {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  padding: 8px 2px !important;
+  text-align: left !important;
+}
+#log-piles data {
+  margin-left: auto !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+
+/* Карточки цифр: подпись сверху, значение снизу, без скачков. */
+.stat,
+#safe .safe-card {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 4px !important;
+  min-height: 68px !important;
+  text-align: left !important;
+}
+.stat-label,
+.safe-stat-label {
+  display: block !important;
+  line-height: 1.2 !important;
+}
+.stat-value,
+.safe-stat-value {
+  display: block !important;
+  line-height: 1.1 !important;
+}
+
+/* Плашка «О игре»: иконка, заголовок и подпись выровнены по центру. */
+.about-game-plaque > summary {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-height: 64px !important;
+  text-align: left !important;
+}
+.about-game-plaque > summary > span:nth-child(2) {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+.about-game-plaque > summary strong,
+.about-game-plaque > summary small {
+  display: block !important;
+  text-align: left !important;
+  line-height: 1.2 !important;
+}
+.about-game-icon {
+  display: grid !important;
+  place-items: center !important;
+}
+.about-game-arrow {
+  margin-left: auto !important;
+  line-height: 1 !important;
+}
+
+/* Кнопки качества и зоны: подпись строго по центру клетки. */
+button.quality-card,
+#zone-grid button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1.15 !important;
+  padding: 6px 4px !important;
+}
+
+main:not(#boot):not(#map) > section > h2,
+main:not(#boot):not(#map) h2 {
+  margin: 0 0 10px !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+}
+main:not(#boot):not(#map) > p:not(.map-return) {
+  margin: 0 0 12px !important;
+  text-align: left !important;
+  line-height: 1.5 !important;
+}
+
+@media (max-width: 560px) {
+  #wallet { flex-direction: row !important; }
+  #open-inventory, #open-profile { padding: 0 8px !important; font-size: 12px !important; }
+  main:not(#boot):not(#map) > nav a,
+  #profile > nav a { font-size: 13px !important; padding: 8px 12px !important; }
+}
+@media (min-width: 800px) {
+  main:not(#boot):not(#map) {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  main:not(#boot):not(#map) > img {
+    position: static !important;
+    height: 240px !important;
+    max-height: 240px !important;
+  }
+  main:not(#boot):not(#map) > p,
+  main:not(#boot):not(#map) > h1,
+  main:not(#boot):not(#map) > nav,
+  main:not(#boot):not(#map) > section,
+  main:not(#boot):not(#map) > form,
+  main:not(#boot):not(#map) > ul,
+  main:not(#boot):not(#map) > table,
+  main:not(#boot):not(#map) > button {
+    grid-column: auto !important;
+  }
+}
